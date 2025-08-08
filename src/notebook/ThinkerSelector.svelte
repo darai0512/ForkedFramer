@@ -7,14 +7,17 @@
     { value: "gpt4o", label: "gpt4o" },
     { value: "gpt4.1", label: "gpt4.1" },
     { value: "gpt4.1-mini", label: "gpt4.1-mini" },
-    { value: "o4-mini", label: "o4-mini" },
+    { value: "gpt-5", label: "gpt-5" },
+    { value: "gpt-5-mini", label: "gpt-5-mini" },
+    { value: "gpt-5-chat", label: "gpt-5-chat" },
     // { value: "sonnet", label: "sonnet" },
     // { value: "sonnet:think", label: "sonnet(think)" },
-    { value: "sonnet", label: "sonnet-4.0" },
+    { value: "sonnet-4.0", label: "sonnet-4.0" },
+    { value: "opus-4.1", label: "opus-4.1" },
     // { value: "gemini", label: "gemini" },
     { value: "gemini-flash", label: "gemini-flash" },
     // { value: "gemini-flash:think", label: "gemini-flash(think)" },
-    { value: "grok3", label: "grok3" }
+    { value: "grok4", label: "grok4" }
   ];
 </script>
 

@@ -6,10 +6,14 @@ export const ThinkerSchema = z.enum([
   "sonnet", 
   "sonnet:think", 
   "sonnet-4.0",
+  "opus-4.1",
   "gpt4o", 
   "gpt4.1",
   "gpt4.1-mini",
   "gpt4.1-nano",
+  "gpt-5",
+  "gpt-5-mini",
+  "gpt-5-chat",
   "o4-mini", 
   "o4-mini-high", 
   "o3", 
@@ -17,7 +21,8 @@ export const ThinkerSchema = z.enum([
   "gemini-flash", 
   "gemini-flash:think", 
   "grok3-mini", 
-  "grok3"
+  "grok3",
+  "grok4",
 ]);
 export type Thinker = z.infer<typeof ThinkerSchema>;
 

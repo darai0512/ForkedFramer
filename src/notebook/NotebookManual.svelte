@@ -28,10 +28,12 @@
   import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
   import { createPreference } from '../preferences';
   import { _ } from 'svelte-i18n';
+  import ThinkerSelector from './ThinkerSelector.svelte';
 
   let notebook: NotebookLocal | null;
   $: notebook = $mainBook?.notebook ?? null;
   let thinker: Thinker = "gpt4.1";
+  // let thinker: Thinker = "gpt-5-mini"; // Default to the latest model
 
   let fullAutoRunning = false;
   let themeWaiting = false;
