@@ -89,18 +89,18 @@
     <div class="custom-font-panel">
       <input type="text" class="input px-2" bind:value={localFontName} placeholder="フォント名" />
       <button class="px-2 bg-secondary-500 text-white hover:bg-secondary-700 focus:bg-secondary-700 active:bg-secondary-900 download-button" on:click={setLocalFont}>採用</button>
+      {#each localFonts as font}
+        <div class="font-sample hbox" style="font-family: '{font}'">
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
+          <span on:click={mouseEvent=>onChangeFont({detail:{mouseEvent,font: {family:font, variants: ["400"]}}})}>{font}(ローカル) 今日はいい天気ですね</span>
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+          <img src={trash} width="20" height="20" alt="trash" on:click={() => removeFromHistory(font)}/>
+        </div>
+      {/each}
     </div>
     {/if}
-    {#each localFonts as font}
-      <div class="font-sample hbox" style="font-family: '{font}'">
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-static-element-interactions -->
-        <span on:click={mouseEvent=>onChangeFont({detail:{mouseEvent,font: {family:font, variants: ["400"]}}})}>{font}(ローカル) 今日はいい天気ですね</span>
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-        <img src={trash} width="20" height="20" alt="trash" on:click={() => removeFromHistory(font)}/>
-      </div>
-    {/each}
   </div>
   </Drawer>
 </div>
