@@ -448,25 +448,34 @@ export class BubbleLayer extends LayerBase {
     // カーソルキー
     if (this.selected) {
       if (event.code === 'ArrowLeft') {
-        if (this.selected.optionSet.randomSeed) {
-          this.selected.optionContext.randomSeed -= 1;
-          if (this.selected.optionContext.randomSeed < 0) {
-            this.selected.optionContext.randomSeed = 100;
+        console.log(event);
+        if (event.ctrlKey) {
+          this.incrementFontSize(-1);
+        } else {
+          if (this.selected.optionSet.randomSeed) {
+            this.selected.optionContext.randomSeed -= 1;
+            if (this.selected.optionContext.randomSeed < 0) {
+              this.selected.optionContext.randomSeed = 100;
+            }
+            this.onCommit(true);
+            this.redraw();
+            return true;
           }
-          this.onCommit(true);
-          this.redraw();
-          return true;
         }
       }
       if (event.code === 'ArrowRight') {
-        if (this.selected.optionSet.randomSeed) {
-          this.selected.optionContext.randomSeed += 1;
-          if (100 < this.selected.optionContext.randomSeed) {
-            this.selected.optionContext.randomSeed = 0;
+        if (event.ctrlKey) {
+          this.incrementFontSize(1);
+        } else {
+          if (this.selected.optionSet.randomSeed) {
+            this.selected.optionContext.randomSeed += 1;
+            if (100 < this.selected.optionContext.randomSeed) {
+              this.selected.optionContext.randomSeed = 0;
+            }
+            this.onCommit(true);
+            this.redraw();
+            return true;
           }
-          this.onCommit(true);
-          this.redraw();
-          return true;
         }
       }
       if (event.code === 'Delete') {
@@ -475,6 +484,14 @@ export class BubbleLayer extends LayerBase {
       }
     }
     return false;
+  }
+
+  incrementFontSize(delta: number): void {
+    if (!this.selected) { return; }
+    const fontSize = this.selected.getPhysicalFontSize(this.getPaperSize());
+    this.selected.setPhysicalFontSize(this.getPaperSize(), fontSize + delta);
+    this.onCommit(true);
+    this.redraw();
   }
 
   copyBubble(): void {

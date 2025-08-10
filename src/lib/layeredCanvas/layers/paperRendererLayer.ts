@@ -414,7 +414,6 @@ export class PaperRendererLayer extends LayerBase {
   }
 
   resetCache(){
-    console.log("PaperRendererLayer resetCache called");
     for (let bubble of this.rawBubbles!) {
       const ri = bubble.renderInfo;
       if (ri) {
