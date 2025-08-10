@@ -95,6 +95,8 @@ async function* readNDJSONStream(
 export class IndexedDBFileSystem extends FileSystem {
   private db: IDBPDatabase<unknown> | null = null;
   public readonly mediaConverter: MediaConverter;
+  private dbName: string = 'FileSystemDB';
+  private isReconnecting: boolean = false;
 
   constructor(mediaConverter: MediaConverter) {
     super();
@@ -102,7 +104,12 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async open(dbname: string = 'FileSystemDB'): Promise<void> {
-    this.db = await openDB(dbname, 2, {
+    this.dbName = dbname;
+    await this.openDatabase();
+  }
+
+  private async openDatabase(): Promise<void> {
+    this.db = await openDB(this.dbName, 2, {
       async upgrade(db, oldVersion, newVersion, transaction) {
         if (oldVersion < 1) {
           const nodesStore = db.createObjectStore('nodes', { keyPath: 'id' });
@@ -119,8 +126,56 @@ export class IndexedDBFileSystem extends FileSystem {
         }
   
         await transaction.done;
+      },
+      terminated: () => {
+        // IndexedDB接続が予期せず終了した場合の処理
+        console.error('IndexedDB connection was terminated unexpectedly');
+        this.handleTerminated();
       }
     });
+  }
+
+  private async handleTerminated(): Promise<void> {
+    if (this.isReconnecting) {
+      return; // 既に再接続中の場合はスキップ
+    }
+    
+    this.isReconnecting = true;
+    this.db = null;
+    
+    // 再接続を試みる
+    let retryCount = 0;
+    const maxRetries = 5;
+    const retryDelay = 1000; // 1秒
+    
+    while (retryCount < maxRetries) {
+      try {
+        console.log(`Attempting to reconnect to IndexedDB... (attempt ${retryCount + 1}/${maxRetries})`);
+        await this.openDatabase();
+        console.log('Successfully reconnected to IndexedDB');
+        this.isReconnecting = false;
+        return;
+      } catch (error) {
+        console.error(`Failed to reconnect to IndexedDB:`, error);
+        retryCount++;
+        if (retryCount < maxRetries) {
+          await sleep(retryDelay * retryCount); // 段階的に待機時間を増やす
+        }
+      }
+    }
+    
+    this.isReconnecting = false;
+    console.error('Failed to reconnect to IndexedDB after maximum retries');
+  }
+
+  private async ensureConnection(): Promise<void> {
+    if (!this.db) {
+      console.log('Database connection lost, attempting to reconnect...');
+      await this.handleTerminated();
+      if (!this.db) {
+        throw new Error('Failed to establish database connection');
+      }
+    }
   }
 
   async createFile(_type: string): Promise<File> {
@@ -128,6 +183,7 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async createFileWithId(id: NodeId, _type: string = 'text'): Promise<File> {
+    await this.ensureConnection();
     const file = new IndexedDBFile(this, id, this.db!);
     const tx = this.db!.transaction(["nodes","metadata"], "readwrite");
     const store = tx.objectStore('nodes');
@@ -139,6 +195,7 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async createFolder(): Promise<Folder> {
+    await this.ensureConnection();
     const id = ulid() as NodeId;
     const folder = new IndexedDBFolder(this, id, this.db!);
     const tx = this.db!.transaction(["nodes","metadata"], "readwrite");
@@ -151,6 +208,7 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async destroyNode(id: NodeId): Promise<void> {
+    await this.ensureConnection();
     const tx = this.db!.transaction(["nodes","metadata"], "readwrite");
     const store = tx.objectStore('nodes');
     const metadataStore = tx.objectStore('metadata');
@@ -164,6 +222,7 @@ export class IndexedDBFileSystem extends FileSystem {
     // 多分頑張ればそもそもメタデータもとらないようにできると思うが、
     // どの程度寄与するか不明な上修正範囲が広いのでやらない
 
+    await this.ensureConnection();
     // メタデータがあればそこから
     const metadata = await this.db!.get('metadata', id);
     if (metadata) {
@@ -200,6 +259,7 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async collectTotalSize(): Promise<number> {
+    await this.ensureConnection();
     const tx = this.db!.transaction("nodes", "readonly");
     const store = tx.store;
     let cursor = await store.openCursor();
@@ -232,6 +292,7 @@ export class IndexedDBFileSystem extends FileSystem {
   
   async dump(options?: { format?: DumpFormat; onProgress?: DumpProgress }): Promise<ReadableStream<Uint8Array>> {
     const onProgress = options?.onProgress ?? (() => {});
+    await this.ensureConnection();
     const tx = this.db!.transaction("nodes", "readonly");
     const store = tx.store;
     let cursor = await store.openCursor();
@@ -289,6 +350,7 @@ export class IndexedDBFileSystem extends FileSystem {
     console.log("Start undump");
     onProgress(0);
 
+    await this.ensureConnection();
     {
       const tx = this.db!.transaction('nodes', 'readwrite');
       const store = tx.objectStore('nodes');
@@ -423,7 +485,7 @@ export class IndexedDBFile extends File {
     throw new Error('Not implemented');
   }
 
-  async writeBlob(blob: Blob): Promise<void> {
+  async writeBlob(_blob: Blob): Promise<void> {
     // 現状envelope格納専用のため
   }
 }
