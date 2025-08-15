@@ -144,7 +144,10 @@ function strokeBubbleElement(ctx: CanvasRenderingContext2D, paperSize: Vector, b
 function drawBubbleText(targetCtx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, supportsDpr: boolean) {
   const transform = targetCtx.getTransform();
   const dpr = supportsDpr ? (window.devicePixelRatio ?? 1) : 1;
-  const viewScale: Vector = [transform.a * dpr, transform.d * dpr];
+  // 回転を含むtransformから正しいスケールを計算
+  const scaleX = Math.sqrt(transform.a * transform.a + transform.b * transform.b);
+  const scaleY = Math.sqrt(transform.c * transform.c + transform.d * transform.d);
+  const viewScale: Vector = [scaleX * dpr, scaleY * dpr];
 
   const size = bubble.getPhysicalSize(paperSize);
   let fontSize = bubble.getPhysicalFontSize(paperSize);
