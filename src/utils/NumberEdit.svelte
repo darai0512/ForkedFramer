@@ -18,6 +18,9 @@
 
   $: onValueChanged(value);
   function onValueChanged(value: number) {
+    if (value === undefined || value === null) {
+      return;
+    }
     $valueText = value.toString();
   }
 
