@@ -274,6 +274,11 @@
     $bubbleInspectorTarget!.command = "textedit";
   }
 
+  function onSendToMaterialCollection(film: Film) {
+    $bubbleInspectorTarget!.commandTargetFilm = film;
+    $bubbleInspectorTarget!.command = "sendToMaterialCollection";
+  }
+
   function onTool(e: CustomEvent<{tool: string, film: Film}>) {
     const { tool, film } = e.detail;
     switch(tool) {
@@ -300,6 +305,9 @@
         break;
       case "duplicate":
         onDuplicate({ detail: film } as CustomEvent<Film>);
+        break;
+      case "sendToMaterialCollection":
+        onSendToMaterialCollection(film);
         break;
     }
   }
@@ -361,6 +369,7 @@
       $bubble!.direction = "h";
     }
   }
+
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight/>

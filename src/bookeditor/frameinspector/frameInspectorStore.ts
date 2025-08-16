@@ -26,9 +26,10 @@ import {
   handleEraserCommand,
   handleInpaintCommand,
   handleTextEditCommand,
+  handleSendToMaterialCollectionCommand,
 } from '../operations/filmStackOperations';
 
-type FrameInspectorCommand = "generate" | "cover" | "scribble" | "punch" | "outpaint" | "video" | "upscale" | "eraser" | "inpaint" | "textedit";
+type FrameInspectorCommand = "generate" | "cover" | "scribble" | "punch" | "outpaint" | "video" | "upscale" | "eraser" | "inpaint" | "textedit" | "sendToMaterialCollection";
 
 export interface FrameInspectorTarget extends FilmOperationTarget {
   frame: FrameElement;
@@ -106,7 +107,8 @@ async function onFrameCommand(fit: FrameInspectorTarget | null) {
     "punch": handlePunchCommand,
     "upscale": handleUpscaleCommand,
     "outpaint": outPaintFrameFilm,
-    "video": handleVideoCommand
+    "video": handleVideoCommand,
+    "sendToMaterialCollection": handleSendToMaterialCollectionCommand
   });
   
   frameInspectorRebuildToken.update(v => v + 1);

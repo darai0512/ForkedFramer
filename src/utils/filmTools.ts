@@ -1,1 +1,1 @@
-export type FilmTool = 'punch' | 'outpaint' | 'video' | 'upscale' | 'eraser' | 'inpaint' | 'textedit' | 'duplicate';
+export type FilmTool = 'punch' | 'outpaint' | 'video' | 'upscale' | 'eraser' | 'inpaint' | 'textedit' | 'duplicate' | 'sendToMaterialCollection';

@@ -12,6 +12,7 @@ import {
   handleEraserCommand,
   handleInpaintCommand,
   handleTextEditCommand,
+  handleSendToMaterialCollectionCommand,
   handleScribbleCommand,
   handleGenerateCommand,
   handlePunchCommand,
@@ -20,7 +21,7 @@ import {
   processCommand
 } from '../operations/filmStackOperations';
 
-type BubbleInspectorCommand = "generate" | "cover" | "scribble" | "punch" | "upscale" | "video" | "split" | "inpaint" | "eraser" | "textedit";
+type BubbleInspectorCommand = "generate" | "cover" | "scribble" | "punch" | "upscale" | "video" | "split" | "inpaint" | "eraser" | "textedit" | "sendToMaterialCollection";
 
 export interface BubbleInspectorTarget extends FilmOperationTarget {
   bubble: Bubble;
@@ -99,7 +100,8 @@ async function onBubbleCommand(bit: BubbleInspectorTarget | null) {
     "punch": handlePunchCommand,
     "upscale": handleUpscaleCommand,
     "split": splitBubble,
-    "video": handleVideoCommand
+    "video": handleVideoCommand,
+    "sendToMaterialCollection": handleSendToMaterialCollectionCommand
   });
   
   bubbleInspectorRebuildToken.update(v => v + 1);

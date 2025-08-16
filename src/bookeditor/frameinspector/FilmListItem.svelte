@@ -31,6 +31,7 @@
   import inpaintIcon from '../../assets/filmlist/inpaint.webp';
   import texteditIcon from '../../assets/filmlist/textedit.webp';
   import downloadIcon from '../../assets/download.webp';
+  import newFolderIcon from '../../assets/fileManager/new-folder.webp';
   
   export let showsBarrier: boolean;
   export let film: Film | null;
@@ -83,6 +84,10 @@
 
   function onTextEdit(ev: MouseEvent) {
     dispatchFilmTool('textedit');
+  }
+
+  function onSendToMaterialCollection(ev: MouseEvent) {
+    dispatchFilmTool('sendToMaterialCollection');
   }
 
   function onPunch(ev: MouseEvent) {
@@ -317,9 +322,12 @@
         <button class="transformix-item" use:toolTip={`${$_('frame.actions.movieCreation')}...`} on:click={onVideo}>
           <img draggable={false} src={videoIcon} alt={$_('frame.actions.movieCreation')}/>
         </button>
-          <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
-            <img draggable={false} src={downloadIcon} alt="ダウンロード"/>
-          </button>
+        <button class="transformix-item" use:toolTip={'素材集に送る'} on:click={onSendToMaterialCollection}>
+          <img draggable={false} src={newFolderIcon} alt="素材集に送る"/>
+        </button>
+        <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
+          <img draggable={false} src={downloadIcon} alt="ダウンロード"/>
+        </button>
         </div>
       </div>
     </div>

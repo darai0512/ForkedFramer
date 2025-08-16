@@ -78,6 +78,9 @@
       case "textedit":
         onTextEdit(film);
         break;
+      case "sendToMaterialCollection":
+        onSendToMaterialCollection(film);
+        break;
     }
   }
 
@@ -128,6 +131,11 @@
   function onTextEdit(film: Film) {
     $frameInspectorTarget!.commandTargetFilm = film;
     $frameInspectorTarget!.command = "textedit";
+  }
+
+  function onSendToMaterialCollection(film: Film) {
+    $frameInspectorTarget!.commandTargetFilm = film;
+    $frameInspectorTarget!.command = "sendToMaterialCollection";
   }
 
   function calculateOutPaintingCost(film: Film) {

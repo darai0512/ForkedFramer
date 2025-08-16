@@ -14,6 +14,8 @@ import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
 import { eraserFilm } from "../../utils/eraserFilm";
 import { inpaintFilm } from "../../utils/inpaintFilm";
 import { textEditFilm } from "../../utils/textEditFilm";
+import { saveMaterialToFolder, loadMaterialCollections, type MaterialCollectionState } from '../../materialBucket/materialOperations';
+import { gadgetFileSystem } from '../../filemanager/fileManagerStore';
 
 // 共通インターフェース - フィルムオペレーション対象
 export interface FilmOperationTarget {
@@ -180,6 +182,53 @@ export async function handleTextEditCommand<T extends FilmOperationTarget>(
   }
   commit(null);
   loading.set(false);
+}
+
+export async function handleSendToMaterialCollectionCommand<T extends FilmOperationTarget>(
+  target: T
+): Promise<void> {
+  const fs = get(gadgetFileSystem);
+  if (!fs) {
+    toastStore.trigger({ message: 'ファイルシステムが利用できません', timeout: 3000 });
+    return;
+  }
+
+  try {
+    // 素材集フォルダを取得
+    const state: MaterialCollectionState = {
+      materialCollectionFolders: [],
+      openStates: {},
+      collectionFolderNode: null
+    };
+    
+    await loadMaterialCollections(state);
+    
+    if (state.materialCollectionFolders.length === 0) {
+      toastStore.trigger({ message: '素材集フォルダが見つかりません', timeout: 3000 });
+      return;
+    }
+
+    // 最初のコレクションフォルダに保存
+    const firstCollection = state.materialCollectionFolders[0];
+    const folder = firstCollection[2].asFolder()!;
+    
+    // ファイル名を生成
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const fileName = `layer-${timestamp}.png`;
+    
+    await saveMaterialToFolder(folder, target.commandTargetFilm!.media, fileName);
+    
+    toastStore.trigger({ 
+      message: `「${firstCollection[1]}」に保存しました`, 
+      timeout: 3000 
+    });
+  } catch (error) {
+    console.error('素材集への保存に失敗:', error);
+    toastStore.trigger({ 
+      message: '素材集への保存に失敗しました', 
+      timeout: 3000 
+    });
+  }
 }
 
 // コマンド処理の共通フロー
