@@ -37,7 +37,7 @@
         { value: "480p", label: "480p" },
         { value: "720p", label: "720p" },
       ],
-      cost: (duration: number, pixels: number) => {
+      cost: (duration: number, pixels: number, resolution: string) => {
         return duration * 5;
       }
     },
@@ -53,7 +53,7 @@
       resolution: [
         { value: "720p", label: "720p" },
       ],
-      cost: (duration: number, pixels: number) => {
+      cost: (duration: number, pixels: number, resolution: string) => {
         return 125;
       }
     },
@@ -71,7 +71,7 @@
         { value: "720p", label: "720p" },
         { value: "1080p", label: "1080p" },
       ],
-      cost: (duration: number, pixels: number) => {
+      cost: (duration: number, pixels: number, resolution: string) => {
         return calculateSeedanceCost(1.8, duration, pixels);
       }
     },
@@ -88,8 +88,32 @@
         { value: "480p", label: "480p" },
         { value: "1080p", label: "1080p" },
       ],
-      cost: (duration: number, pixels: number) => {
+      cost: (duration: number, pixels: number, resolution: string) => {
         return calculateSeedanceCost(2.5, duration, pixels);
+      }
+    },
+    "wan/v2.2-a14b/turbo": {
+      durations: [
+        { value: "5", label: $_('generator.fiveSeconds') },
+      ],
+      aspectRatios: [
+        { value: "1:1", label: $_('generator.squareRatio') },
+        { value: "16:9", label: $_('generator.landscapeRatio') },
+        { value: "9:16", label: $_('generator.portraitRatio') }
+      ],
+      resolution: [
+        { value: "480p", label: "480p" },
+        { value: "720p", label: "720p" },
+      ],
+      cost: (duration: number, pixels: number, resolution: string) => {
+        switch (resolution) {
+          case "480p":
+            return 8;
+          case "720p":
+            return 16;
+          default:
+            throw new Error(`Unsupported resolution: ${resolution}`);
+        }
       }
     }
   };
@@ -117,7 +141,7 @@
     const height = parseInt(resolution.replace('p', '')) || 720;
     const width = height * (16 / 9);     // seedanceしか使ってないので固定
     const pixels = width * height;
-    cost = modelOptions[model].cost(parseInt(duration), pixels);
+    cost = modelOptions[model].cost(parseInt(duration), pixels, resolution);
     console.log(`Model: ${model}, Duration: ${duration}, Resolution: ${resolution}, Cost: ${cost}`);
   }
 
@@ -204,6 +228,7 @@
             <option value="kling">kling-2.1</option>
             <option value="seedance/lite">Seedance Lite</option>
             <option value="seedance/pro">Seedance Pro</option>
+            <option value="wan/v2.2-a14b/turbo">WAN v2.2-a14b Turbo</option>
           </select>
         </label>
 

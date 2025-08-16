@@ -76,7 +76,7 @@ export const ImagingStatusResponseSchema = z.object({
 });
 export type ImagingStatusResponse = z.infer<typeof ImagingStatusResponseSchema>;
 
-export const ImageToVideoModelSchema = z.enum(["kling", "FramePack", "seedance/pro", "seedance/lite"]);
+export const ImageToVideoModelSchema = z.enum(["kling", "FramePack", "seedance/pro", "seedance/lite", "wan/v2.2-a14b/turbo"]);
 export type ImageToVideoModel = z.infer<typeof ImageToVideoModelSchema>;
 
 export const ImageToVideoResolutionSchema = z.enum(["480p", "720p", "1080p"]);
