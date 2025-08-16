@@ -144,9 +144,20 @@ function strokeBubbleElement(ctx: CanvasRenderingContext2D, paperSize: Vector, b
 function drawBubbleText(targetCtx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, supportsDpr: boolean) {
   const transform = targetCtx.getTransform();
   const dpr = supportsDpr ? (window.devicePixelRatio ?? 1) : 1;
-  // 回転を含むtransformから正しいスケールを計算
-  const scaleX = Math.sqrt(transform.a * transform.a + transform.b * transform.b);
-  const scaleY = Math.sqrt(transform.c * transform.c + transform.d * transform.d);
+  // 回転がない場合は直接値を使用、回転がある場合のみ計算
+  let scaleX: number;
+  let scaleY: number;
+  
+  // transform.bとtransform.cが非常に小さい場合は回転なしと判定
+  if (Math.abs(transform.b) < 0.001 && Math.abs(transform.c) < 0.001) {
+    scaleX = Math.abs(transform.a);
+    scaleY = Math.abs(transform.d);
+  } else {
+    // 回転を含む場合の正しいスケール計算
+    scaleX = Math.sqrt(transform.a * transform.a + transform.b * transform.b);
+    scaleY = Math.sqrt(transform.c * transform.c + transform.d * transform.d);
+  }
+  
   const viewScale: Vector = [scaleX * dpr, scaleY * dpr];
 
   const size = bubble.getPhysicalSize(paperSize);
