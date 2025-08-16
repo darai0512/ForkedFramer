@@ -249,6 +249,7 @@
       "textEdit": "Text Edit",
       "duplicate": "Duplicate",
       "movieCreation": "Movie Creation",
+      "sendToMaterialCollection": "Send to Material Collection",
       "download": "Download"
     },
     "effects": {

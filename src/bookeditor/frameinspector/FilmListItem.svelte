@@ -31,7 +31,7 @@
   import inpaintIcon from '../../assets/filmlist/inpaint.webp';
   import texteditIcon from '../../assets/filmlist/textedit.webp';
   import downloadIcon from '../../assets/download.webp';
-  import newFolderIcon from '../../assets/fileManager/new-folder.webp';
+  import stampIcon from '../../assets/stamp.webp';
   
   export let showsBarrier: boolean;
   export let film: Film | null;
@@ -322,11 +322,11 @@
         <button class="transformix-item" use:toolTip={`${$_('frame.actions.movieCreation')}...`} on:click={onVideo}>
           <img draggable={false} src={videoIcon} alt={$_('frame.actions.movieCreation')}/>
         </button>
-        <button class="transformix-item" use:toolTip={'素材集に送る'} on:click={onSendToMaterialCollection}>
-          <img draggable={false} src={newFolderIcon} alt="素材集に送る"/>
+        <button class="transformix-item" use:toolTip={$_('frame.actions.sendToMaterialCollection')} on:click={onSendToMaterialCollection}>
+          <img draggable={false} src={stampIcon} alt={$_('frame.actions.sendToMaterialCollection')}/>
         </button>
         <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
-          <img draggable={false} src={downloadIcon} alt="ダウンロード"/>
+          <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
         </button>
         </div>
       </div>
