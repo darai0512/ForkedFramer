@@ -17,6 +17,8 @@
   import sprytIcon from '../assets/spryt.webp';
   import LanguageSwitcher from './LanguageSwitcher.svelte';
   import { _ } from 'svelte-i18n';
+  import { derived } from 'svelte/store';
+  import { saveStatusStore } from '../filemanager/saveStatusStore';
 
   import undoIcon from '../assets/undo.webp';
   import redoIcon from '../assets/redo.webp';
@@ -170,6 +172,20 @@
 
   // プレースホルダーアバター画像
   const defaultAvatar = "https://api.dicebear.com/7.x/initials/svg?seed=User";
+
+  // セーブステータスによる背景色のクラス
+  const titleBgClass = derived(saveStatusStore, $status => {
+    switch ($status.status) {
+      case 'saving':
+        return 'bg-yellow-600';
+      case 'success':
+        return 'bg-green-600';
+      case 'error':
+        return 'bg-red-600';
+      default:
+        return 'variant-filled-tertiary';
+    }
+  });
 </script>
 
 <div class="w-screen min-h-8 bg-surface-900 text-slate-100 gap-2 flex items-center pl-4 pr-2 pt-2 pb-2">
@@ -188,7 +204,7 @@
   </ul>
 
   <div class="flex-grow"></div>
-  <div class="rounded variant-filled-tertiary px-2 text-white">{$mainBookTitle}</div>
+  <div class="rounded px-2 text-white transition-colors duration-300 {$titleBgClass}">{$mainBookTitle}</div>
 
   <div class="flex-grow"></div>
   

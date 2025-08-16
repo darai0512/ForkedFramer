@@ -29,6 +29,7 @@
   import { buildFileSystem as buildLocalFileSystem } from './localFileSystem';
   import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
   import { createCoalescingWork } from '../utils/coalescingWork';
+  import { saveStatusStore } from './saveStatusStore';
 
   export let localFileSystem: FileSystem;
 
@@ -151,22 +152,30 @@
   const coalescingSaveWork = createCoalescingWork(
     async () => {
       // await new Promise(resolve => setTimeout(resolve, 2000));
-      const book = $mainBook!;
-      const fs = $mainBookFileSystem!;
-      if (!$saveProhibitFlag) {
-        const file = (await fs.getNode(book.revision.id as NodeId))!.asFile()!;
-        await saveBookTo(book, fs, file);
+      saveStatusStore.set('saving');
+      try {
+        const book = $mainBook!;
+        const fs = $mainBookFileSystem!;
+        if (!$saveProhibitFlag) {
+          const file = (await fs.getNode(book.revision.id as NodeId))!.asFile()!;
+          await saveBookTo(book, fs, file);
+        }
+        currentRevision = {...book.revision};
+        const info: CurrentFileInfo = {
+          id: book.revision.id as NodeId,
+          fileSystem: getFileSystemType(fs.id),
+          title: $mainBookTitle
+        }
+        await recordCurrentFileInfo(info);
+        saveStatusStore.set('success');
+      } catch (e) {
+        saveStatusStore.set('error');
+        throw e;
       }
-      currentRevision = {...book.revision};
-      const info: CurrentFileInfo = {
-        id: book.revision.id as NodeId,
-        fileSystem: getFileSystemType(fs.id),
-        title: $mainBookTitle
-      }
-      await recordCurrentFileInfo(info);
     },
     (e) => {
         console.error(e);
+        saveStatusStore.set('error');
         if (e instanceof DOMException && e.name === "QuotaExceededError") {
           toastStore.trigger({ message: $_('messages.memoryInsufficient'), autohide: false });
         }
