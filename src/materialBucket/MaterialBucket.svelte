@@ -7,10 +7,16 @@
   import { _ } from 'svelte-i18n';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import type { Node, EmbodiedEntry } from '../lib/filesystem/fileSystem';
-  import { waitDialog } from '../utils/waitDialog';
   import { toolTip } from '../utils/passiveToolTipStore';
   import { MaterialBucket_closeOnDragStore } from './tweakUiStore';
   import { tick } from 'svelte';
+  import {
+    type MaterialCollectionState,
+    loadMaterialCollections,
+    addMaterialCollection,
+    deleteMaterialCollection,
+    renameMaterialCollection
+  } from './materialOperations';
   
   import trashIcon from '../assets/fileManager/trash.webp';
   import renameIcon from '../assets/fileManager/rename.webp';
@@ -33,54 +39,32 @@
 
   let warehouseOpen = false;
 
-  async function loadMaterialCollections() {
-    if ($gadgetFileSystem == null) return;
-    const root = await $gadgetFileSystem.getRoot();
-    const collectionFolders = await root.getNodesByName('素材集');
-    if (collectionFolders.length > 0) {
-      collectionFolderNode = collectionFolders[0];
-      const collectionFolder = collectionFolderNode.asFolder()!;
-      const subfolders = await collectionFolder.listEmbodied();
-      materialCollectionFolders = subfolders.filter(entry => entry[2].getType() === 'folder');
-      
-      // 初回読み込み時に開いた状態を設定
-      materialCollectionFolders.forEach((folder, index) => {
-        if (openStates[folder[1]] === undefined) {
-          openStates[folder[1]] = index === 0; // 最初のフォルダだけ開く
-        }
-      });
-    }
+  // MaterialCollectionState オブジェクトを作成
+  $: state = {
+    materialCollectionFolders,
+    openStates,
+    collectionFolderNode
+  } as MaterialCollectionState;
+
+  async function loadCollections() {
+    await loadMaterialCollections(state);
+    materialCollectionFolders = state.materialCollectionFolders;
+    openStates = state.openStates;
+    collectionFolderNode = state.collectionFolderNode;
   }
 
-  async function addMaterialCollection() {
-    if (collectionFolderNode == null || $gadgetFileSystem == null) return;
-    const collectionFolder = collectionFolderNode.asFolder()!;
-    const newFolder = await $gadgetFileSystem.createFolder();
-    const name = `新しいコレクション${materialCollectionFolders.length + 1}`;
-    await collectionFolder.link(name, newFolder.id);
-    await loadMaterialCollections();
+  async function addCollection() {
+    await addMaterialCollection(state);
+    materialCollectionFolders = state.materialCollectionFolders;
+    openStates = state.openStates;
+    collectionFolderNode = state.collectionFolderNode;
   }
 
-  async function deleteMaterialCollection(bindId: string) {
-    if (collectionFolderNode == null || $gadgetFileSystem == null) return;
-    const collectionFolder = collectionFolderNode.asFolder()!;
-    const entry = await collectionFolder.getEntry(bindId as any);
-    if (entry) {
-      // 削除確認ダイアログを表示
-      const confirmed = await waitDialog<boolean>('confirm', {
-        title: 'コレクションの削除',
-        message: `「${entry[1]}」を削除しますか？\n\nこのコレクション内のすべてのファイルが削除されます。\nこの操作は元に戻すことができません。`,
-        positiveButtonText: '削除',
-        negativeButtonText: 'キャンセル'
-      });
-      
-      if (confirmed) {
-        await collectionFolder.unlink(bindId as any);
-        await $gadgetFileSystem.destroyNode(entry[2]);
-        delete openStates[entry[1]];
-        await loadMaterialCollections();
-      }
-    }
+  async function deleteCollection(bindId: string) {
+    await deleteMaterialCollection(state, bindId);
+    materialCollectionFolders = state.materialCollectionFolders;
+    openStates = state.openStates;
+    collectionFolderNode = state.collectionFolderNode;
   }
 
   async function startEditingFolder(bindId: string, currentName: string) {
@@ -94,12 +78,13 @@
   }
 
   async function saveEditingFolder() {
-    if (editingFolderId == null || collectionFolderNode == null || !editingFolderName.trim()) return;
-    const collectionFolder = collectionFolderNode.asFolder()!;
-    await collectionFolder.rename(editingFolderId as any, editingFolderName.trim());
+    if (editingFolderId == null || !editingFolderName.trim()) return;
+    await renameMaterialCollection(state, editingFolderId, editingFolderName);
+    materialCollectionFolders = state.materialCollectionFolders;
+    openStates = state.openStates;
+    collectionFolderNode = state.collectionFolderNode;
     editingFolderId = null;
     editingFolderName = '';
-    await loadMaterialCollections();
   }
 
   function cancelEditingFolder() {
@@ -116,7 +101,7 @@
   }
 
   $: if ($gadgetFileSystem) {
-    loadMaterialCollections();
+    loadCollections();
   }
 </script>
 
@@ -141,7 +126,7 @@
             </div>
             <button 
               class="btn btn-sm variant-filled-primary collection-add-button" 
-              on:click={addMaterialCollection}
+              on:click={addCollection}
               use:toolTip={'新しいコレクションを作成'}
             >
               <img src={newFolderIcon} alt="new collection" class="button-icon" />
@@ -183,7 +168,7 @@
                     </button>
                     <button 
                       class="icon-button"
-                      on:click|stopPropagation={() => deleteMaterialCollection(folder[0])}
+                      on:click|stopPropagation={() => deleteCollection(folder[0])}
                       use:toolTip={'コレクションを削除'}
                     >
                       <img src={trashIcon} alt="trash" class="icon" />

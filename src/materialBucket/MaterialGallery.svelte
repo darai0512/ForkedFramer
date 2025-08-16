@@ -10,7 +10,11 @@
   import { ImageMedia, VideoMedia, type Media, buildMedia } from '../lib/layeredCanvas/dataModels/media';
   import { createEventDispatcher, onMount } from 'svelte';
   import type { Node, BindId } from '../lib/filesystem/fileSystem';
-  import { saveMaterialToFolder, deleteMaterialFromFolder } from '../filemanager/fileManagerStore';
+  import { 
+    saveMaterialToFolder, 
+    deleteMaterialFromFolder, 
+    loadMaterialsFromFolder 
+  } from './materialOperations';
 
   export let targetNode: Node | null = null;
 
@@ -49,6 +53,7 @@
     if (targetNode == null || bindId == null) return;
     const folder = targetNode.asFolder()!;
     await deleteMaterialFromFolder(folder, bindId);
+    await displayMaterialImages(targetNode);
   }
 
   async function onFileDrop(files: FileList) {
@@ -86,25 +91,21 @@
     if (node == null) return;
     const folder = node.asFolder()!;
     
-    const materials = await folder.listEmbodied();
+    const materialItems = await loadMaterialsFromFolder(folder);
     const newItems: (() => Promise<Media[]>)[] = [];
     const newBindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
     
-    for (let i = 0; i < materials.length; i++) {
-      const material = materials[i][2];
-      const file = material.asFile()!;
-      const bindId = materials[i][0];
+    for (const item of materialItems) {
+      newItems.push(item.loadMedia);
+      newBindIds.set(item.loadMedia, item.bindId);
       
-      // 非同期関数を作成
-      const loadMedia = async (): Promise<Media[]> => {
-        const mediaResource = await file.readMediaResource();
-        const media = buildMedia(mediaResource);
-        newBindIds.set(media, bindId);
-        return [media];
-      };
-      
-      newItems.push(loadMedia);
-      newBindIds.set(loadMedia, bindId);
+      // メディアをロードしてbindIdを関連付け
+      const mediaPromise = item.loadMedia();
+      mediaPromise.then(mediaArray => {
+        if (mediaArray.length > 0) {
+          newBindIds.set(mediaArray[0], item.bindId);
+        }
+      });
     }
     
     items = newItems;
