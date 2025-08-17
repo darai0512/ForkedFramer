@@ -6,11 +6,13 @@
   import { moveInArray } from '../../utils/moveInArray';
   import FilmListItem from "./FilmListItem.svelte";
   import { buildMedia } from '../../lib/layeredCanvas/dataModels/media';
+  import { mergeSelectedFilms } from '../operations/filmMergeOperations';
 
   export let showsBarrier: boolean;
   export let filmStack: FilmStack;
   export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
   export let calculateInPaintingCost: ((film: Film) => number) | null = null;
+  export let paperSize: [number, number] | null = null;
 
   const dispatch = createEventDispatcher();
 
@@ -72,11 +74,28 @@
     filmStack = filmStack;
   }
 
+  function onMergeSelectedFilms() {
+    if (!paperSize) {
+      console.warn('paperSize is required for merging films');
+      return;
+    }
+    
+    const mergedFilm = mergeSelectedFilms(filmStack, paperSize);
+    if (mergedFilm) {
+      dispatch('commit', true);
+      filmStack = filmStack;
+    }
+  }
+
+  // 結合可能かどうかを判定
+  $: canMerge = filmStack.getOperationTargetFilms().length > 1;
+
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="film-list-container">
   <FilmListItem showsBarrier={false} film={null} on:select={onGenerate}/>
+  
   <div 
     class="flex flex-col gap-2 mt-2 min-h-[20px]" 
     use:sortableList={{animation: 100, onUpdate: onSortableUpdate}} 
@@ -101,6 +120,15 @@
       <div data-ghost class="ghost-element"/>
     {/if}
   </div>  
+  <!-- 結合ボタン -->
+  {#if canMerge}
+    <button 
+      class="merge-button btn variant-filled-primary w-full mt-2 h-6 text-white" 
+      on:click={onMergeSelectedFilms}
+    >
+      選択レイヤーを結合
+    </button>
+  {/if}
 </div>
 
 <style>

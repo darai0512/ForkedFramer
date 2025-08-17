@@ -177,6 +177,7 @@
         <FilmList 
           showsBarrier={true}  
           filmStack={filmStack}
+          paperSize={$frameInspectorTarget?.page?.paperSize || null}
           on:commit={onCommit}
           on:generate={onGenerate} 
           on:accept={onAccept}
