@@ -3,7 +3,8 @@ import { waitDialog } from '../utils/waitDialog';
 import { get } from 'svelte/store';
 import { gadgetFileSystem, saveMaterialToFolder as saveToFolder, deleteMaterialFromFolder as deleteFromFolder } from '../filemanager/fileManagerStore';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
-import { buildMedia } from '../lib/layeredCanvas/dataModels/media';
+import { buildMedia, ImageMedia, VideoMedia } from '../lib/layeredCanvas/dataModels/media';
+import { copyCanvas } from '../lib/layeredCanvas/tools/imageUtil';
 
 export interface MaterialCollectionState {
   materialCollectionFolders: EmbodiedEntry[];
@@ -125,4 +126,64 @@ export async function loadMaterialsFromFolder(
   }
   
   return items;
+}
+
+export async function sendMediaToMaterialCollection(
+  media: Media,
+  fileName?: string
+): Promise<{ success: boolean; message: string }> {
+  const fs = get(gadgetFileSystem);
+  if (!fs) {
+    return { success: false, message: 'ファイルシステムが利用できません' };
+  }
+
+  try {
+    // 素材集フォルダを取得
+    const state: MaterialCollectionState = {
+      materialCollectionFolders: [],
+      openStates: {},
+      collectionFolderNode: null
+    };
+    
+    await loadMaterialCollections(state);
+    
+    if (state.materialCollectionFolders.length === 0) {
+      return { success: false, message: '素材集フォルダが見つかりません' };
+    }
+
+    // 最初のコレクションフォルダに保存
+    const firstCollection = state.materialCollectionFolders[0];
+    const folder = firstCollection[2].asFolder()!;
+    
+    // ファイル名を生成
+    if (!fileName) {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      fileName = `material-${timestamp}.png`;
+    }
+    
+    // Mediaをコピーして保存（参照の問題を避けるため）
+    let copiedMedia: Media;
+    if (media instanceof ImageMedia) {
+      const copiedCanvas = copyCanvas(media.drawSourceCanvas);
+      copiedMedia = new ImageMedia(copiedCanvas);
+    } else if (media instanceof VideoMedia) {
+      // 動画の場合はそのまま使用（動画は通常コピーしない）
+      copiedMedia = media;
+    } else {
+      copiedMedia = media;
+    }
+    
+    await saveMaterialToFolder(folder, copiedMedia, fileName);
+    
+    return { 
+      success: true, 
+      message: `「${firstCollection[1]}」に保存しました` 
+    };
+  } catch (error) {
+    console.error('素材集への保存に失敗:', error);
+    return { 
+      success: false, 
+      message: '素材集への保存に失敗しました' 
+    };
+  }
 }
