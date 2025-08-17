@@ -19,7 +19,7 @@ export function createCoalescingWork(
         console.log('coalescingWork start');
         await job();          // ここで throw/reject し得る
         console.log('coalescingWork end');
-    } while (pending);
+      } while (pending);
     } catch (err) {
       onError(err);           // 例外を報告
       // 失敗しても「次の pending」があるなら回す
@@ -36,6 +36,8 @@ export function createCoalescingWork(
     if (!running) {
       running = true;
       void runLoop();         // fire-and-forget
+    } else {
+      console.log('coalescingWork already running');
     }
   };
 }
