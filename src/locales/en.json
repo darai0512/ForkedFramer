@@ -228,6 +228,7 @@
     "layer": "Layer",
     "frameOnly": "Frame Only",
     "all": "All",
+    "mergeSelectedLayers": "Merge Selected Layers",
     "barrier": {
       "opening": "Frame Opening",
       "left": "Left Frame Opening",

@@ -7,6 +7,7 @@
   import FilmListItem from "./FilmListItem.svelte";
   import { buildMedia } from '../../lib/layeredCanvas/dataModels/media';
   import { mergeSelectedFilms } from '../operations/filmMergeOperations';
+  import { _ } from 'svelte-i18n';
 
   export let showsBarrier: boolean;
   export let filmStack: FilmStack;
@@ -126,7 +127,7 @@
       class="merge-button btn variant-filled-primary w-full mt-2 h-6 text-white" 
       on:click={onMergeSelectedFilms}
     >
-      選択レイヤーを結合
+{$_('frame.mergeSelectedLayers')}
     </button>
   {/if}
 </div>

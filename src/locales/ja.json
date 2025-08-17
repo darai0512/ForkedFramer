@@ -228,6 +228,7 @@
     "layer": "レイヤー",
     "frameOnly": "枠なし",
     "all": "すべて",
+    "mergeSelectedLayers": "選択レイヤーを結合",
     "barrier": {
       "opening": "枠の開放",
       "left": "左枠の開放",
