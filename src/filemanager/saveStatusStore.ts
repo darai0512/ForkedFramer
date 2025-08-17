@@ -26,8 +26,8 @@ function createSaveStatusStore() {
 
     originalSet(state);
 
-    // 成功またはエラーの場合、1秒後にidleに戻す
-    if (state.status === 'success' || state.status === 'error') {
+    // 成功の場合のみ、500ms後にidleに戻す
+    if (state.status === 'success') {
       resetTimer = setTimeout(() => {
         originalSet({ status: 'idle' });
       }, 500);
