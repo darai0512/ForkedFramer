@@ -8,6 +8,17 @@
   
   let mediaContainer: HTMLDivElement;
   
+  function handleClose() {
+    modalStore.close();
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      modalStore.close();
+    }
+  }
+
   async function captureCurrentFrame() {
     if (!$mediaViewerTarget || $mediaViewerTarget.type !== 'video') return;
     
@@ -51,7 +62,13 @@
   }
 </script>
 
-<div class="page-container" on:click={() => modalStore.close()}>
+<div 
+  class="page-container" 
+  role="button" 
+  tabindex="0"
+  on:click={handleClose}
+  on:keydown={handleKeyDown}
+>
   {#if $mediaViewerTarget}
     <div class="media-container" bind:this={mediaContainer}>
       <MediaFrame 
