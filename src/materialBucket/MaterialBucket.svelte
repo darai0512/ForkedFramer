@@ -125,7 +125,7 @@
               />
             </div>
             <button 
-              class="btn btn-sm variant-filled-primary collection-add-button" 
+              class="btn btn-sm variant-filled-primary text-white collection-add-button" 
               on:click={addCollection}
               use:toolTip={'新しいコレクションを作成'}
             >

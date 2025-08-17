@@ -66,10 +66,10 @@
     {#if $mediaViewerTarget.type === 'video'}
       <div class="video-controls">
         <button 
-          class="btn variant-filled-primary"
+          class="btn variant-filled-primary text-white"
           on:click={captureCurrentFrame}
         >
-          {$_('send_to_material_collection')}
+          {$_('frame.actions.sendToMaterialCollection')}
         </button>
       </div>
     {/if}
