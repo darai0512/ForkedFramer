@@ -40,10 +40,6 @@
       // Send to material collection
       const result = await sendMediaToMaterialCollection(media, fileName);
       
-      if (result.success) {
-        modalStore.close();
-      }
-      
       toastStore.trigger({ 
         message: result.message, 
         timeout: 3000 
@@ -55,19 +51,18 @@
   }
 </script>
 
-<div class="page-container">
+<div class="page-container" on:click={() => modalStore.close()}>
   {#if $mediaViewerTarget}
     <div class="media-container" bind:this={mediaContainer}>
       <MediaFrame 
         media={$mediaViewerTarget}
-        on:click={() => modalStore.close()} 
       />
     </div>
     {#if $mediaViewerTarget.type === 'video'}
       <div class="video-controls">
         <button 
           class="btn variant-filled-primary text-white"
-          on:click={captureCurrentFrame}
+          on:click|stopPropagation={captureCurrentFrame}
         >
           {$_('frame.actions.sendToMaterialCollection')}
         </button>
