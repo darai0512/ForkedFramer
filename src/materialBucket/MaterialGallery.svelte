@@ -15,10 +15,16 @@
     deleteMaterialFromFolder, 
     loadMaterialsFromFolder 
   } from './materialOperations';
+  import { materialCollectionUpdateToken } from './materialBucketStore';
 
   export let targetNode: Node | null = null;
 
   $: displayMaterialImages(targetNode);
+  
+  $: if ($materialCollectionUpdateToken) {
+    displayMaterialImages(targetNode);
+    $materialCollectionUpdateToken = false;
+  }
 
   const dispatch = createEventDispatcher();
   let items: (() => Promise<Media[]>)[] = [];

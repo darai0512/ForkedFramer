@@ -5,6 +5,7 @@ import { gadgetFileSystem, saveMaterialToFolder as saveToFolder, deleteMaterialF
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import { buildMedia, ImageMedia, VideoMedia } from '../lib/layeredCanvas/dataModels/media';
 import { copyCanvas } from '../lib/layeredCanvas/tools/imageUtil';
+import { materialCollectionUpdateToken } from './materialBucketStore';
 
 export interface MaterialCollectionState {
   materialCollectionFolders: EmbodiedEntry[];
@@ -174,6 +175,9 @@ export async function sendMediaToMaterialCollection(
     }
     
     await saveMaterialToFolder(folder, copiedMedia, fileName);
+    
+    // 素材集の更新をトリガー
+    materialCollectionUpdateToken.set(true);
     
     return { 
       success: true, 
