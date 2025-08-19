@@ -1,13 +1,16 @@
 <script lang="ts">
-  import { loadCharactersFromRoster, rosterOpen, rosterSelectedCharacter } from "./rosterStore";
+  import { loadCharactersFromRoster, rosterOpen, rosterSelectedCharacter, saveCharacterToRoster } from "./rosterStore";
   import Drawer from "../utils/Drawer.svelte";
   import { onMount } from "svelte";
   import type { CharacterLocal } from "../lib/book/book";
   import { gadgetFileSystem } from "../filemanager/fileManagerStore";
   import { rm } from "../lib/filesystem/fileSystem";
   import trashIcon from '../assets/trash.webp';
+  import downloadIcon from '../assets/download.webp';
   import MediaFrame from "../gallery/MediaFrame.svelte";
   import { _ } from 'svelte-i18n';
+  import { saveCharacterToFile, loadCharacterFromFile } from "./characterExport";
+  import { toastStore } from "@skeletonlabs/skeleton";
 
   let opened = false;
   let characters: CharacterLocal[] = [];
@@ -26,6 +29,30 @@
     console.log("remove");
     characters = characters.filter((char) => char !== c);
     rm($gadgetFileSystem!, `AI/キャラクター/${c.ulid}`);
+  }
+
+  async function exportCharacter(c: CharacterLocal) {
+    try {
+      await saveCharacterToFile(c);
+      toastStore.trigger({ message: `キャラクター「${c.name}」をエクスポートしました`, timeout: 3000 });
+    } catch (error) {
+      console.error('Failed to export character:', error);
+      toastStore.trigger({ message: 'エクスポートに失敗しました', timeout: 3000 });
+    }
+  }
+
+  async function importCharacter() {
+    try {
+      const character = await loadCharacterFromFile();
+      if (character) {
+        await saveCharacterToRoster($gadgetFileSystem!, character);
+        characters = await loadCharactersFromRoster($gadgetFileSystem!);
+        toastStore.trigger({ message: `キャラクター「${character.name}」をインポートしました`, timeout: 3000 });
+      }
+    } catch (error) {
+      console.error('Failed to import character:', error);
+      toastStore.trigger({ message: 'インポートに失敗しました', timeout: 3000 });
+    }
   }
 
   onMount(() => {
@@ -50,7 +77,12 @@
     on:clickAway={onClickAway}
   >
     <div class="drawer-content">
-      <h2 class="roster-title">{$_('notebook.characterRoster')}</h2>
+      <div class="roster-header">
+        <h2 class="roster-title">{$_('notebook.characterRoster')}</h2>
+        <button class="import-btn" on:click={importCharacter}>
+          キャラクターをインポート
+        </button>
+      </div>
       <div class="character-list">
         {#each characters as character (character.ulid)}
           <div class="character-card">
@@ -62,9 +94,14 @@
                   style="background-color: {character.themeColor};"
                 ></div>
               </div>
-              <button class="delete-btn" on:click={() => remove(character)}>
-                <img src={trashIcon} alt={$_('notebook.delete')} class="trash-icon" />
-              </button>
+              <div class="header-buttons">
+                <button class="export-btn" on:click={() => exportCharacter(character)} title="エクスポート">
+                  <img src={downloadIcon} alt="エクスポート" class="download-icon" />
+                </button>
+                <button class="delete-btn" on:click={() => remove(character)}>
+                  <img src={trashIcon} alt={$_('notebook.delete')} class="trash-icon" />
+                </button>
+              </div>
             </div>
             <div class="character-content">
               <div class="portrait-container">
@@ -111,13 +148,36 @@
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   }
   
-  .roster-title {
-    font-size: 1.5rem;
-    font-weight: 600;
+  .roster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid rgb(var(--color-primary-500));
+  }
+  
+  .roster-title {
+    font-size: 1.5rem;
+    font-weight: 600;
     color: rgb(var(--color-primary-700));
+    margin: 0;
+  }
+  
+  .import-btn {
+    background-color: rgb(var(--color-primary-500));
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .import-btn:hover {
+    background-color: rgb(var(--color-primary-600));
   }
   
   .character-list {
@@ -166,6 +226,32 @@
     border-radius: 50%;
     border: 2px solid white;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  
+  .export-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 4px;
+  }
+  
+  .export-btn:hover {
+    opacity: 1;
+    background-color: rgba(0, 100, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .download-icon {
+    width: 20px;
+    height: 20px;
   }
   
   .delete-btn {
