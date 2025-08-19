@@ -174,7 +174,7 @@ export class VideoMedia extends MediaBase {
           video.addEventListener('error', onError, { once: true });
 
           video.currentTime = time;
-        });        this.video!.currentTime = time; 
+        });
       }
     };
   }

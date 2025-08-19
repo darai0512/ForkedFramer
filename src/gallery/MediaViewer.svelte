@@ -3,8 +3,16 @@
   import { mediaViewerTarget } from "./mediaViewerStore";
   import MediaFrame from "./MediaFrame.svelte";
   import { sendMediaToMaterialCollection } from "../materialBucket/materialOperations";
-  import { ImageMedia } from "../lib/layeredCanvas/dataModels/media";
+  import { ImageMedia, VideoMedia } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
+  import { get } from 'svelte/store';
+  import { mainBookFileSystem } from '../filemanager/fileManagerStore';
+  import { waitDialog } from '../utils/waitDialog';
+  import { image2Video } from '../supabase';
+  import { saveRequest } from '../filemanager/warehouse';
+  import { loading } from '../utils/loadingStore';
+  import { onlineStatus } from '../utils/accountStore';
+  import type { ImageToVideoRequest } from '$protocolTypes/imagingTypes';
   
   let mediaContainer: HTMLDivElement;
   
@@ -16,6 +24,39 @@
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       modalStore.close();
+    }
+  }
+
+  async function generateMovieFromImage() {
+    if (!$mediaViewerTarget || $mediaViewerTarget.type !== 'image') return;
+    
+    if (get(onlineStatus) !== "signed-in") {
+      toastStore.trigger({ message: `動画生成はサインインしてないと使えません`, timeout: 3000});
+      return;
+    }
+
+    modalStore.close();
+    const request = await waitDialog<ImageToVideoRequest>('videoGenerator', { media: $mediaViewerTarget });
+    console.log("modalFrameVideo", request);
+
+    if (!request) { return; }
+
+    loading.set(true);
+    try {
+      const { requestId: request_id } = await image2Video(request);
+      await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id);
+
+      const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id });
+      
+      // 生成した動画を素材集に送る
+      const result = await sendMediaToMaterialCollection(newMedia, `generated-video-${new Date().toISOString().replace(/[:.]/g, '-')}.mp4`);
+      
+      loading.set(false);
+      toastStore.trigger({ message: result.message, timeout: 3000});
+    }
+    catch (e) {
+      loading.set(false);
+      toastStore.trigger({ message: `動画生成に失敗しました`, timeout: 3000});
     }
   }
 
@@ -85,6 +126,16 @@
         </button>
       </div>
     {/if}
+    {#if $mediaViewerTarget.type === 'image'}
+      <div class="image-controls">
+        <button 
+          class="btn variant-filled-primary text-white"
+          on:click|stopPropagation={generateMovieFromImage}
+        >
+          動画化して素材集に送る
+        </button>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -101,7 +152,8 @@
     width: 80svw;
     height: 80svh;
   }
-  .video-controls {
+  .video-controls,
+  .image-controls {
     display: flex;
     gap: 1rem;
     padding: 0.5rem;
