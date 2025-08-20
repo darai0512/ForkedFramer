@@ -399,6 +399,28 @@
   "mangaView": {
     "page": "Page"
   },
+  "publicMaterials": {
+    "postButton": "Post to Public Materials",
+    "generateVideoButton": "Generate Video and Send to Materials",
+    "dialog": {
+      "title": "Post to Public Materials",
+      "confirmText": "This material will be posted to the public materials collection.<br>Once posted, other users will be able to use this material.",
+      "agreeText": "I agree to post",
+      "submitButton": "Post",
+      "displayName": "Material Name",
+      "displayNamePlaceholder": "Enter material name",
+      "category": "Category",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter material description (optional)"
+    },
+    "categories": {
+      "general": "General",
+      "character": "Character",
+      "background": "Background",
+      "effect": "Effect",
+      "item": "Item"
+    }
+  },
   "dialogs": {
     "confirm": "Confirm",
     "yes": "Yes",

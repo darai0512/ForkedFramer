@@ -399,6 +399,28 @@
   "mangaView": {
     "page": "ページ"
   },
+  "publicMaterials": {
+    "postButton": "みんなの素材集に投稿",
+    "generateVideoButton": "動画化して素材集に送る",
+    "dialog": {
+      "title": "みんなの素材集に投稿",
+      "confirmText": "この素材をみんなの素材集に投稿します。<br>投稿した素材は他のユーザーが利用できるようになります。",
+      "agreeText": "投稿に同意します",
+      "submitButton": "投稿する",
+      "displayName": "素材名",
+      "displayNamePlaceholder": "素材の名前を入力",
+      "category": "カテゴリ",
+      "description": "説明",
+      "descriptionPlaceholder": "素材の説明を入力（任意）"
+    },
+    "categories": {
+      "general": "一般",
+      "character": "キャラクター",
+      "background": "背景",
+      "effect": "エフェクト",
+      "item": "アイテム"
+    }
+  },
   "dialogs": {
     "confirm": "確認",
     "yes": "はい",

@@ -6,7 +6,12 @@ import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import { buildMedia, ImageMedia, VideoMedia, type RemoteMediaReference } from '../lib/layeredCanvas/dataModels/media';
 import { copyCanvas } from '../lib/layeredCanvas/tools/imageUtil';
 import { materialCollectionUpdateToken } from './materialBucketStore';
-import { pollMediaStatus } from '../supabase';
+import { pollMediaStatus, getMaterialsUrl, recordMaterial } from '../supabase';
+import { toastStore } from '@skeletonlabs/skeleton';
+import { blobToSha1 } from '../lib/layeredCanvas/tools/misc';
+import { loading } from '../utils/loadingStore';
+import { onlineStatus } from '../utils/accountStore';
+import { BrowserMediaConverter } from '../lib/filesystem/mediaConverter';
 
 export interface MaterialCollectionState {
   materialCollectionFolders: EmbodiedEntry[];
@@ -201,5 +206,108 @@ export async function sendMediaToMaterialCollection(
       success: false, 
       message: '素材集への保存に失敗しました' 
     };
+  }
+}
+
+export async function postToPublicMaterials(media: Media): Promise<void> {
+  // サインインチェック
+  if (get(onlineStatus) !== 'signed-in') {
+    toastStore.trigger({ message: 'みんなの素材集への投稿にはサインインが必要です', timeout: 3000 });
+    return;
+  }
+
+  const dialogResponse = await waitDialog<{
+    media: Media, 
+    confirmed: boolean,
+    category?: string,
+    displayName?: string,
+    description?: string
+  }>('postToPublicMaterials', { 
+    media
+  });
+  
+  if (!dialogResponse?.confirmed) {
+    return;
+  }
+
+  loading.set(true);
+  try {
+    // BrowserMediaConverterを使用してメディアをBlobに変換
+    const converter = new BrowserMediaConverter();
+    let filename: string;
+    
+    // メディアのdrawSourceを取得
+    const mediaSource = media.type === 'image' ? media.drawSourceCanvas : media.drawSource;
+    if (!mediaSource) {
+      throw new Error('メディアソースが見つかりません');
+    }
+    
+    // ファイル名を決定（拡張子も適切に設定）
+    filename = media.type === 'image' 
+      ? `material-${Date.now()}.webp`
+      : `material-video-${Date.now()}.mp4`;
+
+    // メディアをBlobに変換
+    const result = await converter.toStorable(mediaSource);
+    if (!result.blob) {
+      throw new Error('メディアの変換に失敗しました');
+    }
+    const blob = result.blob;
+
+    // SHA1ハッシュを計算
+    const sha1 = await blobToSha1(blob);
+    
+    // アップロードURLを取得
+    const { apiUrl, url, token, filename: uploadFilename } = await getMaterialsUrl(filename);
+    console.log("素材アップロード", apiUrl, url, token, uploadFilename);
+
+    // ファイルをアップロード
+    const response = await fetch(url, {
+      method: "POST",
+      mode: "cors",
+      body: blob,
+      headers: {
+        "Content-Type": "b2/x-auto",
+        "Authorization": token,
+        "X-Bz-File-Name": uploadFilename,
+        "X-Bz-Content-Sha1": sha1,
+      },
+    });
+    
+    console.log(response);
+    if (!response.ok) {
+      throw new Error("素材のアップロードに失敗しました");
+    }
+
+    const materialUrl = `${apiUrl}/file/FramePlannerMaterials/${uploadFilename}`;
+    console.log("material_url", materialUrl);
+
+    // recordMaterialを呼び出してデータベースに記録
+    const recordResponse = await recordMaterial({
+      category: dialogResponse.category || 'general',
+      display_name: dialogResponse.displayName || 'Untitled',
+      description: dialogResponse.description || '',
+      file: materialUrl
+    });
+
+    if (recordResponse.success) {
+      toastStore.trigger({ 
+        message: `素材を投稿しました！<br/>管理人に承認された場合、ユーザー全員に公開されます`, 
+        timeout: 5000 
+      });
+    } else {
+      toastStore.trigger({ 
+        message: `素材のアップロードは完了しましたが、記録に失敗しました: ${recordResponse.message}`, 
+        timeout: 5000 
+      });
+    }
+  } catch (error) {
+    console.error('素材の投稿に失敗:', error);
+    toastStore.trigger({ 
+      message: `素材の投稿に失敗しました: ${error instanceof Error ? error.message : 'Unknown error'}`, 
+      timeout: 3000 
+    });
+  } finally {
+    loading.set(false);
   }
 }
