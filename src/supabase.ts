@@ -14,6 +14,7 @@ import {
   type TextEditRequest, TextEditRequestSchema, TextEditResponseSchema,
 } from "./utils/edgeFunctions/types/imagingTypes.d";
 import { EraseFileResponseSchema, GetDownloadUrlResponseSchema, GetUploadUrlResponseSchema } from "$protocolTypes/cloudFileTypes.d";
+import { type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes";
 import { NotebookRequestSchema, NotebookWithInstructionRequestSchema, type NotebookRequest, type NotebookWithInstructionRequest, AdviseThemeResponseSchema, type AdviseThemeResponse } from "$protocolTypes/adviseTypes.d";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 
@@ -146,6 +147,14 @@ export async function getTransportUrl(filename: string) {
   return await invoke("publishing/gettransporturl", { filename }, GetUploadUrlRequestSchema, GetUploadUrlResponseSchema);
 }
 
+export async function getMaterialsUrl(filename: string) {
+  return await invoke("publishing/getmaterialsurl", { filename }, GetUploadUrlRequestSchema, GetUploadUrlResponseSchema);
+}
+
+export async function getActorsUrl(filename: string) {
+  return await invoke("publishing/getactorsurl", { filename }, GetUploadUrlRequestSchema, GetUploadUrlResponseSchema);
+}
+
 export async function checkUsernameAvailable(username: string) {
   return await invoke("sns/profile/checkusernameavailable", { username }, CheckUsernameAvailableRequestSchema, CheckUsernameAvailableResponseSchema);
 }
@@ -160,6 +169,10 @@ export async function getMyProfile() {
 
 export async function recordPublication(req: RecordPublicationRequest) {
   return await invoke("sns/publication/recordpublication", req, RecordPublicationRequestSchema, RecordPublicationResponseSchema);
+}
+
+export async function recordMaterial(req: RecordMaterialRequest) {
+  return await invoke("tools/recordmaterial", req, RecordMaterialRequestSchema, RecordMaterialResponseSchema);
 }
 
 export async function notifyShare(text: string) {

@@ -2,7 +2,7 @@
   import { modalStore, toastStore } from "@skeletonlabs/skeleton";
   import { mediaViewerTarget } from "./mediaViewerStore";
   import MediaFrame from "./MediaFrame.svelte";
-  import { sendMediaToMaterialCollection } from "../materialBucket/materialOperations";
+  import { sendMediaToMaterialCollection, postToPublicMaterials } from "../materialBucket/materialOperations";
   import { ImageMedia, VideoMedia } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
   import { get } from 'svelte/store';
@@ -58,6 +58,11 @@
       loading.set(false);
       toastStore.trigger({ message: `動画生成に失敗しました`, timeout: 3000});
     }
+  }
+
+  async function handlePostToPublicMaterials() {
+    modalStore.close();
+    await postToPublicMaterials($mediaViewerTarget!);
   }
 
   async function captureCurrentFrame() {
@@ -124,6 +129,12 @@
         >
           {$_('frame.actions.sendToMaterialCollection')}
         </button>
+        <button 
+          class="btn variant-filled-secondary text-white"
+          on:click|stopPropagation={handlePostToPublicMaterials}
+        >
+          {$_('publicMaterials.postButton')}
+        </button>
       </div>
     {/if}
     {#if $mediaViewerTarget.type === 'image'}
@@ -132,7 +143,13 @@
           class="btn variant-filled-primary text-white"
           on:click|stopPropagation={generateMovieFromImage}
         >
-          動画化して素材集に送る
+          {$_('publicMaterials.generateVideoButton')}
+        </button>
+        <button 
+          class="btn variant-filled-secondary text-white"
+          on:click|stopPropagation={handlePostToPublicMaterials}
+        >
+          {$_('publicMaterials.postButton')}
         </button>
       </div>
     {/if}
