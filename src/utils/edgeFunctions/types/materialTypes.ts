@@ -29,13 +29,13 @@ export const ApproveMaterialResponseSchema = z.object({
 });
 export type ApproveMaterialResponse = z.infer<typeof ApproveMaterialResponseSchema>;
 
-export const GetMaterialsRequestSchema = z.object({
+export const ListMaterialsRequestSchema = z.object({
   category: z.string().optional(),
   approved_only: z.boolean().optional().default(true),
   limit: z.number().optional().default(100),
   offset: z.number().optional().default(0),
 });
-export type GetMaterialsRequest = z.infer<typeof GetMaterialsRequestSchema>;
+export type ListMaterialsRequest = z.infer<typeof ListMaterialsRequestSchema>;
 
 export const MaterialSchema = z.object({
   id: z.string(),
@@ -51,8 +51,8 @@ export const MaterialSchema = z.object({
 });
 export type Material = z.infer<typeof MaterialSchema>;
 
-export const GetMaterialsResponseSchema = z.object({
+export const ListMaterialsResponseSchema = z.object({
   materials: z.array(MaterialSchema),
   total: z.number(),
 });
-export type GetMaterialsResponse = z.infer<typeof GetMaterialsResponseSchema>;
+export type ListMaterialsResponse = z.infer<typeof ListMaterialsResponseSchema>;

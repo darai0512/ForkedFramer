@@ -14,7 +14,7 @@ import {
   type TextEditRequest, TextEditRequestSchema, TextEditResponseSchema,
 } from "./utils/edgeFunctions/types/imagingTypes.d";
 import { EraseFileResponseSchema, GetDownloadUrlResponseSchema, GetUploadUrlResponseSchema } from "$protocolTypes/cloudFileTypes.d";
-import { type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes";
+import { type ListMaterialsRequest, ListMaterialsRequestSchema, ListMaterialsResponseSchema, type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes";
 import { NotebookRequestSchema, NotebookWithInstructionRequestSchema, type NotebookRequest, type NotebookWithInstructionRequest, AdviseThemeResponseSchema, type AdviseThemeResponse } from "$protocolTypes/adviseTypes.d";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 
@@ -173,6 +173,10 @@ export async function recordPublication(req: RecordPublicationRequest) {
 
 export async function recordMaterial(req: RecordMaterialRequest) {
   return await invoke("tools/recordmaterial", req, RecordMaterialRequestSchema, RecordMaterialResponseSchema);
+}
+
+export async function listMaterials(req: ListMaterialsRequest) {
+  return await invoke("tools/listmaterials", req, ListMaterialsRequestSchema, ListMaterialsResponseSchema);
 }
 
 export async function notifyShare(text: string) {
