@@ -414,12 +414,17 @@
       "descriptionPlaceholder": "Enter material description (optional)"
     },
     "categories": {
+      "all": "All",
       "general": "General",
       "character": "Character",
       "background": "Background",
       "effect": "Effect",
       "item": "Item"
     }
+  },
+  "materialBucket": {
+    "generationHistory": "Generation History",
+    "publicMaterials": "Public Materials"
   },
   "dialogs": {
     "confirm": "Confirm",

@@ -414,12 +414,17 @@
       "descriptionPlaceholder": "素材の説明を入力（任意）"
     },
     "categories": {
+      "all": "すべて",
       "general": "一般",
       "character": "キャラクター",
       "background": "背景",
       "effect": "エフェクト",
       "item": "アイテム"
     }
+  },
+  "materialBucket": {
+    "generationHistory": "生成履歴",
+    "publicMaterials": "みんなの素材集"
   },
   "dialogs": {
     "confirm": "確認",
