@@ -72,6 +72,7 @@
   import CanvasBrowser from './utils/CanvasBrowser.svelte';
   import NewStorageWizard from './filemanager/NewStorageWizard.svelte';
   import ConfirmDialog from './utils/ConfirmDialog.svelte';
+  import PostToPublicMaterials from './gallery/PostToPublicMaterials.svelte';
 
   //const advertiser = "thumbnail_stories";
   const advertiser = null;
@@ -134,6 +135,9 @@
     },
     confirm: {
       ref: ConfirmDialog,
+    },
+    postToPublicMaterials: {
+      ref: PostToPublicMaterials,
     }
   };
 
