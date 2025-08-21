@@ -7,7 +7,6 @@
   import FeathralCost from '../utils/FeathralCost.svelte';
   
   let media: Media;
-  let isAgreed = false;
   let category = 'general';
   let displayName = '';
   let description = '';
@@ -17,8 +16,12 @@
     modalStore.close();
   }
 
+  function showGuideline() {
+    window.open('/postingGuideline.html', '_blank');
+  }
+
   function onSubmit() {
-    if (!isAgreed || !displayName.trim()) return;
+    if (!displayName.trim()) return;
     
     const response = {
       media,
@@ -90,22 +93,19 @@
         
         <p class="text-sm mb-4">{@html $_('publicMaterials.dialog.confirmText')}</p>
         <p class="text-sm mb-4">
-          採用された場合、<FeathralCost showsLabel={false} cost={200} inline={true}/>プレゼント！
+          {$_('publicMaterials.dialog.selectionRewardPrefix')}
+          <FeathralCost showsLabel={false} cost={200} inline={true}/>
+          {$_('publicMaterials.dialog.selectionRewardSuffix')}
         </p>
         
-        <label class="flex items-center gap-2">
-          <input 
-            type="checkbox" 
-            bind:checked={isAgreed}
-            class="checkbox"
-          />
-          <span>{$_('publicMaterials.dialog.agreeText')}</span>
-        </label>
       </div>
     </div>
   </section>
 
   <footer class="card-footer flex gap-2">
+    <button type="button" class="btn variant-filled-secondary" on:click={showGuideline}>
+      {$_('publication.postingGuideline')}
+    </button>
     <div class="flex-1"></div>
     <button class="btn variant-ghost-surface" on:click={onCancel}>
       {$_('dialogs.cancel')}
@@ -113,7 +113,7 @@
     <button 
       class="btn variant-filled-primary" 
       on:click={onSubmit}
-      disabled={!isAgreed || !displayName.trim()}
+      disabled={!displayName.trim()}
     >
       <span class="submit-text">{$_('publicMaterials.dialog.submitButton')}</span>
     </button>

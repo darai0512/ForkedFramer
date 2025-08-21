@@ -316,7 +316,8 @@
   "materialBucket": {
     "materialCollection": "素材集",
     "generationHistory": "生成履歴",
-    "closeOnDrag": "ドラッグ時にウィンドウを閉じる"
+    "closeOnDrag": "ドラッグ時にウィンドウを閉じる",
+    "publicMaterials": "みんなの素材集"
   },
   "gallery": {
     "delete": "削除",
@@ -404,14 +405,16 @@
     "generateVideoButton": "動画化して素材集に送る",
     "dialog": {
       "title": "みんなの素材集に投稿",
-      "confirmText": "この素材をみんなの素材集に投稿します。<br>投稿した素材は他のユーザーが利用できるようになります。",
+      "confirmText": "この素材をみんなの素材集に投稿します。<br>投稿した素材は他のユーザーが利用できるようになります。<br>※著作権が自分にないものは投稿しないでください。<br>※18禁・公序良俗に反するものも投稿しないでください。",
       "agreeText": "投稿に同意します",
       "submitButton": "投稿する",
       "displayName": "素材名",
       "displayNamePlaceholder": "素材の名前を入力",
       "category": "カテゴリ",
       "description": "説明",
-      "descriptionPlaceholder": "素材の説明を入力（任意）"
+      "descriptionPlaceholder": "素材の説明を入力（任意）",
+      "selectionRewardPrefix": "採用された場合、",
+      "selectionRewardSuffix": "プレゼント！"
     },
     "categories": {
       "all": "すべて",
@@ -421,10 +424,6 @@
       "effect": "エフェクト",
       "item": "アイテム"
     }
-  },
-  "materialBucket": {
-    "generationHistory": "生成履歴",
-    "publicMaterials": "みんなの素材集"
   },
   "dialogs": {
     "confirm": "確認",
