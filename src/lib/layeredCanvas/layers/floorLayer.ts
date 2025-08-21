@@ -20,6 +20,20 @@ export class FloorLayer extends LayerBase {
     return [0];
   }
 
+  renderDepths(): number[] { return [0]; }
+
+  render(ctx: CanvasRenderingContext2D, depth: number) {
+    const canvas = ctx.canvas;
+    ctx.fillStyle = "rgb(240,240,240)";
+    // transformに関係なく一色にしたい
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+  }
+
+
+
   dropped(position: Vector, media: HTMLCanvasElement | HTMLVideoElement | string): boolean {
     console.log("floor received");
     this.onResidual(media);

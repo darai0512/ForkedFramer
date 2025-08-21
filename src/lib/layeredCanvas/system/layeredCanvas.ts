@@ -702,9 +702,6 @@ export class LayeredCanvas {
     const ctx = this.viewport.ctx;
     const renderTimes: {depth: number, time: number}[] = [];
 
-    ctx.fillStyle = "rgb(240,240,240)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     this.rootPaper.prerender();
 
     const depths = this.rootPaper.renderDepths();

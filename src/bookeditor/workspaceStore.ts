@@ -24,10 +24,12 @@ export let mainBookExceptionHandler: Writable<((e: any) => void) | null> = writa
 export function insertNewPageToBook(book: Book, index: number) {
   const p = book.newPageProperty;
   const example = frameExamples[p.templateName];
+  console.log("insertNewPage 1", example.frameTree.bgColor);
   const bubbles = example.bubbles.map((b: any) => Bubble.compile(p.paperSize, b));
   const page = newPage(FrameElement.compile(example.frameTree), bubbles);
+  console.log("insertNewPage 2", page.frameTree.bgColor);
   page.paperSize = [...p.paperSize];
-  page.paperColor = p.paperColor;
+  page.paperColor = example.frameTree.bgColor === 'transparent' ? '#00000000' : p.paperColor;
   page.frameColor = p.frameColor;
   page.frameWidth = p.frameWidth;
   book.pages.splice(index, 0, page);
