@@ -304,7 +304,6 @@ export class PaperRendererLayer extends LayerBase {
 
   renderFrameBackground(ctx: CanvasRenderingContext2D, layout: Layout, inheritanceContext: InheritanceContext | null) {
     if (layout.element.visibility === 0) { return; }
-    console.log(layout.element.bgColor);
     if (!layout.element.bgColor) { return; }
 
     const borderWidth = inheritanceContext?.borderWidth ?? 0;
