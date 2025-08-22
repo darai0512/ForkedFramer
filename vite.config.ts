@@ -1,14 +1,20 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig as vitestDefineConfig } from 'vitest/config'
+import { defineConfig, loadEnv } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { resolve } from 'path'
 import { glob } from 'glob'
 import * as path from 'path'
-import { visualizer } from "rollup-plugin-visualizer";
+import { visualizer } from "rollup-plugin-visualizer"
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default vitestDefineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  
+  return {
   build: {
     minify: false,
+    sourcemap: true,
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
@@ -22,7 +28,15 @@ export default defineConfig({
     },
     outDir: 'dist',
   },
-  plugins: [svelte(), visualizer()],
+  plugins: [
+    svelte(), 
+    visualizer(),
+    sentryVitePlugin({
+      org: env.SENTRY_ORG,
+      project: env.SENTRY_PROJECT,
+      authToken: env.SENTRY_AUTH_TOKEN,
+    })
+  ],
   resolve: {
     alias: {
       $bookTypes: path.resolve(__dirname, 'src/lib/book/types'),
@@ -57,4 +71,5 @@ export default defineConfig({
     setupFiles: ['./test/setup.ts'],
   },
   assetsInclude: ['**/*.wasm'], // .wasm を静的アセットとして処理
+  }
 })

@@ -43,3 +43,4 @@ testdata/largedump/*
 certs/
 frameplanner.example.local-key.pem
 frameplanner.example.local.pem
+.env
