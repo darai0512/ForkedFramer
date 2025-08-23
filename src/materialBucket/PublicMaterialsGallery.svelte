@@ -79,18 +79,18 @@
       const newItems = response.materials.map((material) => {
         const loadMedia = async (): Promise<Media[]> => {
           try {
-            let response = await fetch(material.file);
-            
-            if (!response.ok) {
-              throw new Error(`Failed to fetch ${material.file}`);
-            }
-            
+            let response: Response;
             let blob: Blob;
+            
             try {
+              response = await fetch(material.file);
+              if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+              }
               blob = await response.blob();
             } catch (error) {
-              // blob作成失敗（CORSエラー等）の場合、キャッシュを更新してリトライ
-              console.warn(`Failed to create blob for ${material.file}, retrying with cache reload:`, error);
+              // fetch自体が失敗（CORSエラー等）の場合、キャッシュを更新してリトライ
+              console.warn(`Failed to fetch/create blob for ${material.file}, retrying with cache reload:`, error);
               response = await fetch(material.file, { cache: 'reload' });
               if (!response.ok) {
                 throw new Error(`Failed to fetch ${material.file} after retry`);
