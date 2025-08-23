@@ -81,16 +81,22 @@
           try {
             let response = await fetch(material.file);
             
-            // 最初のfetchが失敗した場合、キャッシュを更新してリトライ
             if (!response.ok) {
-              console.warn(`First fetch failed for ${material.file}, retrying with cache reload`);
+              throw new Error(`Failed to fetch ${material.file}`);
+            }
+            
+            let blob: Blob;
+            try {
+              blob = await response.blob();
+            } catch (error) {
+              // blob作成失敗（CORSエラー等）の場合、キャッシュを更新してリトライ
+              console.warn(`Failed to create blob for ${material.file}, retrying with cache reload:`, error);
               response = await fetch(material.file, { cache: 'reload' });
               if (!response.ok) {
                 throw new Error(`Failed to fetch ${material.file} after retry`);
               }
+              blob = await response.blob();
             }
-            
-            const blob = await response.blob();
             let media: Media;
             
             // Content-Typeまたはファイル拡張子から判別
