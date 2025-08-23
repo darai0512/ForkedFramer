@@ -79,9 +79,15 @@
       const newItems = response.materials.map((material) => {
         const loadMedia = async (): Promise<Media[]> => {
           try {
-            const response = await fetch(material.file);
+            let response = await fetch(material.file);
+            
+            // 最初のfetchが失敗した場合、キャッシュを更新してリトライ
             if (!response.ok) {
-              throw new Error(`Failed to fetch ${material.file}`);
+              console.warn(`First fetch failed for ${material.file}, retrying with cache reload`);
+              response = await fetch(material.file, { cache: 'reload' });
+              if (!response.ok) {
+                throw new Error(`Failed to fetch ${material.file} after retry`);
+              }
             }
             
             const blob = await response.blob();
