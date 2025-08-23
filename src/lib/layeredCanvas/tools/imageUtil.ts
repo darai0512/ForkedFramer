@@ -70,7 +70,7 @@ export async function canvasToBlob(canvas: HTMLCanvasElement, format: string = "
       if (blob) {
         resolve(blob);
       } else {
-        throw new Error("Failed to convert canvas to blob");
+        throw new Error(`Failed to convert canvas to blob, ${canvas.width}x${canvas.height}`);
       }
     }, format, 1.0);
   });
