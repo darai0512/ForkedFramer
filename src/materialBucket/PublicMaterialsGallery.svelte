@@ -12,6 +12,8 @@
   import { Film } from '../lib/layeredCanvas/dataModels/film';
   import { loading } from '../utils/loadingStore';
   import { toastStore } from '@skeletonlabs/skeleton';
+  import { onlineStatus } from '../utils/accountStore';
+  import { _ } from 'svelte-i18n';
 
   // カテゴリは一旦無視
   const actualCategory = '';
@@ -138,7 +140,7 @@
     } catch (error) {
       console.error('Failed to load public materials:', error);
       toastStore.trigger({ 
-        message: 'みんなの素材集の読み込みに失敗しました', 
+        message: $_('publicMaterials.loadError'), 
         timeout: 3000 
       });
     } finally {
@@ -163,31 +165,41 @@
   // }
 
   onMount(() => {
-    loadPublicMaterials();
+    if ($onlineStatus === 'signed-in') {
+      loadPublicMaterials();
+    }
   });
 </script>
 
-<div class="gallery-container" on:scroll={handleScroll}>
-  {#if items.length > 0}
-    <Gallery 
-      columnWidth={220} 
-      referable={false} 
-      bind:items={items} 
-      on:commit={onChooseImage} 
-      on:dragstart={onChildDragStart}
-    />
-  {:else if !$loading}
+{#if $onlineStatus !== 'signed-in'}
+  <div class="gallery-container">
     <div class="empty-state">
-      <p class="empty-message">承認済みの素材はまだありません</p>
+      <p class="empty-message">{@html $_('publicMaterials.signInRequired')}</p>
     </div>
-  {/if}
-  
-  {#if loadingMore}
-    <div class="loading-more">
-      <span>読み込み中...</span>
-    </div>
-  {/if}
-</div>
+  </div>
+{:else}
+  <div class="gallery-container" on:scroll={handleScroll}>
+    {#if items.length > 0}
+      <Gallery 
+        columnWidth={220} 
+        referable={false} 
+        bind:items={items} 
+        on:commit={onChooseImage} 
+        on:dragstart={onChildDragStart}
+      />
+    {:else if !$loading}
+      <div class="empty-state">
+        <p class="empty-message">{$_('publicMaterials.noApprovedMaterials')}</p>
+      </div>
+    {/if}
+    
+    {#if loadingMore}
+      <div class="loading-more">
+        <span>{$_('publicMaterials.loadingMore')}</span>
+      </div>
+    {/if}
+  </div>
+{/if}
 
 <style>
   .gallery-container {

@@ -403,6 +403,10 @@
   "publicMaterials": {
     "postButton": "みんなの素材集に投稿",
     "generateVideoButton": "動画化して素材集に送る",
+    "signInRequired": "みんなの素材集を利用するには<br>サインインが必要です",
+    "noApprovedMaterials": "承認済みの素材はまだありません",
+    "loadingMore": "読み込み中...",
+    "loadError": "みんなの素材集の読み込みに失敗しました",
     "dialog": {
       "title": "みんなの素材集に投稿",
       "confirmText": "この素材をみんなの素材集に投稿します。<br>投稿した素材は他のユーザーが利用できるようになります。<br>※著作権が自分にないものは投稿しないでください。<br>※18禁・公序良俗に反するものも投稿しないでください。",

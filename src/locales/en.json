@@ -402,6 +402,10 @@
   "publicMaterials": {
     "postButton": "Post to Public Materials",
     "generateVideoButton": "Generate Video and Send to Materials",
+    "signInRequired": "Sign in required to use<br>public materials collection",
+    "noApprovedMaterials": "No approved materials yet",
+    "loadingMore": "Loading...",
+    "loadError": "Failed to load public materials",
     "dialog": {
       "title": "Post to Public Materials",
       "confirmText": "This material will be posted to the public materials collection.<br>Once posted, other users will be able to use this material.<br>※Please do not post content for which you do not own the copyright.<br>※Please also refrain from posting adult content or content that violates public order and morals.",
