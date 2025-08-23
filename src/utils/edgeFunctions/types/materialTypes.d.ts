@@ -39,15 +39,12 @@ export type ListMaterialsRequest = z.infer<typeof ListMaterialsRequestSchema>;
 
 export const MaterialSchema = z.object({
   id: z.string(),
-  user_id: z.string(),
   category: z.string(),
   display_name: z.string(),
   description: z.string(),
   file: z.string(),
-  approved_at: z.string().nullable(),
-  rewarded_at: z.string().nullable(),
-  created_at: z.string(),
-  updated_at: z.string(),
+  author_username: z.string(),
+  author_display_name: z.string(),
 });
 export type Material = z.infer<typeof MaterialSchema>;
 

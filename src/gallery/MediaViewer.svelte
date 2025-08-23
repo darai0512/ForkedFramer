@@ -67,6 +67,23 @@
 
   // materialInfoがついてる素材は投稿できない
   $: canPostToPublic = $mediaViewerTarget && !(($mediaViewerTarget as any).materialInfo);
+  
+  // materialInfoが存在するかチェック
+  $: materialInfo = ($mediaViewerTarget as any)?.materialInfo;
+  
+  // MangaFarmのURLを取得
+  function getMangaFarmUrl() {
+    const getParentDomain = () => window.location.hostname.split('.').slice(1).join('.');
+    const parentDomain = getParentDomain();
+    return window.location.hostname === 'frameplanner.example.local'
+      ? 'http://example.local:5174'
+      : `https://${parentDomain}`;
+  }
+  
+  function openUserProfile(username: string) {
+    const targetUrl = `${getMangaFarmUrl()}/user/${username}`;
+    window.open(targetUrl, '_blank');
+  }
 
   async function captureCurrentFrame() {
     if (!$mediaViewerTarget || $mediaViewerTarget.type !== 'video') return;
@@ -124,6 +141,28 @@
         media={$mediaViewerTarget}
       />
     </div>
+    {#if materialInfo}
+      <div class="material-info">
+        <h3 class="font-bold text-lg">{materialInfo.name || '無題'}</h3>
+        {#if materialInfo.description}
+          <p class="text-sm mt-2">{materialInfo.description}</p>
+        {/if}
+        {#if materialInfo.author_username}
+          <p class="text-sm mt-2">
+            作成者: 
+            <button 
+              class="author-link"
+              on:click|stopPropagation={() => openUserProfile(materialInfo.author_username)}
+            >
+              {materialInfo.author_display_name || materialInfo.author_username}
+              {#if materialInfo.author_display_name}
+                <span class="opacity-70">(@{materialInfo.author_username})</span>
+              {/if}
+            </button>
+          </p>
+        {/if}
+      </div>
+    {/if}
     {#if $mediaViewerTarget.type === 'video'}
       <div class="video-controls">
         <button 
@@ -179,5 +218,22 @@
     display: flex;
     gap: 1rem;
     padding: 0.5rem;
+  }
+  .material-info {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    max-width: 500px;
+    text-align: center;
+  }
+  .author-link {
+    color: #60a5fa;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .author-link:hover {
+    color: #93bbfc;
   }
 </style>

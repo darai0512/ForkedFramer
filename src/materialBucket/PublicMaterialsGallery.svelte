@@ -116,10 +116,13 @@
             }
             
             // メタデータを保存（ツールチップなどで使用可能）
+            console.log(material);
             (media as any).materialInfo = {
               name: material.display_name,
               description: material.description,
-              category: material.category
+              category: material.category,
+              author_username: material.author_username,
+              author_display_name: material.author_display_name
             };
             
             return [media];
