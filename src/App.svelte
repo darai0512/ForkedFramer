@@ -75,7 +75,7 @@
   import PostToPublicMaterials from './gallery/PostToPublicMaterials.svelte';
 
   //const advertiser = "thumbnail_stories";
-  const advertiser = null;
+  const advertiser = "jonigata";
 
   const modalComponentRegistry: Record<string, ModalComponent> = {
     comic: {
