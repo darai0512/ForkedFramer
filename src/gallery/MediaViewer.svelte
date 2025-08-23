@@ -65,6 +65,9 @@
     await postToPublicMaterials($mediaViewerTarget!);
   }
 
+  // materialInfoがついてる素材は投稿できない
+  $: canPostToPublic = $mediaViewerTarget && !(($mediaViewerTarget as any).materialInfo);
+
   async function captureCurrentFrame() {
     if (!$mediaViewerTarget || $mediaViewerTarget.type !== 'video') return;
     
@@ -131,6 +134,7 @@
         </button>
         <button 
           class="btn variant-filled-secondary text-white"
+          disabled={!canPostToPublic}
           on:click|stopPropagation={handlePostToPublicMaterials}
         >
           {$_('publicMaterials.postButton')}
@@ -147,6 +151,7 @@
         </button>
         <button 
           class="btn variant-filled-secondary text-white"
+          disabled={!canPostToPublic}
           on:click|stopPropagation={handlePostToPublicMaterials}
         >
           {$_('publicMaterials.postButton')}
