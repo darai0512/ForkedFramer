@@ -6,6 +6,7 @@ import { get as storeGet } from "svelte/store";
 import { supabase } from "../supabase";
 import { readSupabaseSession } from "./supabaseAuth/readSupabaseSession";
 import md5 from 'md5'; // md5ハッシュ化のためのライブラリを使用
+import * as Sentry from "@sentry/svelte";
 
 interface AuthState {
   user: User | null;
@@ -83,6 +84,14 @@ function createAuthStore(): AuthStore {
       }
           
       updateState(session);
+
+      const u = session?.user
+      if (u) {
+        Sentry.setUser({ id: u.id, email: u.email ?? undefined }) // ← ここで付与
+        Sentry.setTag('user_id', u.id)
+      } else {
+        Sentry.setUser(null)
+      }
     });
 
     return () => {
