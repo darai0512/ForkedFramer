@@ -163,10 +163,10 @@ function drawFragment(
         drawChar(0.1, -0.1, c);
         break;
       case /[「『：；]/.test(c):
-        drawRotatedChar(90, 0.2, 0.1, 1, 1, c);
+        drawRotatedChar(90, 0.2, 0.3, 1, 1, c);
         break;
       case /[」』]/.test(c):
-        drawRotatedChar(90, 0.1, 0.3, 1, 1, c);
+        drawRotatedChar(90, 0.1, -0.1, 1, 1, c);
         break;
       case /[＜（【〔≪｛]/.test(c):
         drawRotatedChar(90, 0.15, 0.15, 1, 1, c);
