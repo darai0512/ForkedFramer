@@ -65,6 +65,22 @@ export function imageToBase64(imgElement: HTMLImageElement) {
 }
 
 export async function canvasToBlob(canvas: HTMLCanvasElement, format: string = "image/webp"): Promise<Blob> {
+  // 0x0のキャンバスの場合、1x1の透明なblobを返す
+  if (canvas.width === 0 || canvas.height === 0) {
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = 1;
+    tempCanvas.height = 1;
+    return new Promise((resolve) => {
+      tempCanvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          throw new Error(`Failed to convert 1x1 canvas to blob`);
+        }
+      }, format, 1.0);
+    });
+  }
+
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
       if (blob) {
