@@ -14,6 +14,7 @@ import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
 import { eraserFilm } from "../../utils/eraserFilm";
 import { inpaintFilm } from "../../utils/inpaintFilm";
 import { textEditFilm } from "../../utils/textEditFilm";
+import { mainBook } from '../workspaceStore'; // デバッグ用
 
 // 共通インターフェース - フィルムオペレーション対象
 export interface FilmOperationTarget {
@@ -45,7 +46,7 @@ export async function handleScribbleCommand<T extends FilmOperationTarget>(
   element: any
 ): Promise<void> {
   if (!painterRun) return;
-  console.log("handleScribbleCommand", target, target.page?.id);
+  console.log("handleScribbleCommand", target, target.page?.id, get(mainBook)?.pages.map(p => p.id));
   
   toolTipRequest.set(null);
   await painterRun(target.page, element, target.commandTargetFilm!);
