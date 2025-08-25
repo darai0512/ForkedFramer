@@ -168,22 +168,12 @@ export class IndexedDBFileSystem extends FileSystem {
     console.error('Failed to reconnect to IndexedDB after maximum retries');
   }
 
-  private async ensureConnection(): Promise<void> {
-    if (!this.db) {
-      console.log('Database connection lost, attempting to reconnect...');
-      await this.handleTerminated();
-      if (!this.db) {
-        throw new Error('Failed to establish database connection');
-      }
-    }
-  }
 
   async createFile(_type: string): Promise<File> {
     return this.createFileWithId(ulid() as NodeId, _type);
   }
 
   async createFileWithId(id: NodeId, _type: string = 'text'): Promise<File> {
-    await this.ensureConnection();
     const file = new IndexedDBFile(this, id, this.db!);
     const tx = this.db!.transaction(["nodes","metadata"], "readwrite");
     const store = tx.objectStore('nodes');
@@ -195,7 +185,6 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async createFolder(): Promise<Folder> {
-    await this.ensureConnection();
     const id = ulid() as NodeId;
     const folder = new IndexedDBFolder(this, id, this.db!);
     const tx = this.db!.transaction(["nodes","metadata"], "readwrite");
@@ -208,7 +197,6 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async destroyNode(id: NodeId): Promise<void> {
-    await this.ensureConnection();
     const tx = this.db!.transaction(["nodes","metadata"], "readwrite");
     const store = tx.objectStore('nodes');
     const metadataStore = tx.objectStore('metadata');
@@ -222,7 +210,6 @@ export class IndexedDBFileSystem extends FileSystem {
     // 多分頑張ればそもそもメタデータもとらないようにできると思うが、
     // どの程度寄与するか不明な上修正範囲が広いのでやらない
 
-    await this.ensureConnection();
     // メタデータがあればそこから
     const metadata = await this.db!.get('metadata', id);
     if (metadata) {
@@ -259,7 +246,6 @@ export class IndexedDBFileSystem extends FileSystem {
   }
 
   async collectTotalSize(): Promise<number> {
-    await this.ensureConnection();
     const tx = this.db!.transaction("nodes", "readonly");
     const store = tx.store;
     let cursor = await store.openCursor();
@@ -292,7 +278,6 @@ export class IndexedDBFileSystem extends FileSystem {
   
   async dump(options?: { format?: DumpFormat; onProgress?: DumpProgress }): Promise<ReadableStream<Uint8Array>> {
     const onProgress = options?.onProgress ?? (() => {});
-    await this.ensureConnection();
     const tx = this.db!.transaction("nodes", "readonly");
     const store = tx.store;
     let cursor = await store.openCursor();
@@ -350,7 +335,6 @@ export class IndexedDBFileSystem extends FileSystem {
     console.log("Start undump");
     onProgress(0);
 
-    await this.ensureConnection();
     {
       const tx = this.db!.transaction('nodes', 'readwrite');
       const store = tx.objectStore('nodes');
