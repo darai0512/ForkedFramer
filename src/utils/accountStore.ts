@@ -91,6 +91,7 @@ function createAuthStore(): AuthStore {
         Sentry.setTag('user_id', u.id)
       } else {
         Sentry.setUser(null)
+        Sentry.setTag('user_id', 'null')
       }
     });
 

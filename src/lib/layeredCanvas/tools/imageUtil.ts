@@ -67,6 +67,7 @@ export function imageToBase64(imgElement: HTMLImageElement) {
 export async function canvasToBlob(canvas: HTMLCanvasElement, format: string = "image/webp"): Promise<Blob> {
   // 0x0のキャンバスの場合、1x1の透明なblobを返す
   if (canvas.width === 0 || canvas.height === 0) {
+    console.log("canvasToBlob: canvas is 0x0, return 1x1 transparent blob");
     const tempCanvas = document.createElement("canvas");
     tempCanvas.width = 1;
     tempCanvas.height = 1;
