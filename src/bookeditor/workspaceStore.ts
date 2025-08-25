@@ -5,6 +5,7 @@ import { frameExamples } from "../lib/layeredCanvas/tools/frameExamples";
 import { FrameElement } from "../lib/layeredCanvas/dataModels/frameTree";
 import { Bubble } from "../lib/layeredCanvas/dataModels/bubble";
 import { loadFonts } from "./fontLoading"
+import { get } from "svelte/store";
 
 export const mainBook = writable<Book | null>(null);
 export const mainBookTitle = writable('');
@@ -24,10 +25,8 @@ export let mainBookExceptionHandler: Writable<((e: any) => void) | null> = writa
 export function insertNewPageToBook(book: Book, index: number) {
   const p = book.newPageProperty;
   const example = frameExamples[p.templateName];
-  console.log("insertNewPage 1", example.frameTree.bgColor);
   const bubbles = example.bubbles.map((b: any) => Bubble.compile(p.paperSize, b));
   const page = newPage(FrameElement.compile(example.frameTree), bubbles);
-  console.log("insertNewPage 2", page.frameTree.bgColor);
   page.paperSize = [...p.paperSize];
   page.paperColor = example.frameTree.bgColor === 'transparent' ? '#00000000' : p.paperColor;
   page.frameColor = p.frameColor;
@@ -63,3 +62,16 @@ fontLoadToken.subscribe(async (fonts) => {
     resetFontCacheKey.update(value => value + 1);
   }
 });
+
+export function outputMainBook() {
+  const book = get(mainBook);
+  if (!book) { return; }
+  const json = JSON.stringify(book, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mainBook.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}

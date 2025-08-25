@@ -59,6 +59,7 @@ declare global {
   }
   export interface Window {
     countPaths(): void;
+    doIt(): void;
   }
 }
 
@@ -125,3 +126,9 @@ window.countPaths = function() {
     console.log('%cPaper.js Error', 'color:white; background-color:#dc2626; padding:2px 4px; border-radius:4px;', error);
   }
 };
+
+import { outputMainBook } from "./bookeditor/workspaceStore";
+
+window.doIt = function() {
+  outputMainBook();
+} 

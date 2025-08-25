@@ -58,11 +58,13 @@ export const frameExamples: Record<string, any> = {
   "white-paper": {
     frameTree: { // 一コマ(マージンなし)
       bgColor: "white",
+      borderWidth: 0,
       height: 100,
       column: [
         {
           visibility: 1,
           height: 100,
+          borderWidth: 0,
         },
       ],
     },
