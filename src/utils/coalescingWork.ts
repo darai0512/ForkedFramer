@@ -1,43 +1,42 @@
-/**
- * createCoalescingWork v2
- * -----------------------
- *   - 同時実行 1 本に制限し、pending を取りこぼさない
- *   - job() が throw/reject してもループが固まらない
- *   - onError で例外を拾う or デフォルトで console.error
- */
 export function createCoalescingWork(
   job: () => Promise<unknown>,
   onError: (err: unknown) => void = console.error,
 ): () => void {
-  let running = false;  // いま実行中か
-  let pending = false;  // 待ちがあるか
+  let running = false;
+  let pending = false;
 
   async function runLoop(): Promise<void> {
     try {
-      do {
+      for (;;) {
         pending = false;
-        console.log('coalescingWork start');
-        await job();          // ここで throw/reject し得る
-        console.log('coalescingWork end');
-      } while (pending);
-    } catch (err) {
-      onError(err);           // 例外を報告
-      // 失敗しても「次の pending」があるなら回す
-      if (pending) {
-        return runLoop();
+        try {
+          console.log("coalescingWork: job start");
+          await job();
+          console.log("coalescingWork: job end");
+        } catch (err) {
+          try { onError(err); } catch {}
+        }
+        if (!pending) break; // 要求が積まれていなければ終了
       }
     } finally {
-      running = false;        // ここは必ず通る
+      running = false;
+      // ループ終了後に新たな request() が入っていた場合の取りこぼし防止
+      if (pending) {
+        // 再スケジュール（request() が running を立て直す）
+        request();
+      }
     }
   }
 
-  return function request(): void {
+  function request(): void {
     pending = true;
     if (!running) {
       running = true;
-      void runLoop();         // fire-and-forget
+      void runLoop();
     } else {
-      console.log('coalescingWork already running');
+      console.log("coalescingWork: job already running, coalesced");
     }
-  };
+  }
+
+  return request;
 }

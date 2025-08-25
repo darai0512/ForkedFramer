@@ -16,7 +16,6 @@
   import { analyticsEvent } from "../utils/analyticsEvent";
   import Drawer from '../utils/Drawer.svelte'
   import FileManagerFolder from './FileManagerFolder.svelte';
-  import { DelayedCommiter } from '../utils/delayedCommiter';
   import { loading, progress } from '../utils/loadingStore'
   import { frameInspectorTarget } from '../bookeditor/frameinspector/frameInspectorStore';
   import { saveProhibitFlag } from '../utils/developmentFlagStore';
@@ -153,25 +152,22 @@
     async () => {
       // await new Promise(resolve => setTimeout(resolve, 2000));
       saveStatusStore.set('saving');
-      try {
-        const book = $mainBook!;
-        const fs = $mainBookFileSystem!;
-        if (!$saveProhibitFlag) {
-          const file = (await fs.getNode(book.revision.id as NodeId))!.asFile()!;
-          await saveBookTo(book, fs, file);
-        }
-        currentRevision = {...book.revision};
-        const info: CurrentFileInfo = {
-          id: book.revision.id as NodeId,
-          fileSystem: getFileSystemType(fs.id),
-          title: $mainBookTitle
-        }
-        await recordCurrentFileInfo(info);
-        saveStatusStore.set('success');
-      } catch (e) {
-        saveStatusStore.set('error');
-        throw e;
+
+      const book = $mainBook!;
+      const fs = $mainBookFileSystem!;
+      if (!$saveProhibitFlag) {
+        const file = (await fs.getNode(book.revision.id as NodeId))!.asFile()!;
+        await saveBookTo(book, fs, file);
       }
+      currentRevision = {...book.revision};
+      const info: CurrentFileInfo = {
+        id: book.revision.id as NodeId,
+        fileSystem: getFileSystemType(fs.id),
+        title: $mainBookTitle
+      }
+      await recordCurrentFileInfo(info);
+
+      saveStatusStore.set('success');
     },
     (e) => {
         console.error(e);
@@ -184,11 +180,6 @@
 
 
   let currentRevision: Revision;
-  let delayedCommiter = new DelayedCommiter(
-    () => {
-      console.log("delayedCommiter: commit");
-      coalescingSaveWork();
-    });
 
   $: onOpen($fileManagerOpen);
   async function onOpen(open: boolean) {
@@ -286,13 +277,7 @@
         return;
       }
 
-      // 普通のオートセーブ
-      if (getHistoryWeight(book) == 'heavy') {
-        delayedCommiter.cancel();
-        delayedCommiter.schedule(0);
-      } else {
-        delayedCommiter.schedule(2000);
-      }
+      coalescingSaveWork();
     }
   }
 
