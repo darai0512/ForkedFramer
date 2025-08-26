@@ -20,6 +20,7 @@
 //    { value: 'gpt-image-1/low', name: 'GPT-IMAGE-1 low' },
 //    { value: 'gpt-image-1/medium', name: 'GPT-IMAGE-1 medium' },
     { value: 'gpt-image-1/high', name: 'GPT-IMAGE-1 high' },
+    { value: 'nano-banana', name: 'Nano Banana' },
   ];
   
   // 各モデルのコストを動的に計算

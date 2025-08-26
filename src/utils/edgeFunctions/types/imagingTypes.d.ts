@@ -10,7 +10,7 @@ export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "qwen"]);
 export type ImagingProvider = z.infer<typeof ImagingProvider>;
 
-export const TextEditModelSchema = z.enum(["kontext/pro", "kontext/max", "kontext/inscene", "gpt-image-1/low", "gpt-image-1/medium", "gpt-image-1/high"])
+export const TextEditModelSchema = z.enum(["kontext/pro", "kontext/max", "kontext/inscene", "gpt-image-1/low", "gpt-image-1/medium", "gpt-image-1/high", "nano-banana"])
 export type TextEditModel = z.infer<typeof TextEditModelSchema>;
 
 export const TextToImageRequestSchema = z.object({

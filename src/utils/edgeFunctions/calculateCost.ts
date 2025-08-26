@@ -70,6 +70,8 @@ export function calculateTextEditCost(model: TextEditModel, imageSize: { width: 
             return 6;
         case 'kontext/max':
             return 13;
+        case 'nano-banana':
+            return 6;
     }
 
     // 画像サイズから計算
