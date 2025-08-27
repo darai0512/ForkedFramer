@@ -186,7 +186,6 @@
     if (open) {
       $fileManagerMarkedFlag = $bookOperators!.getMarks().some((m) => m);
       $fileManagerUsedSizeToken = localFileSystem;
-      console.log("used size updated");
     }
   }
 

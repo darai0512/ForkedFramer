@@ -72,7 +72,6 @@ export class BookWorkspaceOperators implements BookOperators {
     },
     defaultBubbleSlot: DefaultBubbleSlot
   ) {
-    console.log("setBuiltBook", builtBook);
     this.layeredCanvas = builtBook.layeredCanvas;
     this.arrayLayer = builtBook.arrayLayer;
     this.focusKeeper = builtBook.focusKeeper;

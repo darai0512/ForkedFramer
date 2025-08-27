@@ -145,7 +145,7 @@
 
   // ブラウザのクライアント領域のサイズ変更を検知
   const handleResize = () => {
-    console.log(`クライアント領域がリサイズされました: ${window.innerWidth} x ${window.innerHeight}`);
+    // console.log(`クライアント領域がリサイズされました: ${window.innerWidth} x ${window.innerHeight}`);
   };
 
   onMount(async () => {

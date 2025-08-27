@@ -148,8 +148,6 @@
   function onResetFontCache(key: number) {
     if (!arrayLayer) { return; }
 
-    console.log("resetFontCache");
-
     for (const paper of arrayLayer.array.papers) {
       paper.paper?.findLayer(PaperRendererLayer)?.resetCache();
     }

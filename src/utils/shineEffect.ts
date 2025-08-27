@@ -52,7 +52,6 @@ export const shineEffect: Action<HTMLElement, ShineEffectParameters> = (node, in
   // 光る効果を開始
   const startShine = () => {
     if (!enabled) return;
-    console.log('Starting shine effect'); // デバッグ用ログ
     node.classList.remove('shine');
     void node.offsetWidth; // 強制的にリフロー
     node.classList.add('shine');

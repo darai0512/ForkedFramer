@@ -24,7 +24,6 @@ export function toolTip(node: HTMLElement, message: string) {
   const handleMouseEnter = (event: MouseEvent) => {
     const topElement = document.elementFromPoint(event.clientX, event.clientY);
     if (topElement !== node && !node.contains(topElement)) {
-      console.log("toolTip: blocked by other element");
       return;
     }
     timeoutId = setTimeout(() => {
