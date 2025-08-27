@@ -156,6 +156,7 @@
       const book = $mainBook!;
       const fs = $mainBookFileSystem!;
       if (!$saveProhibitFlag) {
+        console.log("auto saving", book.revision);
         const file = (await fs.getNode(book.revision.id as NodeId))!.asFile()!;
         await saveBookTo(book, fs, file);
       }
