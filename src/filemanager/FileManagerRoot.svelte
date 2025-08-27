@@ -276,6 +276,7 @@
         return;
       }
 
+      console.log("book changed", book.revision, currentRevision, getHistoryWeight(book));
       coalescingSaveWork();
     }
   }
