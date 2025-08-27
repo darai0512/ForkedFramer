@@ -114,23 +114,15 @@
   $: onBuildCloudFileSystem($onlineStatus, $onlineAccount);
   async function onBuildCloudFileSystem(os: OnlineStatus, oa: OnlineAccount | null) { 
     console.log("#### onBuildCloudFileSystem");
-    console.log("A");
     if (os == 'unknown') { $cloudState = 'uncertain'; return; }
-    console.log("B");
     if (os == 'signed-out') { $cloudState = 'unlinked'; return; }
-    console.log("C");
 
     if (oa == null) { $cloudState = 'uncertain'; return; }
-    console.log("D");
     const plan = oa.subscriptionPlan;
-    console.log("E", plan);
     if (plan != 'basic' && plan != 'basic/en' && plan != 'premium') { $cloudState = 'unlinked'; return; }
-    console.log("F");
 
     cloudFileSystem = await buildCloudFileSystem();
-    console.log("G");
     cloudFolders = await getRootFolders(cloudFileSystem);
-    console.log("H");
     $cloudState = 'linked';
   }
 

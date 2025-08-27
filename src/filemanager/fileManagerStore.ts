@@ -38,6 +38,7 @@ export const gadgetFileSystem: Writable<FileSystem | null> = writable(null);
 export const selectedFile: Writable<NodeId | null> = writable(null);
 
 export async function saveBookTo(book: Book, fileSystem: FileSystem, file: File): Promise<void> {
+  const startTime = performance.now();
   console.tag("saveBookTo", "cyan", file.id);
 
   const root = await fileSystem.getRoot();
@@ -75,6 +76,9 @@ export async function saveBookTo(book: Book, fileSystem: FileSystem, file: File)
 
   const json = JSON.stringify(serializedBook);
   await file.write(json);
+  
+  const endTime = performance.now();
+  console.log(`saveBookTo completed in ${(endTime - startTime).toFixed(2)}ms`);
 }
 
 export function serializeBook(book: Book): SerializedBook {
