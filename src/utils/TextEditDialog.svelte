@@ -37,6 +37,15 @@
   // 参考画像用のデータ
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
+  
+  // 参考画像が使用可能なモデルかチェック
+  $: referenceImagesSupported = selectedModel === 'gpt-image-1/high' || selectedModel === 'nano-banana';
+  
+  // モデルが変更されて参考画像が使用できない場合はリセット
+  $: if (!referenceImagesSupported && (referenceImages.length > 0 || referenceMedias.length > 0)) {
+    referenceImages = [];
+    referenceMedias = [];
+  }
 
   onMount(async () => {
     const args = $modalStore[0]?.meta;
@@ -228,29 +237,31 @@
             <TextEditModels bind:model={selectedModel} {imageSize} />
           </div>
           
-          <div class="setting-section">
-            <h3>{$_('dialogs.textEdit.referenceImages')}</h3>
-            <div class="reference-images-container" use:dropzone={onFileDrop}>
-              {#if referenceImages.length > 0}
-                <Gallery 
-                  columnWidth={100} 
-                  referable={false}
-                  accessable={false}
-                  items={referenceImages}
-                  on:delete={onReferenceImageDelete}
-                />
-              {:else}
-                <div class="empty-state">
-                  <p class="empty-message">{$_('dialogs.textEdit.dropReferenceImages')}</p>
+          {#if referenceImagesSupported}
+            <div class="setting-section">
+              <h3>{$_('dialogs.textEdit.referenceImages')}</h3>
+              <div class="reference-images-container" use:dropzone={onFileDrop}>
+                {#if referenceImages.length > 0}
+                  <Gallery 
+                    columnWidth={100} 
+                    referable={false}
+                    accessable={false}
+                    items={referenceImages}
+                    on:delete={onReferenceImageDelete}
+                  />
+                {:else}
+                  <div class="empty-state">
+                    <p class="empty-message">{$_('dialogs.textEdit.dropReferenceImages')}</p>
+                  </div>
+                {/if}
+              </div>
+              {#if referenceMedias.length > 0}
+                <div class="image-count">
+                  {$_('dialogs.textEdit.referenceImageCount')}: {referenceMedias.length}
                 </div>
               {/if}
             </div>
-            {#if referenceMedias.length > 0}
-              <div class="image-count">
-                {$_('dialogs.textEdit.referenceImageCount')}: {referenceMedias.length}
-              </div>
-            {/if}
-          </div>
+          {/if}
         </div>
       </div>
     </div>
