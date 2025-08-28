@@ -5,9 +5,12 @@
   import AutoSizeTextarea from '../notebook/AutoSizeTextarea.svelte';
   import TextEditModels from '../generator/TextEditModels.svelte';
   import type { TextEditModel } from '$protocolTypes/imagingTypes';
-
-  import MangaBlackPicture from '../assets/kontext/manga-black.webp';
-  import MangaGrayPicture from '../assets/kontext/manga-gray.webp';
+  import { dropzone } from '../utils/dropzone';
+  import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
+  import type { Media } from '../lib/layeredCanvas/dataModels/media';
+  import { ImageMedia, VideoMedia } from '../lib/layeredCanvas/dataModels/media';
+  import Gallery from '../gallery/Gallery.svelte';
+  import type { GalleryItem } from '../gallery/gallery';
   import { _ } from 'svelte-i18n';
 
   let title: string;
@@ -31,8 +34,9 @@
   let historyIndex = -1;
   let temporaryPrompt = '';
   
-  // 画像リスト用のサンプルデータ
-  let imageList: Array<{id: string, url: string, name: string, prompt: string}> = [];
+  // 参考画像用のデータ
+  let referenceImages: GalleryItem[] = [];
+  let referenceMedias: Media[] = [];
 
   onMount(async () => {
     const args = $modalStore[0]?.meta;
@@ -54,12 +58,6 @@
         console.error('No image source in modal meta');
       }
     }
-    
-    // サンプル画像データを追加
-    imageList = [
-      { id: '1', url: MangaBlackPicture, name: $_('dialogs.textEdit.mangaBlack'), prompt: 'Convert to sharp monochrome contour line art, frontal lighting, flat discrete cel shading' },
-      { id: '2', url: MangaGrayPicture, name: $_('dialogs.textEdit.mangaGray'), prompt: 'Convert to sharp monochrome contour line art, flat shading using gray' },
-    ];
   });
 
   function drawImageOnCanvas() {
@@ -98,13 +96,42 @@
     modalStore.close();
   }
   
-  function onImageSelect(selectedImage: {id: string, url: string, name: string, prompt: string}) {
-    console.log('Selected image:', selectedImage);
-    // 選択された画像のプロンプトをテキストエリアに設定
-    prompt = selectedImage.prompt;
-    // 履歴ナビゲーションをリセット
-    historyIndex = -1;
-    temporaryPrompt = '';
+  async function onFileDrop(files: FileList) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.type.startsWith('image/svg')) continue;
+      
+      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+        // 非同期関数を作成してreferenceImagesに追加
+        const loadMedia = async (): Promise<Media[]> => {
+          let media: Media;
+          if (file.type.startsWith('image/')) {
+            const canvas = await createCanvasFromBlob(file);
+            media = new ImageMedia(canvas);
+          } else {
+            const video = await createVideoFromBlob(file);
+            media = new VideoMedia(video);
+          }
+          // メディアをリストに追加
+          referenceMedias.push(media);
+          referenceMedias = referenceMedias; // リアクティブ更新
+          return [media];
+        };
+        
+        referenceImages.push(loadMedia);
+      }
+    }
+    referenceImages = referenceImages; // リアクティブ更新をトリガー
+  }
+  
+  function onReferenceImageDelete(e: CustomEvent<GalleryItem>) {
+    // Galleryアイテムと対応するメディアを削除
+    const index = referenceImages.indexOf(e.detail as GalleryItem);
+    if (index !== -1) {
+      referenceMedias.splice(index, 1);
+      referenceMedias = referenceMedias; // リアクティブ更新
+    }
+    referenceImages = referenceImages.filter(item => item !== e.detail);
   }
 
   function onSubmit() {
@@ -117,6 +144,7 @@
       image: imageSource,
       prompt: prompt,
       model: selectedModel,
+      referenceImages: referenceMedias,
     });
 
     modalStore.close();
@@ -201,15 +229,27 @@
           </div>
           
           <div class="setting-section">
-            <h3>{$_('dialogs.textEdit.instructionTemplate')}</h3>
-            <div class="image-list">
-              {#each imageList as image (image.id)}
-                <div class="image-item" on:click={() => onImageSelect(image)} on:keydown={(e) => e.key === 'Enter' && onImageSelect(image)} tabindex="0" role="button">
-                  <img src={image.url} alt={image.name} class="image-thumbnail" />
-                  <div class="image-name">{image.name}</div>
+            <h3>{$_('dialogs.textEdit.referenceImages')}</h3>
+            <div class="reference-images-container" use:dropzone={onFileDrop}>
+              {#if referenceImages.length > 0}
+                <Gallery 
+                  columnWidth={100} 
+                  referable={false}
+                  accessable={false}
+                  items={referenceImages}
+                  on:delete={onReferenceImageDelete}
+                />
+              {:else}
+                <div class="empty-state">
+                  <p class="empty-message">{$_('dialogs.textEdit.dropReferenceImages')}</p>
                 </div>
-              {/each}
+              {/if}
             </div>
+            {#if referenceMedias.length > 0}
+              <div class="image-count">
+                {$_('dialogs.textEdit.referenceImageCount')}: {referenceMedias.length}
+              </div>
+            {/if}
           </div>
         </div>
       </div>
@@ -274,52 +314,41 @@
     color: rgb(var(--color-primary-500));
   }
   
-  .image-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  
-  .image-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid rgb(var(--color-surface-300));
+  .reference-images-container {
+    min-height: 150px;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 2px dashed rgb(var(--color-surface-300));
     border-radius: 8px;
+    padding: 12px;
     background: rgb(var(--color-surface-50));
-    cursor: pointer;
     transition: all 0.2s ease;
   }
   
-  .image-item:hover {
-    background: rgb(var(--color-surface-100));
-    border-color: rgb(var(--color-primary-400));
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  :global(.reference-images-container.drag-over) {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+    border-color: rgb(var(--color-primary-400)) !important;
+    border-style: solid !important;
   }
   
-  .image-item:focus {
-    outline: 2px solid rgb(var(--color-primary-500));
-    outline-offset: 2px;
+  .empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
   }
   
-  .image-thumbnail {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 8px;
-    border: 1px solid rgb(var(--color-surface-300));
-    flex-shrink: 0;
-  }
-  
-  .image-name {
+  .empty-message {
+    color: rgb(var(--color-surface-500));
     font-size: 14px;
-    font-weight: 500;
-    color: rgb(var(--color-surface-700));
     text-align: center;
-    width: 100%;
+  }
+  
+  .image-count {
+    margin-top: 8px;
+    font-size: 12px;
+    color: rgb(var(--color-surface-600));
+    font-weight: 500;
   }
   
   .canvas-container {

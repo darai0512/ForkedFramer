@@ -442,9 +442,9 @@
     "textEdit": {
       "placeholder": "Enter image modification instructions",
       "model": "Model",
-      "instructionTemplate": "Instruction Template",
-      "mangaBlack": "Manga Black",
-      "mangaGray": "Manga Gray",
+      "referenceImages": "Reference Images",
+      "dropReferenceImages": "Drop reference images here",
+      "referenceImageCount": "Reference images",
       "historyHint": "Ctrl + ↑↓ to browse history"
     },
     "inpaint": {
