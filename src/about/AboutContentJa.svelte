@@ -52,7 +52,7 @@
     <a href="https://www.youtube.com/channel/UC3kZKl2Q5IvlFKnJ8RHKBGw">Youtube ムービーマニュアル</a>
   </p>
   <p>
-    <a href="https://blogcake.net/ai-comic/" target="_blank" rel="noopener noreferrer">AIで漫画を描く！？FramePlannerで作る漫画の作り方</a>
+    <a href="https://note.com/super_lilac52/n/n63eee9724a03" target="_blank" rel="noopener noreferrer">「FramePlanner」とは？誰でも簡単にAIマンガが作れる神ツールを解説！</a>
   </p>
   <p>
     <!-- svelte-ignore a11y-click-events-have-key-events -->
