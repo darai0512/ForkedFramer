@@ -37,7 +37,7 @@ export async function textEditFilm(film: Film) {
 
   loading.set(true);
   const imageDataUrl = request.image.toDataURL("image/png");
-  const { requestId } = await textEdit({imageDataUrl, prompt: request.prompt, model: request.model});
+  const { requestId } = await textEdit({imageDataUrls: [imageDataUrl], prompt: request.prompt, model: request.model});
   const mode = `textedit:${request.model}`;
   await saveRequest(get(mainBookFileSystem)!, "image", mode, requestId);
 
