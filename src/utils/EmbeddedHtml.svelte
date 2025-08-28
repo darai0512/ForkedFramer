@@ -4,6 +4,7 @@
   export let app;
   export let url;
   export let reload: boolean;
+  export let onAnalyticsEvent: (eventData: any) => void = () => {};
 
   let key = 0;
 
@@ -12,9 +13,22 @@
     reload = false;
     key++;
   }
+
+  function handleMessage(event: MessageEvent) {
+    // セキュリティチェック: 同一オリジンまたは信頼できるオリジンからのメッセージのみ受け入れ
+    if (event.origin !== window.location.origin) {
+      return;
+    }
+
+    if (event.data.type === 'analytics' && event.data.app === app) {
+      console.log('Analytics event received:', event.data);
+      onAnalyticsEvent(event.data);
+    }
+  }
     
   onMount(() => {
     console.log(`Mounted ${app}`);
+    window.addEventListener('message', handleMessage);
   });
   
   afterUpdate(() => {
@@ -23,6 +37,7 @@
   
   onDestroy(() => {
     console.log(`Destroyed ${app}`);
+    window.removeEventListener('message', handleMessage);
   });
 </script>
 

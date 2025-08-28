@@ -3,6 +3,7 @@
   import EmbeddedHtml from '../EmbeddedHtml.svelte';
   import { shineEffect } from '../shineEffect';
   import { toolTip } from '../passiveToolTipStore';
+  import { analyticsEvent } from '../analyticsEvent';
 
   import adsIcon from '../../assets/binoculars.webp';
   import leaveIcon from '../../assets/ads-leave.webp';
@@ -18,13 +19,18 @@
     }
     isOpen = !isOpen;
   }
+
+  function handleAnalyticsEvent(eventData: any) {
+    console.log('Ad analytics event:', eventData);
+    analyticsEvent('ad');
+  }
 </script>
 
 <div class="fixed inset-y-0 right-0 flex items-center z-50 pointer-events-none">
   <div class="flex flex-col items-end"> <!-- ボタンとパネルをグループ化 -->
     <AdPanel {isOpen}>
       <div class="content">
-        <EmbeddedHtml app="ads" url="/ads/{advertiser}/index.html" bind:reload={reload}/>
+        <EmbeddedHtml app="ads" url="/ads/{advertiser}/index.html" bind:reload={reload} onAnalyticsEvent={handleAnalyticsEvent}/>
       </div>
     </AdPanel>
     <button
