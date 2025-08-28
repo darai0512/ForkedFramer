@@ -5,7 +5,7 @@
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { calculateTextEditCost } from '../utils/edgeFunctions/calculateCost';
 
-  export let model: TextEditModel = 'kontext/inscene';
+  export let model: TextEditModel = 'nano-banana';
   export let comment: string = '';
   export let imageSize: { width: number; height: number };
   let internalModel: TextEditModel;
