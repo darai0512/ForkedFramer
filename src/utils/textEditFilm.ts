@@ -9,13 +9,13 @@ import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
 import { loading } from './loadingStore';
-import type { TextEditModel } from '$protocolTypes/imagingTypes';
+import type { TextEditMode } from '$protocolTypes/imagingTypes';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 
 type TextEditDialogResult = {
   image: HTMLCanvasElement;
   prompt: string;
-  model: TextEditModel;
+  model: TextEditMode;
   referenceImages: Media[];
 }
 

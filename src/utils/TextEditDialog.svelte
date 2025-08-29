@@ -4,7 +4,7 @@
   import { createPreferenceStore } from '../preferences';
   import AutoSizeTextarea from '../notebook/AutoSizeTextarea.svelte';
   import TextEditModels from '../generator/TextEditModels.svelte';
-  import type { TextEditModel } from '$protocolTypes/imagingTypes';
+  import type { TextEditMode } from '$protocolTypes/imagingTypes';
   import { dropzone } from '../utils/dropzone';
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
   import type { Media } from '../lib/layeredCanvas/dataModels/media';
@@ -25,7 +25,7 @@
   let prompt = '';
   let placeholder = $_('dialogs.textEdit.placeholder');
 
-  let selectedModel: TextEditModel = 'kontext/inscene';
+  let selectedModel: TextEditMode = 'kontext/inscene';
   
   // プロンプト履歴
   const MAX_HISTORY_SIZE = 50;

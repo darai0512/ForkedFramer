@@ -1,7 +1,7 @@
 // このモジュールはFramePlanner側で定義してコピーしているので、
 // FramePlannerSupabaseで変更してはだめ
 
-import type { ImagingMode, ImageToVideoModel, Padding, TextEditModel } from "$protocolTypes/imagingTypes";
+import type { ImagingMode, ImageToVideoModel, Padding, TextEditMode } from "$protocolTypes/imagingTypes";
 
 /**
  * 画像サイズからメガピクセル単位でのコストを計算する
@@ -63,7 +63,7 @@ export function calculateInPaintingCost(size: { width: number; height: number })
     return calculateCostFromMegapixels(size, 8);
 }
 
-export function calculateTextEditCost(model: TextEditModel, imageSize: { width: number; height: number }): number {
+export function calculateTextEditCost(model: TextEditMode, imageSize: { width: number; height: number }): number {
     // 固定値
     switch (model) {
         case 'kontext/pro':

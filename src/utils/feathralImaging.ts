@@ -9,7 +9,7 @@ import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, cons
 import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
 import { updateToken } from "../utils/accountStore";
-import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextEditModel } from './edgeFunctions/types/imagingTypes';
+import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextEditMode } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
 import { analyticsEvent } from "../utils/analyticsEvent";
 import { FunctionsHttpError } from '@supabase/supabase-js'
@@ -252,7 +252,7 @@ function calculateGPTCost(mode: Mode): number {
 }
 */
 
-export const textToImageModelOptions: Array<{value: ImagingMode, name: string, cost: number, uiType: ImagingProvider}> = [
+export const textToImageModeOptions: Array<{value: ImagingMode, name: string, cost: number, uiType: ImagingProvider}> = [
   { value: 'qwen-image', name: 'Qwen Image', cost: 4, uiType: "flux" },
   { value: 'gpt-image-1/low', name: 'GPT-image-1 low', cost: 2, uiType: "gpt-image-1" },
   { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', cost: 7, uiType: "gpt-image-1" },
@@ -265,7 +265,7 @@ export const textToImageModelOptions: Array<{value: ImagingMode, name: string, c
 ];
 
 // Text edit model options (moved from TextEditModels.svelte)
-export const textEditModelOptions: Array<{ value: TextEditModel; name: string }> = [
+export const textEditModeOptions: Array<{ value: TextEditMode; name: string }> = [
   { value: 'kontext/pro', name: 'Flux Kontext [Pro]' },
   { value: 'kontext/max', name: 'Flux Kontext [Max]' },
   { value: 'kontext/inscene', name: 'Flux Kontext [InScene]' },

@@ -9,7 +9,7 @@
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import type { ImagingMode, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, calculateCost, generateImage, textToImageModelOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { type ImagingContext, calculateCost, generateImage, textToImageModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
   import FluxModes from './FluxModes.svelte';
@@ -42,7 +42,7 @@
 
   $: onChangeMode(mode, sizeText);
   function onChangeMode(mode: ImagingMode, st: string) {
-    uiType = textToImageModelOptions.find(m => m.value === mode)?.uiType;
+    uiType = textToImageModeOptions.find(m => m.value === mode)?.uiType;
     if (uiType == 'gpt-image-1') {
       width = st == "1536x1024" ? 1536 : 1024;
       height = st == "1024x1536" ? 1536 : 1024;
