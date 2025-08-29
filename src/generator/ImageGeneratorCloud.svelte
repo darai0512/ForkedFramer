@@ -12,7 +12,7 @@
   import { type ImagingContext, calculateCost, generateImage, textToImageModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
-  import FluxModes from './FluxModes.svelte';
+  import FluxModes from './TextToImageModes.svelte';
   import { ImageMedia, type Media } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
 

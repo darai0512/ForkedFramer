@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { createPreferenceStore } from '../preferences';
   import AutoSizeTextarea from '../notebook/AutoSizeTextarea.svelte';
-  import TextEditModels from '../generator/TextEditModels.svelte';
+  import TextEditModels from '../generator/TextEditModes.svelte';
   import type { TextEditMode } from '$protocolTypes/imagingTypes';
   import { dropzone } from '../utils/dropzone';
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';

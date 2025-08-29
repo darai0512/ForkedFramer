@@ -17,7 +17,7 @@
   import NotebookCharacterList from './NotebookCharacterList.svelte';
   import Feathral from '../utils/Feathral.svelte';
   import { ProgressBar } from '@skeletonlabs/skeleton';
-  import FluxModes from '../generator/FluxModes.svelte';
+  import FluxModes from '../generator/TextToImageModes.svelte';
   import { adviseTheme, adviseCharacters, advisePlot, adviseScenario, adviseStoryboard, adviseCritique } from '../supabase';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import { type Folder } from '../lib/filesystem/fileSystem';

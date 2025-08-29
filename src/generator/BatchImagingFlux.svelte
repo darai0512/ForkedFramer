@@ -7,7 +7,7 @@
   import { busy, batchImagingPage } from './batchImagingStore';
   import { mainBook, redrawToken } from '../bookeditor/workspaceStore';
   import { commitBook } from '../lib/book/book';
-  import FluxModes from './FluxModes.svelte';
+  import FluxModes from './TextToImageModes.svelte';
   import { _ } from 'svelte-i18n';
   import "../box.css"  
 
