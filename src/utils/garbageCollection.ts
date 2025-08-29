@@ -59,9 +59,10 @@ export async function purgeCollectedGarbage(fileSystem: FileSystem, imageFolder:
     await drawStrayMark(image);
     await file.writeImage(image);
     */
-    await fileSystem.destroyNode(imageFile as NodeId);
     const bindIds = imageList.filter((entry) => entry[2] === imageFile).map(e => e[0]);
+    // 先にリンクを削除してからノードを破棄する（不整合を避けるため）
     await imageFolder.unlinkv(bindIds);
+    await fileSystem.destroyNode(imageFile as NodeId);
     console.log("purge image", imageFile);
   }
   console.log("purge done");

@@ -20,7 +20,7 @@ export async function buildFileSystem(handle: FileSystemDirectoryHandle): Promis
   const fs = new FSAFileSystem(sqlite, blobStore, mediaConverter);
   await fs.open();
 
-  fs.withoutPersist(async () => {
+  await fs.withoutPersist(async () => {
     await makeSpecialFolders(fs);
   });
 
