@@ -4,6 +4,7 @@
   import { createPreference } from '../preferences';
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { calculateTextEditCost } from '../utils/edgeFunctions/calculateCost';
+  import { textEditModelOptions } from '../utils/feathralImaging';
 
   export let model: TextEditModel = 'nano-banana';
   export let comment: string = '';
@@ -12,19 +13,10 @@
 
   const preference = createPreference<TextEditModel>("imaging", "textEditModel");
 
-  // モデルオプションの定義
-  const modelOptions: Array<{value: TextEditModel, name: string}> = [
-    { value: 'kontext/pro', name: 'Flux Kontext [Pro]' },
-    { value: 'kontext/max', name: 'Flux Kontext [Max]' },
-    { value: 'kontext/inscene', name: 'Flux Kontext [InScene]' },
-//    { value: 'gpt-image-1/low', name: 'GPT-IMAGE-1 low' },
-//    { value: 'gpt-image-1/medium', name: 'GPT-IMAGE-1 medium' },
-    { value: 'gpt-image-1/high', name: 'GPT-IMAGE-1 high' },
-    { value: 'nano-banana', name: 'Nano Banana' },
-  ];
+  // モデルオプション（feathralImaging.ts から提供）
   
   // 各モデルのコストを動的に計算
-  $: modelOptionsWithCost = modelOptions.map(option => ({
+  $: modelOptionsWithCost = textEditModelOptions.map(option => ({
     ...option,
     cost: calculateTextEditCost(option.value, imageSize)
   }));

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { modeOptions } from '../utils/feathralImaging';
+  import { textToImageModelOptions } from '../utils/feathralImaging';
   import { onMount } from 'svelte';
   import { createPreference } from '../preferences';
   import FeathralCost from '../utils/FeathralCost.svelte';
@@ -24,7 +24,7 @@
   let isOpen = false;
   
   // 選択されたモードのコスト取得
-  $: selectedMode = modeOptions.find(option => option.value === internalMode);
+  $: selectedMode = textToImageModelOptions.find(option => option.value === internalMode);
   
   // ドロップダウンの開閉を切り替える
   function toggleDropdown() {
@@ -60,7 +60,7 @@
     
     {#if isOpen}
       <div class="options-container">
-        {#each modeOptions as option}
+        {#each textToImageModelOptions as option}
           <div
             class="option-item"
             class:selected={option.value === internalMode}
@@ -171,4 +171,3 @@
     text-align: center;
   }
 </style>
-

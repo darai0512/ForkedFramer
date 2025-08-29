@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, afterUpdate, onDestroy } from 'svelte';
 
-  export let app;
+  export let app: string;
   export let url;
   export let reload: boolean;
   export let onAnalyticsEvent: (eventData: any) => void = () => {};

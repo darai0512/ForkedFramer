@@ -9,7 +9,7 @@ import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, cons
 import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
 import { updateToken } from "../utils/accountStore";
-import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider } from './edgeFunctions/types/imagingTypes';
+import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextEditModel } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
 import { analyticsEvent } from "../utils/analyticsEvent";
 import { FunctionsHttpError } from '@supabase/supabase-js'
@@ -252,7 +252,7 @@ function calculateGPTCost(mode: Mode): number {
 }
 */
 
-export const modeOptions: Array<{value: ImagingMode, name: string, cost: number, uiType: ImagingProvider}> = [
+export const textToImageModelOptions: Array<{value: ImagingMode, name: string, cost: number, uiType: ImagingProvider}> = [
   { value: 'qwen-image', name: 'Qwen Image', cost: 4, uiType: "flux" },
   { value: 'gpt-image-1/low', name: 'GPT-image-1 low', cost: 2, uiType: "gpt-image-1" },
   { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', cost: 7, uiType: "gpt-image-1" },
@@ -262,4 +262,15 @@ export const modeOptions: Array<{value: ImagingMode, name: string, cost: number,
   { value: 'chibi', name: 'FLUX ちび', cost: 7, uiType: "flux" },
   { value: 'manga', name: 'FLUX まんが', cost: 7, uiType: "flux" },
   { value: 'comibg', name: 'シンプル背景', cost: 7, uiType: "flux" },
+];
+
+// Text edit model options (moved from TextEditModels.svelte)
+export const textEditModelOptions: Array<{ value: TextEditModel; name: string }> = [
+  { value: 'kontext/pro', name: 'Flux Kontext [Pro]' },
+  { value: 'kontext/max', name: 'Flux Kontext [Max]' },
+  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]' },
+  // { value: 'gpt-image-1/low', name: 'GPT-IMAGE-1 low' },
+  // { value: 'gpt-image-1/medium', name: 'GPT-IMAGE-1 medium' },
+  { value: 'gpt-image-1/high', name: 'GPT-IMAGE-1 high' },
+  { value: 'nano-banana', name: 'Nano Banana' },
 ];
