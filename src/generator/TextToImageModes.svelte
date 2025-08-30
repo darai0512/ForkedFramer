@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ImagingMode, ImagingProvider } from '$protocolTypes/imagingTypes';
   import { textToImageModeOptions, textEditModeOptions, type ModeChoice } from '../utils/feathralImaging';
+  import { calculateTextEditCost, calculateT2iCost } from '../utils/edgeFunctions/calculateCost';
   import { onMount } from 'svelte';
   import { createPreference } from '../preferences';
   import FeathralCost from '../utils/FeathralCost.svelte';
@@ -9,6 +10,8 @@
   export let mode: ModeChoice;
   // When true, also show text edit modes in the list
   export let allowTextEdit: boolean = false;
+  // Optionally provide image size to compute text edit costs
+  export let imageSize: { width: number; height: number } | undefined = undefined;
   export let comment: string = '';
   let internalMode: ModeChoice;
 
@@ -45,8 +48,12 @@
   let imagingOptions: ModeOption[] = [];
   let textEditOptions: ModeOption[] = [];
   let allOptions: ModeOption[] = [];
-  $: imagingOptions = textToImageModeOptions.map(o => ({ value: { type: 'imaging', value: o.value } as ModeChoice, name: o.name, cost: o.cost, uiType: o.uiType }));
-  $: textEditOptions = textEditModeOptions.map(o => ({ value: { type: 'textEdit', value: o.value } as ModeChoice, name: o.name, cost: 0 }));
+  $: imagingOptions = textToImageModeOptions.map(o => ({ value: { type: 'imaging', value: o.value } as ModeChoice, name: o.name, cost: imageSize ? calculateT2iCost(o.value as ImagingMode, imageSize) : o.cost, uiType: o.uiType }));
+  $: textEditOptions = textEditModeOptions.map(o => ({ 
+    value: { type: 'textEdit', value: o.value } as ModeChoice, 
+    name: o.name, 
+    cost: imageSize ? calculateTextEditCost(o.value, imageSize) : 0 
+  }));
   $: allOptions = allowTextEdit ? [...imagingOptions, ...textEditOptions] : imagingOptions;
 
   // 選択されたモードのコスト取得

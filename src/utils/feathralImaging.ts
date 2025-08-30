@@ -14,7 +14,7 @@ import { saveRequest } from '../filemanager/warehouse';
 import { analyticsEvent } from "../utils/analyticsEvent";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 // import { captureConsoleIntegration } from '@sentry/svelte';
-import { calculateT2iCost } from './edgeFunctions/calculateCost';
+import { calculateT2iCost, calculateTextEditCost } from './edgeFunctions/calculateCost';
 
 export type ImagingContext = {
   awakeWarningToken: boolean;
@@ -278,3 +278,15 @@ export const textEditModeOptions: Array<{ value: TextEditMode; name: string }> =
 type ImagingModeChoice = { type: "imaging", value: ImagingMode };
 type TextEditModeChoice = { type: "textEdit", value: TextEditMode };
 export type ModeChoice = ImagingModeChoice | TextEditModeChoice;
+
+// ModeChoice のコスト計算（TextEditModes を参考に）
+export function calculateModeChoiceCost(
+  size: { width: number; height: number },
+  choice: ModeChoice
+): number {
+  if (choice.type === 'imaging') {
+    return calculateT2iCost(choice.value, size);
+  } else {
+    return calculateTextEditCost(choice.value, size);
+  }
+}
