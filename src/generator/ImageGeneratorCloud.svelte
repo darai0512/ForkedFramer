@@ -9,7 +9,7 @@
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import type { ImagingMode, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, calculateCost, generateImage, textToImageModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { type ImagingContext, type ModeChoice, calculateCost, generateImage, textToImageModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
   import FluxModes from './TextToImageModes.svelte';
@@ -28,11 +28,11 @@
   let refered: Media | null= null;
   let postfix: string = "";
   let batchCount = 1;
-  let mode: ImagingMode = "schnell";
+  let mode: ModeChoice = { type: 'imaging', value: 'schnell' };
   let width = 1024;
   let height = 1024;
   let estimatedCost = 0;
-  let uiType: ImagingProvider;
+  let uiType: ImagingProvider | undefined;
   let sizeText = "1024x1024";
   let background: ImagingBackground = "opaque";
 
@@ -41,8 +41,9 @@
   }
 
   $: onChangeMode(mode, sizeText);
-  function onChangeMode(mode: ImagingMode, st: string) {
-    uiType = textToImageModeOptions.find(m => m.value === mode)?.uiType;
+  function onChangeMode(mode: ModeChoice, st: string) {
+    // allowTextEdit is false here, so we assume imaging
+    uiType = textToImageModeOptions.find(m => m.value === (mode.value as ImagingMode))?.uiType;
     if (uiType == 'gpt-image-1') {
       width = st == "1536x1024" ? 1536 : 1024;
       height = st == "1024x1536" ? 1536 : 1024;
@@ -51,7 +52,7 @@
   }
 
   async function generate() {
-    if (mode == 'pro' && 1 < batchCount ) {
+    if (mode.value === 'pro' && 1 < batchCount ) {
       toastStore.trigger({ message: $_('generator.proModeMultipleImagesNotSupported'), timeout: 2000 });
       batchCount = 1;
     }
@@ -72,7 +73,7 @@
         "gpt-image-1/high": 30,
         "qwen-image": 12,
       }
-      const delta = 1 / factorTable[mode] / pixelRatio;
+      const delta = 1 / factorTable[mode.value as ImagingMode] / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
       let imagingContext: ImagingContext = {
         awakeWarningToken: false,
@@ -85,7 +86,7 @@
       const canvases = await executeProcessAndNotify(
         5000, $_('generator.imageGenerated'),
         async () => {
-          return await generateImage(`${postfix}\n${prompt}`, {width,height}, mode, batchCount, background);
+          return await generateImage(`${postfix}\n${prompt}`, {width,height}, mode.value as ImagingMode, batchCount, background);
           // return { feathral: 99, result: { image: makePlainImage(imageRequest.width, imageRequest.height, "#00ff00ff") } };
         });
       gallery.push(...canvases.map(c => new ImageMedia(c)));
@@ -109,7 +110,7 @@
     toastStore.trigger({ message: $_('generator.copiedToClipboard'), timeout: 1500});
   }
 
-  $: estimatedCost = batchCount * calculateCost({width,height}, mode);
+  $: estimatedCost = batchCount * calculateCost({width,height}, mode.value as ImagingMode);
 
   onMount(async () => {
   });
@@ -122,7 +123,7 @@
 
   <h2>{$_('generator.mode')}</h2>
   <div class="vbox left gap-2 mode">
-    <FluxModes bind:mode={mode}/>
+    <FluxModes bind:mode={mode} allowTextEdit={false}/>
     <p>{$_('generator.costDisclaimer')}</p>
   </div>
 

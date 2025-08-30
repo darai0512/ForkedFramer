@@ -1,18 +1,33 @@
 <script lang="ts">
-  import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { textToImageModeOptions } from '../utils/feathralImaging';
+  import type { ImagingMode, ImagingProvider } from '$protocolTypes/imagingTypes';
+  import { textToImageModeOptions, textEditModeOptions, type ModeChoice } from '../utils/feathralImaging';
   import { onMount } from 'svelte';
   import { createPreference } from '../preferences';
   import FeathralCost from '../utils/FeathralCost.svelte';
 
-  export let mode: ImagingMode;
+  // Selected mode now supports both imaging and text edit
+  export let mode: ModeChoice;
+  // When true, also show text edit modes in the list
+  export let allowTextEdit: boolean = false;
   export let comment: string = '';
-  let internalMode: ImagingMode;
+  let internalMode: ModeChoice;
 
-  const preference = createPreference<ImagingMode>("imaging", "mode");
+  const preference = createPreference<ModeChoice>("imaging", "mode");
+
+  function toModeChoice(v: unknown): ModeChoice {
+    // Migration support: legacy value was ImagingMode (string)
+    if (typeof v === 'string') {
+      return { type: 'imaging', value: v as ImagingMode };
+    }
+    return (v as ModeChoice) ?? { type: 'imaging', value: 'schnell' };
+  }
+
+  // initialize immediately to avoid undefined during first render
+  internalMode = toModeChoice(mode);
 
   onMount(async () => {
-    internalMode = await preference.getOrDefault(mode);
+    const saved = await preference.getOrDefault(mode);
+    internalMode = toModeChoice(saved);
   });
 
   $: if (internalMode !== undefined) {
@@ -23,8 +38,19 @@
   // ドロップダウンの開閉状態
   let isOpen = false;
   
+  type ModeOption = { value: ModeChoice; name: string; cost: number; uiType?: ImagingProvider };
+  function same(a: ModeChoice, b?: ModeChoice) { return !!b && a.type === b.type && a.value === b.value; }
+
+  // Build selectable options
+  let imagingOptions: ModeOption[] = [];
+  let textEditOptions: ModeOption[] = [];
+  let allOptions: ModeOption[] = [];
+  $: imagingOptions = textToImageModeOptions.map(o => ({ value: { type: 'imaging', value: o.value } as ModeChoice, name: o.name, cost: o.cost, uiType: o.uiType }));
+  $: textEditOptions = textEditModeOptions.map(o => ({ value: { type: 'textEdit', value: o.value } as ModeChoice, name: o.name, cost: 0 }));
+  $: allOptions = allowTextEdit ? [...imagingOptions, ...textEditOptions] : imagingOptions;
+
   // 選択されたモードのコスト取得
-  $: selectedMode = textToImageModeOptions.find(option => option.value === internalMode);
+  $: selectedMode = internalMode ? allOptions.find(option => same(option.value, internalMode)) : undefined;
   
   // ドロップダウンの開閉を切り替える
   function toggleDropdown() {
@@ -32,7 +58,7 @@
   }
   
   // 選択処理
-  function selectOption(option: {value: ImagingMode, name: string, cost: number}) {
+  function selectOption(option: ModeOption) {
     internalMode = option.value;
     isOpen = false;
   }
@@ -60,10 +86,10 @@
     
     {#if isOpen}
       <div class="options-container">
-        {#each textToImageModeOptions as option}
+        {#each allOptions as option}
           <div
             class="option-item"
-            class:selected={option.value === internalMode}
+            class:selected={!!internalMode && same(option.value, internalMode)}
             on:click={() => selectOption(option)}
           >
             <span>{option.name}</span>

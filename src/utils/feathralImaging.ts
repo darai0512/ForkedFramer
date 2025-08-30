@@ -274,3 +274,7 @@ export const textEditModeOptions: Array<{ value: TextEditMode; name: string }> =
   { value: 'gpt-image-1/high', name: 'GPT-IMAGE-1 high' },
   { value: 'nano-banana', name: 'Nano Banana' },
 ];
+
+type ImagingModeChoice = { type: "imaging", value: ImagingMode };
+type TextEditModeChoice = { type: "textEdit", value: TextEditMode };
+export type ModeChoice = ImagingModeChoice | TextEditModeChoice;

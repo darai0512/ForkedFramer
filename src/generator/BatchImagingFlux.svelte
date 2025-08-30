@@ -3,7 +3,7 @@
   import Feathral from '../utils/Feathral.svelte';
   import { persistentText } from '../utils/persistentText';
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generatePageImages } from '../utils/feathralImaging';
+  import { type ImagingContext, type ModeChoice, generatePageImages } from '../utils/feathralImaging';
   import { busy, batchImagingPage } from './batchImagingStore';
   import { mainBook, redrawToken } from '../bookeditor/workspaceStore';
   import { commitBook } from '../lib/book/book';
@@ -14,13 +14,13 @@
   export let imagingContext: ImagingContext;
 
   let postfix: string = "";
-  let mode: ImagingMode = "schnell";
+  let mode: ModeChoice = { type: 'imaging', value: 'schnell' };
 
   async function execute() {
     console.log('execute');
     $busy = true;
     await generatePageImages(
-      imagingContext, postfix, mode, $batchImagingPage!, true, () => {imagingContext = imagingContext;});
+      imagingContext, postfix, mode.value as ImagingMode, $batchImagingPage!, true, () => {imagingContext = imagingContext;});
     $busy = false;
     console.log('execute done');
 
@@ -39,7 +39,7 @@
     <p><Feathral/></p>
     <div class="flex flex-row gap-2 items-center">
       <h3>{$_('generator.mode')}</h3>
-      <FluxModes bind:mode={mode} comment={$_('generator.perPanel')}/>
+      <FluxModes bind:mode={mode} allowTextEdit={false} comment={$_('generator.perPanel')}/>
       <h3>{$_('generator.style')}</h3>
       <textarea class="textarea textarea-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', onLoad: (v) => postfix = v}}/>
       </div>

@@ -6,7 +6,7 @@
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { type ImagingContext, type ModeChoice, generateMarkedPageImages, generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
@@ -51,7 +51,7 @@
     succeeded: 0,
     failed: 0,
   };
-  let imagingMode: ImagingMode = "schnell";
+  let imagingMode: ModeChoice = { type: 'imaging', value: 'schnell' };
   let plotInstruction: string = '';
 
   let rootFolder: Folder;
@@ -321,7 +321,7 @@
       const canvases = await executeProcessAndNotify(
         5000, imageGeneratedMessage,
         async () => {
-          return await generateImage(`${postfix}\n${c.appearance}, white background`, {width:512,height:512}, imagingMode, 1, "opaque");
+          return await generateImage(`${postfix}\n${c.appearance}, white background`, {width:512,height:512}, imagingMode.value as ImagingMode, 1, "opaque");
         });
 
       c.portrait = buildMedia(canvases[0]); // HTMLImageElement
@@ -370,7 +370,7 @@
     await generateMarkedPageImages(
       imagingContext, 
       postfix, 
-      imagingMode,
+      imagingMode.value as ImagingMode,
       (x: number) => {
         imageProgress = Math.max(0.001, x);
         imagingContext = imagingContext;
@@ -527,7 +527,7 @@
     </div>
     <div class="section">
       <h2>{$_('notebook.manual.imageGeneration')}</h2>
-      <FluxModes bind:mode={imagingMode} comment={$_('generator.perPanel')}/>
+      <FluxModes bind:mode={imagingMode} allowTextEdit={false} comment={$_('generator.perPanel')}/>
       <div class="flex flex-row mt-2 justify-center align-center gap-2">
         <span class="w-18">{$_('notebook.manual.style')}</span>
         <input type="text" class="input portrait-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}/>
