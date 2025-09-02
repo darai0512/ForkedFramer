@@ -6,7 +6,7 @@
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, type ModeChoice, generateMarkedPageImages, generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
@@ -17,7 +17,7 @@
   import NotebookCharacterList from './NotebookCharacterList.svelte';
   import Feathral from '../utils/Feathral.svelte';
   import { ProgressBar } from '@skeletonlabs/skeleton';
-  import FluxModes from '../generator/TextToImageModes.svelte';
+  import ImagingModes from '../generator/ImagingModes.svelte';
   import { adviseTheme, adviseCharacters, advisePlot, adviseScenario, adviseStoryboard, adviseCritique } from '../supabase';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import { type Folder } from '../lib/filesystem/fileSystem';
@@ -52,7 +52,7 @@
     failed: 0,
     refImages: {},
   };
-  let imagingMode: ModeChoice = { type: 'imaging', value: 'schnell' };
+  let imagingMode: ImagingMode = 'schnell';
   let plotInstruction: string = '';
 
   let rootFolder: Folder;
@@ -322,7 +322,7 @@
       const canvases = await executeProcessAndNotify(
         5000, imageGeneratedMessage,
         async () => {
-          return await generateImage(`${postfix}\n${c.appearance}, white background`, {width:512,height:512}, imagingMode.value as ImagingMode, 1, "opaque");
+          return await generateImage(`${postfix}\n${c.appearance}, white background`, {width:512,height:512}, imagingMode, 1, "opaque");
         });
 
       c.portrait = buildMedia(canvases[0]); // HTMLImageElement
@@ -538,7 +538,7 @@
     </div>
     <div class="section">
       <h2>{$_('notebook.manual.imageGeneration')}</h2>
-      <FluxModes bind:mode={imagingMode} allowTextEdit={true} imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')}/>
+      <ImagingModes bind:mode={imagingMode} group="all" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')}/>
       <p class="text-xs mt-1 mb-4">☆マークは登場人物画像を参照します</p>
       <div class="flex flex-row mt-2 justify-center align-center gap-2">
         <span class="w-18">{$_('notebook.manual.style')}</span>

@@ -54,7 +54,9 @@ export async function textEditFilm(film: Film) {
   
   // TextToImageRequest を構築（refImage>=1 で i2i/textedit 扱い）
   const inferProvider = (m: ImagingMode): ImagingProvider => {
-    return m.startsWith('gpt-image-1/') ? 'gpt-image-1' : 'flux';
+    if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
+    if (m === 'qwen-image') return 'qwen';
+    return 'flux';
   };
   const req: TextToImageRequest = {
     provider: inferProvider(request.model),
@@ -67,7 +69,7 @@ export async function textEditFilm(film: Film) {
   };
 
   const { requestId } = await textEdit(req);
-  const mode = `textedit:${request.model}`;
+  const mode = request.model;
   await saveRequest(get(mainBookFileSystem)!, "image", mode, requestId);
 
   const { mediaResources } = await pollMediaStatus({mediaType: "image", mode, requestId});

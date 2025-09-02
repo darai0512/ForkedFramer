@@ -3,7 +3,7 @@
   import { onMount } from 'svelte';
   import { createPreferenceStore } from '../preferences';
   import AutoSizeTextarea from '../notebook/AutoSizeTextarea.svelte';
-  import TextEditModels from '../generator/TextEditModes.svelte';
+  import ImagingModes from '../generator/ImagingModes.svelte';
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
   import { dropzone } from '../utils/dropzone';
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
@@ -234,7 +234,7 @@
         <div class="right-pane-content">
           <div class="setting-section">
             <h3>{$_('dialogs.textEdit.model')}</h3>
-            <TextEditModels bind:model={selectedModel} {imageSize} />
+            <ImagingModes bind:mode={selectedModel} {imageSize} group="textedit" />
           </div>
           
           {#if referenceImagesSupported}
