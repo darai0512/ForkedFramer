@@ -49,7 +49,7 @@
   let textEditOptions: ModeOption[] = [];
   let allOptions: ModeOption[] = [];
   $: imagingOptions = textToImageModeOptions.map(o => ({ value: { type: 'imaging', value: o.value } as ModeChoice, name: o.name, cost: imageSize ? calculateT2iCost(o.value as ImagingMode, imageSize) : o.cost, uiType: o.uiType }));
-  $: textEditOptions = textEditModeOptions.map(o => ({ 
+  $: textEditOptions = textEditModeOptions.filter(o => o.t2i).map(o => ({ 
     value: { type: 'textEdit', value: o.value } as ModeChoice, 
     name: o.name, 
     cost: imageSize ? calculateTextEditCost(o.value, imageSize) : 0 
@@ -58,6 +58,10 @@
 
   // 選択されたモードのコスト取得
   $: selectedMode = internalMode ? allOptions.find(option => same(option.value, internalMode)) : undefined;
+  // If current selection is not available (e.g., filtered out), fallback to first option
+  $: if (internalMode && !selectedMode && allOptions.length > 0) {
+    internalMode = allOptions[0].value;
+  }
   
   // ドロップダウンの開閉を切り替える
   function toggleDropdown() {

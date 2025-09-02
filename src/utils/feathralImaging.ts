@@ -265,14 +265,14 @@ export const textToImageModeOptions: Array<{value: ImagingMode, name: string, co
 ];
 
 // Text edit model options (moved from TextEditModels.svelte)
-export const textEditModeOptions: Array<{ value: TextEditMode; name: string }> = [
-  { value: 'kontext/pro', name: 'Flux Kontext [Pro]' },
-  { value: 'kontext/max', name: 'Flux Kontext [Max]' },
-  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]' },
-  // { value: 'gpt-image-1/low', name: 'GPT-IMAGE-1 low' },
-  // { value: 'gpt-image-1/medium', name: 'GPT-IMAGE-1 medium' },
-  { value: 'gpt-image-1/high', name: 'GPT-IMAGE-1 high' },
-  { value: 'nano-banana', name: 'Nano Banana' },
+export const textEditModeOptions: Array<{ value: TextEditMode; name: string, t2i: boolean }> = [
+  { value: 'kontext/pro', name: 'Flux Kontext [Pro]', t2i: false },
+  { value: 'kontext/max', name: 'Flux Kontext [Max]', t2i: false },
+  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]', t2i: false },
+  // { value: 'gpt-image-1/low', name: 'GPT-IMAGE-1 low', t2i: true },
+  // { value: 'gpt-image-1/medium', name: 'GPT-IMAGE-1 medium', t2i: true },
+  { value: 'gpt-image-1/high', name: 'GPT-IMAGE-1 high', t2i: true },
+  { value: 'nano-banana', name: 'Nano Banana', t2i: true },
 ];
 
 type ImagingModeChoice = { type: "imaging", value: ImagingMode };
