@@ -1,7 +1,7 @@
 // このモジュールはFramePlanner側で定義してコピーしているので、
 // FramePlannerSupabaseで変更してはだめ
 
-import type { ImagingMode, ImageToVideoModel, Padding, TextEditMode } from "$protocolTypes/imagingTypes";
+import type { ImagingMode, ImageToVideoModel, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes";
 
 /**
  * 画像サイズからメガピクセル単位でのコストを計算する
@@ -14,23 +14,28 @@ function calculateCostFromMegapixels(size: { width: number; height: number }, co
     return Math.ceil(pixels / (1024 * 1024) * costPerMegapixel);
 }
 
-export function calculateT2iCost(mode: ImagingMode, imageSize: { width: number; height: number }): number {
-    // 1Charge = $0.01として
-    // fal.aiの160%くらい
-    const costs: { [key in ImagingMode]: number } = {
-        "schnell": 1,
-        "pro": 8,
-        "chibi": 7,
-        "comibg": 7,
-        "manga": 7,
-        "gpt-image-1/low": 2,
-        "gpt-image-1/medium": 7,
-        "gpt-image-1/high": 30,
-        "qwen-image": 4,
-    };
-    const costPerMegapixel = costs[mode];
-    return calculateCostFromMegapixels(imageSize, costPerMegapixel);
-}
+type CostSpec = { kind: 'fixed', value: number } | { kind: 'perMP', value: number };
+
+// モード単位で単一仕様に一般化（ref画像数には非依存）
+const COST_SPEC: Record<ImagingMode, CostSpec> = {
+    // FLUX 系（面積比例）
+    "schnell": { kind: 'perMP', value: 1 },
+    "pro": { kind: 'perMP', value: 8 },
+    "chibi": { kind: 'perMP', value: 7 },
+    "comibg": { kind: 'perMP', value: 7 },
+    "manga": { kind: 'perMP', value: 7 },
+    // OpenAI 系（面積比例）
+    "gpt-image-1/low": { kind: 'perMP', value: 2 },
+    "gpt-image-1/medium": { kind: 'perMP', value: 7 },
+    "gpt-image-1/high": { kind: 'perMP', value: 30 },
+    // Qwen
+    "qwen-image": { kind: 'perMP', value: 4 },
+    // Kontext/Nano 系（固定 or 面積比例）
+    "kontext/pro": { kind: 'fixed', value: 6 },
+    "kontext/max": { kind: 'fixed', value: 13 },
+    "kontext/inscene": { kind: 'perMP', value: 7 },
+    "nano-banana": { kind: 'fixed', value: 6 },
+};
 
 export function culculateI2vCost(model: ImageToVideoModel, duration: string): number {
     switch (model) {
@@ -63,37 +68,21 @@ export function calculateInPaintingCost(size: { width: number; height: number })
     return calculateCostFromMegapixels(size, 8);
 }
 
-export function calculateTextEditCost(model: TextEditMode, imageSize: { width: number; height: number }): number {
-    // 固定値
-    switch (model) {
-        case 'kontext/pro':
-            return 6;
-        case 'kontext/max':
-            return 13;
-        case 'nano-banana':
-            return 6;
-    }
+function calcFromSpec(spec: CostSpec, size: { width: number; height: number }): number {
+    return spec.kind === 'fixed' ? spec.value : calculateCostFromMegapixels(size, spec.value);
+}
 
-    // 画像サイズから計算
-    let costPerMegapixel = 0;
-    switch (model) {
-        case 'kontext/inscene':
-            costPerMegapixel = 7;
-            break;
-        case 'gpt-image-1/low':
-            costPerMegapixel = 2;
-            break;
-        case 'gpt-image-1/medium':
-            costPerMegapixel = 7;
-            break;
-        case 'gpt-image-1/high':
-            costPerMegapixel = 30;
-            break;
-        default:
-            throw new Error("Invalid model for text edit cost calculation");
-    }
+/**
+ * 統合: refImage の数に応じて t2i か textedit/i2i のコストを計算
+ * refImageCount === 0 -> t2i, 1 以上 -> textedit/i2i
+ */
+export function calculateImagingCost(mode: ImagingMode, imageSize: { width: number; height: number }): number {
+    return calcFromSpec(COST_SPEC[mode], imageSize);
+}
 
-    return calculateCostFromMegapixels(imageSize, costPerMegapixel);
+// リクエストオブジェクトから直接コストを計算
+export function calculateRequestCost(req: TextToImageRequest): number {
+    return calculateImagingCost(req.mode, req.imageSize);
 }
 
 export function calculateSeedanceCost(baseCost: number, duration: number, pixels: number): number {

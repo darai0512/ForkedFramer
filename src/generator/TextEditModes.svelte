@@ -1,24 +1,25 @@
 <script lang="ts">
-  import type { TextEditMode } from '$protocolTypes/imagingTypes';
+  import type { ImagingMode } from '$protocolTypes/imagingTypes';
   import { onMount } from 'svelte';
   import { createPreference } from '../preferences';
   import FeathralCost from '../utils/FeathralCost.svelte';
-  import { calculateTextEditCost } from '../utils/edgeFunctions/calculateCost';
+  import { calculateImagingCost } from '../utils/edgeFunctions/calculateCost';
   import { textEditModeOptions } from '../utils/feathralImaging';
 
-  export let model: TextEditMode = 'nano-banana';
+  export let model: ImagingMode = 'nano-banana';
   export let comment: string = '';
   export let imageSize: { width: number; height: number };
-  let internalModel: TextEditMode;
+  let internalModel: ImagingMode;
 
-  const preference = createPreference<TextEditMode>("imaging", "textEditModel");
+  const preference = createPreference<ImagingMode>("imaging", "textEditModel");
 
   // モデルオプション（feathralImaging.ts から提供）
   
   // 各モデルのコストを動的に計算
   $: modelOptionsWithCost = textEditModeOptions.map(option => ({
     ...option,
-    cost: calculateTextEditCost(option.value, imageSize)
+    // ref画像数に非依存の単一仕様
+    cost: calculateImagingCost(option.value, imageSize)
   }));
 
   onMount(async () => {
@@ -42,7 +43,7 @@
   }
   
   // 選択処理
-  function selectOption(option: {value: TextEditMode, name: string, cost?: number}) {
+  function selectOption(option: {value: ImagingMode, name: string, cost?: number}) {
     internalModel = option.value;
     isOpen = false;
   }

@@ -72,6 +72,11 @@
         "gpt-image-1/medium": 30,
         "gpt-image-1/high": 30,
         "qwen-image": 12,
+        // 追加統合分（実際にはここでは選べないが型合わせ）
+        "kontext/pro": 12,
+        "kontext/max": 12,
+        "kontext/inscene": 12,
+        "nano-banana": 12,
       }
       const delta = 1 / factorTable[mode.value as ImagingMode] / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);

@@ -11,7 +11,6 @@ import {
   type ImagingStatusRequest, ImagingStatusRequestSchema, ImagingStatusResponseSchema,
   type VisionRequest, VisionRequestSchema, VisionResponseSchema,
   type InPaintRequest, InPaintRequestSchema, InPaintResponseSchema,
-  type TextEditRequest, TextEditRequestSchema, TextEditResponseSchema,
 } from "./utils/edgeFunctions/types/imagingTypes.d";
 import { EraseFileResponseSchema, GetDownloadUrlResponseSchema, GetUploadUrlResponseSchema } from "$protocolTypes/cloudFileTypes.d";
 import { type ListMaterialsRequest, ListMaterialsRequestSchema, ListMaterialsResponseSchema, type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes.d";
@@ -87,8 +86,9 @@ export async function inPaint(req: InPaintRequest) {
   return await invoke("charged/imaging/inpaint", req, InPaintRequestSchema, InPaintResponseSchema);
 }
 
-export async function textEdit(req: TextEditRequest) {
-  return await invoke("charged/imaging/textedit", req, TextEditRequestSchema, TextEditResponseSchema);
+// TextEdit は TextToImage に統合（imageDataUrls の数で分岐）
+export async function textEdit(req: TextToImageRequest) {
+  return await invoke("charged/imaging/t2i", req, TextToImageRequestSchema, TextToImageResponseSchema);
 }
 
 export async function removeBg(req: RemoveBgRequest) {

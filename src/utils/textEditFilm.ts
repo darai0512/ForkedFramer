@@ -9,13 +9,13 @@ import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
 import { loading } from './loadingStore';
-import type { TextEditMode } from '$protocolTypes/imagingTypes';
+import type { ImagingMode, ImagingProvider, TextToImageRequest, ImagingBackground } from '$protocolTypes/imagingTypes';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 
 type TextEditDialogResult = {
   image: HTMLCanvasElement;
   prompt: string;
-  model: TextEditMode;
+  model: ImagingMode;
   referenceImages: Media[];
 }
 
@@ -52,7 +52,21 @@ export async function textEditFilm(film: Film) {
   }
   console.log(`Added ${request.referenceImages.length} reference images to request`);
   
-  const { requestId } = await textEdit({imageDataUrls, prompt: request.prompt, model: request.model});
+  // TextToImageRequest を構築（refImage>=1 で i2i/textedit 扱い）
+  const inferProvider = (m: ImagingMode): ImagingProvider => {
+    return m.startsWith('gpt-image-1/') ? 'gpt-image-1' : 'flux';
+  };
+  const req: TextToImageRequest = {
+    provider: inferProvider(request.model),
+    prompt: request.prompt,
+    imageSize: { width: request.image.width, height: request.image.height },
+    numImages: 1,
+    mode: request.model,
+    background: 'opaque' as ImagingBackground,
+    imageDataUrls,
+  };
+
+  const { requestId } = await textEdit(req);
   const mode = `textedit:${request.model}`;
   await saveRequest(get(mainBookFileSystem)!, "image", mode, requestId);
 

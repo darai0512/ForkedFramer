@@ -4,14 +4,28 @@ import { z } from "zod";
 export const ImagingBackgroundSchema = z.enum(["opaque", "transparent"]);
 export type ImagingBackground = z.infer<typeof ImagingBackgroundSchema>;
 
-export const ImagingModeSchema = z.enum(["schnell", "pro", "chibi", "manga", "comibg", "gpt-image-1/low", "gpt-image-1/medium", "gpt-image-1/high", "qwen-image"]);
+export const ImagingModeSchema = z.enum([
+  "schnell",
+  "pro",
+  "chibi",
+  "manga",
+  "comibg",
+  "gpt-image-1/low",
+  "gpt-image-1/medium",
+  "gpt-image-1/high",
+  "qwen-image",
+  // TextEditMode から統合
+  "kontext/pro",
+  "kontext/max",
+  "kontext/inscene",
+  "nano-banana",
+]);
 export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 
 export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "qwen"]);
 export type ImagingProvider = z.infer<typeof ImagingProvider>;
 
-export const TextEditModeSchema = z.enum(["kontext/pro", "kontext/max", "kontext/inscene", "gpt-image-1/low", "gpt-image-1/medium", "gpt-image-1/high", "nano-banana"])
-export type TextEditMode = z.infer<typeof TextEditModeSchema>;
+// TextEditMode は ImagingMode に統合したため削除
 
 export const TextToImageRequestSchema = z.object({
   provider: ImagingProviderSchema,
@@ -23,6 +37,8 @@ export const TextToImageRequestSchema = z.object({
   numImages: z.number(),
   mode: ImagingModeSchema,
   background: ImagingBackgroundSchema,
+  // TextEdit 用の参照画像を Imaging にも許容
+  imageDataUrls: z.array(z.string()).optional(),
 });
 export type TextToImageRequest = z.infer<typeof TextToImageRequestSchema>;
 
@@ -161,15 +177,3 @@ export const TextMaskResponseSchema = z.object({
   }))
 });
 export type TextMaskResponse = z.infer<typeof TextMaskResponseSchema>;
-
-export const TextEditRequestSchema = z.object({
-  imageDataUrls: z.array(z.string()),
-  prompt: z.string(),
-  model: TextEditModeSchema,
-});
-export type TextEditRequest = z.infer<typeof TextEditRequestSchema>;
-
-export const TextEditResponseSchema = z.object({
-  requestId: z.string().describe("request id"),
-});
-export type TextEditResponse = z.infer<typeof TextEditResponseSchema>;

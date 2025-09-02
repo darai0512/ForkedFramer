@@ -9,12 +9,12 @@ import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, cons
 import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
 import { updateToken } from "../utils/accountStore";
-import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextEditMode } from './edgeFunctions/types/imagingTypes';
+import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
 import { analyticsEvent } from "../utils/analyticsEvent";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 // import { captureConsoleIntegration } from '@sentry/svelte';
-import { calculateT2iCost, calculateTextEditCost } from './edgeFunctions/calculateCost';
+import { calculateImagingCost } from './edgeFunctions/calculateCost';
 import { textEdit } from '../supabase';
 
 export type ImagingContext = {
@@ -239,7 +239,7 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
 async function textEditFrameImage(
   imagingContext: ImagingContext,
   postfix: string,
-  model: TextEditMode,
+  model: ImagingMode,
   leafLayout: Layout,
   paperSize: Vector
 ) {
@@ -268,7 +268,21 @@ async function textEditFrameImage(
     }
 
     const prompt = `${postfix}\n${frame.prompt}`;
-    const { requestId } = await textEdit({ imageDataUrls, prompt, model });
+    // TextToImageRequest を構築
+    const inferProvider = (m: ImagingMode): ImagingProvider => {
+      return m.startsWith('gpt-image-1/') ? 'gpt-image-1' : 'flux';
+    };
+    const size = { width: Math.max(1, Math.round(leafLayout.size[0])), height: Math.max(1, Math.round(leafLayout.size[1])) };
+    const req: TextToImageRequest = {
+      provider: inferProvider(model),
+      prompt,
+      imageSize: size,
+      numImages: 1,
+      mode: model,
+      background: 'opaque',
+      imageDataUrls,
+    };
+    const { requestId } = await textEdit(req);
     const modeStr = `textedit:${model}`;
     await saveRequest(get(mainBookFileSystem)!, 'image', modeStr, requestId);
 
@@ -297,7 +311,7 @@ async function textEditFrameImage(
 async function textEditPageImages(
   imagingContext: ImagingContext,
   postfix: string,
-  model: TextEditMode,
+  model: ImagingMode,
   page: Page,
   onProgress: () => void
 ) {
@@ -324,7 +338,7 @@ async function textEditPageImages(
 
 export function calculateCost(size: {width:number,height:number}, mode: ImagingMode): number {
   console.log("calculateCost", size, mode);
-  return calculateT2iCost(mode, size);
+  return calculateImagingCost(mode, size);
 }
 
 /*
@@ -357,7 +371,7 @@ export const textToImageModeOptions: Array<{value: ImagingMode, name: string, co
 ];
 
 // Text edit model options (moved from TextEditModels.svelte)
-export const textEditModeOptions: Array<{ value: TextEditMode; name: string, t2i: boolean }> = [
+export const textEditModeOptions: Array<{ value: ImagingMode; name: string, t2i: boolean }> = [
   { value: 'kontext/pro', name: 'Flux Kontext [Pro]', t2i: false },
   { value: 'kontext/max', name: 'Flux Kontext [Max]', t2i: false },
   { value: 'kontext/inscene', name: 'Flux Kontext [InScene]', t2i: false },
@@ -368,17 +382,10 @@ export const textEditModeOptions: Array<{ value: TextEditMode; name: string, t2i
 ];
 
 type ImagingModeChoice = { type: "imaging", value: ImagingMode };
-type TextEditModeChoice = { type: "textEdit", value: TextEditMode };
+type TextEditModeChoice = { type: "textEdit", value: ImagingMode };
 export type ModeChoice = ImagingModeChoice | TextEditModeChoice;
 
 // ModeChoice のコスト計算（TextEditModes を参考に）
-export function calculateModeChoiceCost(
-  size: { width: number; height: number },
-  choice: ModeChoice
-): number {
-  if (choice.type === 'imaging') {
-    return calculateT2iCost(choice.value, size);
-  } else {
-    return calculateTextEditCost(choice.value, size);
-  }
+export function calculateModeChoiceCost(size: { width: number; height: number }, choice: ModeChoice): number {
+  return calculateImagingCost(choice.value, size);
 }
