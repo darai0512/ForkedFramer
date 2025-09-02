@@ -31,18 +31,17 @@
   onMount(async () => {
     const saved = await preference.getOrDefault(mode);
     internalMode = toModeChoice(saved);
+    mode = internalMode;
   });
 
-  $: if (internalMode !== undefined) {
-    mode = internalMode;
-    preference.set(internalMode).then(() => console.log("save done", internalMode));
-  }
+  // keep prop 'mode' in sync on user actions or coercion; avoid general reactive sync to prevent cycles
   
   // ドロップダウンの開閉状態
   let isOpen = false;
   
   type ModeOption = { value: ModeChoice; name: string; cost: number; uiType?: ImagingProvider };
   function same(a: ModeChoice, b?: ModeChoice) { return !!b && a.type === b.type && a.value === b.value; }
+  function included(choice: ModeChoice, opts: ModeOption[]) { return opts.some(op => same(op.value, choice)); }
 
   // Build selectable options
   let imagingOptions: ModeOption[] = [];
@@ -51,16 +50,20 @@
   $: imagingOptions = textToImageModeOptions.map(o => ({ value: { type: 'imaging', value: o.value } as ModeChoice, name: o.name, cost: imageSize ? calculateT2iCost(o.value as ImagingMode, imageSize) : o.cost, uiType: o.uiType }));
   $: textEditOptions = textEditModeOptions.filter(o => o.t2i).map(o => ({ 
     value: { type: 'textEdit', value: o.value } as ModeChoice, 
-    name: o.name, 
+    name: `☆ ${o.name}`, 
     cost: imageSize ? calculateTextEditCost(o.value, imageSize) : 0 
   }));
   $: allOptions = allowTextEdit ? [...imagingOptions, ...textEditOptions] : imagingOptions;
 
   // 選択されたモードのコスト取得
   $: selectedMode = internalMode ? allOptions.find(option => same(option.value, internalMode)) : undefined;
-  // If current selection is not available (e.g., filtered out), fallback to first option
-  $: if (internalMode && !selectedMode && allOptions.length > 0) {
+  // If current selection is not available (e.g., filtered out), fallback once to first option
+  let coercedOnce = false;
+  $: if (!coercedOnce && internalMode && allOptions.length > 0 && !included(internalMode, allOptions)) {
     internalMode = allOptions[0].value;
+    mode = internalMode;
+    coercedOnce = true;
+    preference.set(internalMode).then(() => console.log("save done", internalMode));
   }
   
   // ドロップダウンの開閉を切り替える
@@ -72,6 +75,8 @@
   function selectOption(option: ModeOption) {
     internalMode = option.value;
     isOpen = false;
+    mode = internalMode;
+    preference.set(internalMode).then(() => console.log("save done", internalMode));
   }
   
   // 外部クリックでドロップダウンを閉じる
@@ -84,7 +89,7 @@
 
 <svelte:window on:click={handleClickOutside} />
 
-<div class="vbox left gap-2 mode">
+<div class="mode-row">
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div class="custom-select-container" on:click|stopPropagation>
@@ -111,11 +116,17 @@
     {/if}
   </div>
   {#if comment}
-    <div class="comment">{comment}</div>
+    <div class="comment-inline">{comment}</div>
   {/if}
 </div>
 
 <style>
+  .mode-row {
+    display: flex;
+    align-items: center; /* 縦センタリング */
+    gap: 8px;
+  }
+
   .custom-select-container {
     position: relative;
     display: inline-block;
@@ -200,11 +211,10 @@
     background-color: #e0f2fe; /* ホバー時は他と同じ薄い水色に */
   }
   
-  .comment {
+  .comment-inline {
     font-family: '源暎アンチック';
     font-size: 12px;
-    margin-top: -8px;
-    width: 100%;
-    text-align: center;
+    color: var(--color-surface-700, #334155);
+    white-space: nowrap; /* 折り返さず同じ行に保持 */
   }
 </style>

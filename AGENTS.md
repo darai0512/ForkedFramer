@@ -39,3 +39,8 @@
 - Copy `.env.example` → `.env`, fill keys (Firebase, Supabase, Sentry). Never commit secrets.
 - HTTPS dev: use `npm run dev-https` with the provided local certs.
 - Cloudflare config in `wrangler.toml`; avoid editing prod bindings in PRs without review.
+
+# Notice
+
+応答は日本語で
+gitコミットは指示するまでしなくてよい

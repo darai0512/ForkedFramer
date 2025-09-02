@@ -528,6 +528,7 @@
     <div class="section">
       <h2>{$_('notebook.manual.imageGeneration')}</h2>
       <FluxModes bind:mode={imagingMode} allowTextEdit={true} imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')}/>
+      <p class="text-xs mt-1 mb-4">☆マークは登場人物画像を参照します</p>
       <div class="flex flex-row mt-2 justify-center align-center gap-2">
         <span class="w-18">{$_('notebook.manual.style')}</span>
         <input type="text" class="input portrait-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}/>
