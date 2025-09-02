@@ -182,7 +182,7 @@ export async function listMaterials(req: ListMaterialsRequest) {
 export async function notifyShare(text: string) {
 }
 
-export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'video', mode: string, requestId: string}) {
+export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'video', mode: string, requestId: string, model: string }) {
   const isVideo = mediaReference.mediaType === 'video';
   let interval = isVideo ? 10000 : 1000;
 

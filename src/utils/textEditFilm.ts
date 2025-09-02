@@ -68,11 +68,11 @@ export async function textEditFilm(film: Film) {
     imageDataUrls,
   };
 
-  const { requestId } = await textEdit(req);
+  const { requestId, model } = await textEdit(req);
   const mode = request.model;
-  await saveRequest(get(mainBookFileSystem)!, "image", mode, requestId);
+  await saveRequest(get(mainBookFileSystem)!, "image", mode, requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode, requestId});
+  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode, requestId, model});
   loading.set(false);
 
   const newFilm = film.clone();

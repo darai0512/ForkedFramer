@@ -32,11 +32,11 @@ export async function outPaintFilm(film: Film, padding: {left: number, top: numb
 
   const size = { width: imageMedia.naturalWidth, height: imageMedia.naturalHeight };
   const imageUrl = imageMedia.drawSourceCanvas.toDataURL("image/png");
-  const { requestId } = await outPaint({dataUrl: imageUrl, size, padding});
+  const { requestId, model } = await outPaint({dataUrl: imageUrl, size, padding});
   console.log("outpainting result", requestId);
-  await saveRequest(get(mainBookFileSystem)!, "image", "outpaint", requestId);
+  await saveRequest(get(mainBookFileSystem)!, "image", "outpaint", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({ mediaType: "image", mode: "outpaint", requestId});
+  const { mediaResources } = await pollMediaStatus({ mediaType: "image", mode: "outpaint", requestId, model});
   const canvas = mediaResources[0] as HTMLCanvasElement;
 
   const newFilm = film.clone();

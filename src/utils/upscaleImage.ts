@@ -42,10 +42,10 @@ export async function upscaleCanvas(canvas: HTMLCanvasElement, warning: string |
   }
 
   loading.set(true);
-  const { requestId } = await upscale(request);
-  await saveRequest(get(mainBookFileSystem)!, "image", "upscale", requestId);
+  const { requestId, model } = await upscale(request);
+  await saveRequest(get(mainBookFileSystem)!, "image", "upscale", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "upscale", requestId});
+  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "upscale", requestId, model});
   loading.set(false);
 
   return mediaResources[0] as HTMLCanvasElement;
@@ -64,10 +64,10 @@ export async function upscaleCanvasWithoutDialog(canvas: HTMLCanvasElement): Pro
   };
 
   loading.set(true);
-  const { requestId } = await upscale(request);
-  await saveRequest(get(mainBookFileSystem)!, "image", "upscale", requestId);
+  const { requestId, model } = await upscale(request);
+  await saveRequest(get(mainBookFileSystem)!, "image", "upscale", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "upscale", requestId});
+  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "upscale", requestId, model});
   loading.set(false);
 
   return mediaResources[0] as HTMLCanvasElement;

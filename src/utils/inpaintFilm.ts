@@ -68,10 +68,10 @@ export async function inpaintFilm(film: Film) {
   loading.set(true);
   const maskDataUrl = request.mask.toDataURL("image/png");
   const imageDataUrl = request.image.toDataURL("image/png");
-  const { requestId } = await inPaint({maskDataUrl, imageDataUrl, prompt: request.prompt});
-  await saveRequest(get(mainBookFileSystem)!, "image", "inpaint", requestId);
+  const { requestId, model } = await inPaint({maskDataUrl, imageDataUrl, prompt: request.prompt});
+  await saveRequest(get(mainBookFileSystem)!, "image", "inpaint", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "inpaint", requestId});
+  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "inpaint", requestId, model});
   loading.set(false);
 
   film.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);

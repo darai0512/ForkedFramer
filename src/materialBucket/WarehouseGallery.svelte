@@ -24,10 +24,10 @@
     deleteEntry($gadgetFileSystem!, requestId!);
   }
 
-  async function handleRequest(mediaType: MediaType, mode: string, request_id: string) {
+  async function handleRequest(mediaType: MediaType, mode: string, request_id: string, model: string) {
     try {
-      const { mediaResources, urls } = await pollMediaStatus({mediaType, mode, requestId: request_id});
-      await saveEntity($gadgetFileSystem!, mediaType, mode, request_id, urls);
+      const { mediaResources, urls } = await pollMediaStatus({mediaType, mode, requestId: request_id, model});
+      await saveEntity($gadgetFileSystem!, mediaType, mode, request_id, model, urls);
       return mediaResources.map((mediaResource) => {
         const media = buildMedia(mediaResource);
         return media;
@@ -71,7 +71,7 @@
       switch (entry.type) {
         case "request":
           const f = async () => {
-            return await handleRequest(entry.mediaType, entry.mode, entry.requestId);
+            return await handleRequest(entry.mediaType, entry.mode, entry.requestId, entry.model);
           };
           newItems.push(f);
           newRequestIds.set(f, entry.requestId);

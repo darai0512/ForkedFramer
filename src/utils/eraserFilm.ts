@@ -48,10 +48,10 @@ export async function eraserFilm(film: Film) {
   loading.set(true);
   const maskDataUrl = request.mask.toDataURL("image/png");
   const imageDataUrl = request.image.toDataURL("image/png");
-  const { requestId } = await eraser({maskDataUrl, imageDataUrl});
-  await saveRequest(get(mainBookFileSystem)!, "image", "eraser", requestId);
+  const { requestId, model } = await eraser({maskDataUrl, imageDataUrl});
+  await saveRequest(get(mainBookFileSystem)!, "image", "eraser", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "eraser", requestId});
+  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "eraser", requestId, model});
   loading.set(false);
 
   film.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);

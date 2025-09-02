@@ -43,10 +43,10 @@
 
     loading.set(true);
     try {
-      const { requestId: request_id } = await image2Video(request);
-      await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id);
+      const { requestId: request_id, model } = await image2Video(request);
+      await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id, model);
 
-      const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id });
+      const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id, model });
       
       // 生成した動画を素材集に送る
       const result = await sendMediaToMaterialCollection(newMedia, `generated-video-${new Date().toISOString().replace(/[:.]/g, '-')}.mp4`);

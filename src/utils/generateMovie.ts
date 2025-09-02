@@ -29,10 +29,10 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
 
   loading.set(true);
   try {
-    const { requestId: request_id } = await image2Video(request);
-    await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id);
+    const { requestId: request_id, model } = await image2Video(request);
+    await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id, model);
 
-    const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id });
+    const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id, model });
     const newFilm = new Film(newMedia);
     filmProcessorQueue.publish(newFilm);
 

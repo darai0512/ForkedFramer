@@ -6,6 +6,7 @@ export interface RemoteRequest {
   mediaType: "image" | "video";
   mode: string;
   requestId: string;
+  model: string;
 }
 
 export interface RemoteEntity {
@@ -14,12 +15,13 @@ export interface RemoteEntity {
   mediaType: "image" | "video";
   mode: string;
   requestId: string;
+  model: string;
   mediaUrls: string[];
 }
 
 export type RemoteEntry = RemoteEntity | RemoteRequest;
 
-export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "video", mode: string, requestId: string) {
+export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "video", mode: string, requestId: string, model: string) {
   const root = await fileSystem.getRoot();
   const warehouse = (await root.getNodeByName("倉庫"))!.asFolder()!;
 
@@ -29,13 +31,14 @@ export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "
     createdAt: new Date().toISOString(),
     mediaType,
     mode,
-    requestId, 
+    requestId,
+    model,
   });
 
   await warehouse.link(requestId, file.id);
 }
 
-export async function saveEntity(fileSystem: FileSystem, mediaType: "image" | "video", mode: string, requestId: string, mediaUrls: string[]) {
+export async function saveEntity(fileSystem: FileSystem, mediaType: "image" | "video", mode: string, requestId: string, model: string, mediaUrls: string[]) {
   const root = await fileSystem.getRoot();
   const warehouse = (await root.getNodeByName("倉庫"))!.asFolder()!;
 
@@ -46,6 +49,7 @@ export async function saveEntity(fileSystem: FileSystem, mediaType: "image" | "v
     mediaType,
     mode,
     requestId,
+    model,
     mediaUrls,
   });
 }

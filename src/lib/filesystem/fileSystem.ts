@@ -10,7 +10,7 @@ export type EmbodiedEntry = [BindId, string, Node];
 
 // リモートメディア=fal.aiなどの画像生成サービス側にあり、まだダウンロードしていないファイル
 export type MediaType  = 'image' | 'video';
-export type RemoteMediaReference = { mediaType: MediaType, mode: string, requestId: string };
+export type RemoteMediaReference = { mediaType: MediaType, mode: string, requestId: string, model: string };
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;
 export type MediaResource = MaterializedType | RemoteMediaReference;
 

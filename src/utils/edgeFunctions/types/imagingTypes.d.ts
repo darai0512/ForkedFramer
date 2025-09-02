@@ -44,6 +44,7 @@ export type TextToImageRequest = z.infer<typeof TextToImageRequestSchema>;
 
 export const TextToImageResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type TextToImageResponse = z.infer<typeof TextToImageResponseSchema>;
 
@@ -67,6 +68,7 @@ export type OutPaintRequest = z.infer<typeof OutPaintRequestSchema>;
 
 export const OutPaintResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type OutPaintResponse = z.infer<typeof OutPaintResponseSchema>;
 
@@ -77,12 +79,14 @@ export type RemoveBgRequest = z.infer<typeof RemoveBgRequestSchema>;
 
 export const RemoveBgResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type RemoveBgResponse = z.infer<typeof RemoveBgResponseSchema>;
 
 export const ImagingStatusRequestSchema = z.object({
   mode: z.string(),
   requestId: z.string(),
+  model: z.string(),
 });
 export type ImagingStatusRequest = z.infer<typeof ImagingStatusRequestSchema>;
 
@@ -110,6 +114,7 @@ export type ImageToVideoRequest = z.infer<typeof ImageToVideoRequestSchema>;
 
 export const ImageToVideoResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type ImageToVideoResponse = z.infer<typeof ImageToVideoResponseSchema>;
 
@@ -133,6 +138,7 @@ export type UpscaleRequest = z.infer<typeof UpscaleRequestSchema>;
 
 export const UpscaleResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type UpscaleResponse = z.infer<typeof UpscaleResponseSchema>;
 
@@ -144,6 +150,7 @@ export type EraserRequest = z.infer<typeof EraserRequestSchema>;
 
 export const EraserResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type EraserResponse = z.infer<typeof EraserResponseSchema>;
 
@@ -156,6 +163,7 @@ export type InPaintRequest = z.infer<typeof InPaintRequestSchema>;
 
 export const InPaintResponseSchema = z.object({
   requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
 });
 export type InPaintResponse = z.infer<typeof InPaintResponseSchema>;
 

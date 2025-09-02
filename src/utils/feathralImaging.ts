@@ -39,11 +39,11 @@ function inferProvider(m: ImagingMode): ImagingProvider {
 
 async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvasElement[]> {
   try {
-    const { requestId } = await text2Image(req);
-    await saveRequest(get(mainBookFileSystem)!, 'image', req.mode, requestId);
+    const { requestId, model } = await text2Image(req);
+    await saveRequest(get(mainBookFileSystem)!, 'image', req.mode, requestId, model);
 
     const perf = performance.now();
-    const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: req.mode, requestId });
+    const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: req.mode, requestId, model });
     console.log('submitImagingRequest', performance.now() - perf);
     return mediaResources as HTMLCanvasElement[];
   } catch (error: any) {
