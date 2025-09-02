@@ -15,6 +15,7 @@ import { analyticsEvent } from "../utils/analyticsEvent";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 // import { captureConsoleIntegration } from '@sentry/svelte';
 import { calculateT2iCost, calculateTextEditCost } from './edgeFunctions/calculateCost';
+import { textEdit } from '../supabase';
 
 export type ImagingContext = {
   awakeWarningToken: boolean;
@@ -22,6 +23,7 @@ export type ImagingContext = {
   total: number;
   succeeded: number;
   failed: number;
+  refImages: Record<string, HTMLCanvasElement>;
 }
 
 export function isContentsPolicyViolationError(error: any): boolean {
@@ -146,7 +148,7 @@ export async function generateImage(prompt: string, image_size: {width: number, 
   }
 }
 
-export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, onProgress: (progress: number) => void) {
+export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, mode: ModeChoice, onProgress: (progress: number) => void) {
   const marks = get(bookOperators)!.getMarks();
   const newPages = get(mainBook)!.pages.filter((p, i) => marks[i]);
   if (newPages.length == 0) {
@@ -174,7 +176,11 @@ export async function generateMarkedPageImages(imagingContext: ImagingContext, p
     imagingContext.succeeded = 0;
     imagingContext.failed = 0;
     onProgress(progress / sum);
-    await generatePageImages(imagingContext, postfix, mode, page, false, onProgress2);
+    if (mode.type === 'imaging') {
+      await generatePageImages(imagingContext, postfix, mode.value, page, false, onProgress2);
+    } else {
+      await textEditPageImages(imagingContext, postfix, mode.value, page, onProgress2);
+    }
   }
 }
 
@@ -228,6 +234,92 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     imagingContext.failed++;
     throw error;
   }
+}
+
+async function textEditFrameImage(
+  imagingContext: ImagingContext,
+  postfix: string,
+  model: TextEditMode,
+  leafLayout: Layout,
+  paperSize: Vector
+) {
+  try {
+    const frame = leafLayout.element;
+    const imageDataUrls: string[] = [];
+
+    // 参考画像の追加: プロンプト中の [ref:####] を抽出して対応する refImages を添付
+    if (Object.keys(imagingContext.refImages).length > 0) {
+      const refTagRegex = /\[ref:([^\]]+)\]/g;
+      const refKeys: string[] = [];
+      let m: RegExpExecArray | null;
+      const composedPrompt = `${postfix}\n${frame.prompt}`;
+      while ((m = refTagRegex.exec(composedPrompt)) !== null) {
+        const key = m[1].trim();
+        if (key && !refKeys.includes(key)) {
+          refKeys.push(key);
+        }
+      }
+      for (const key of refKeys) {
+        const canvas = imagingContext.refImages[key];
+        if (canvas) {
+          imageDataUrls.push(canvas.toDataURL('image/png'));
+        }
+      }
+    }
+
+    const prompt = `${postfix}\n${frame.prompt}`;
+    const { requestId } = await textEdit({ imageDataUrls, prompt, model });
+    const modeStr = `textedit:${model}`;
+    await saveRequest(get(mainBookFileSystem)!, 'image', modeStr, requestId);
+
+    const perf = performance.now();
+    const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: modeStr, requestId });
+    console.log('textEditFrameImage', performance.now() - perf);
+
+    const media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
+    const film = new Film(media);
+    frame.filmStack.films.push(film);
+    frame.gallery.push(media);
+
+    const transformer = new FilmStackTransformer(paperSize, frame.filmStack.films);
+    transformer.scale(0.01);
+    console.log('scaled');
+    constraintLeaf(paperSize, leafLayout);
+    redrawToken.set(true);
+
+    imagingContext.succeeded++;
+  } catch (error) {
+    imagingContext.failed++;
+    throw error;
+  }
+}
+
+async function textEditPageImages(
+  imagingContext: ImagingContext,
+  postfix: string,
+  model: TextEditMode,
+  page: Page,
+  onProgress: () => void
+) {
+  const leaves = collectLeaves(page.frameTree);
+  const pageLayout = calculatePhysicalLayout(page.frameTree, page.paperSize, [0, 0]);
+  const promises: Promise<void>[] = [];
+  for (const leaf of leaves) {
+    const leafLayout = findLayoutOf(pageLayout, leaf)!;
+    promises.push((async () => {
+      await textEditFrameImage(imagingContext, postfix, model, leafLayout, page.paperSize);
+      const transformer = new FilmStackTransformer(page.paperSize, leaf.filmStack.films);
+      transformer.scale(0.01);
+      console.log('scaled');
+      constraintLeaf(page.paperSize, leafLayout);
+      onProgress();
+    })());
+  }
+  imagingContext.total = promises.length;
+  imagingContext.succeeded = 0;
+  imagingContext.failed = 0;
+  await Promise.all(promises);
+  updateToken.set(true);
 }
 
 export function calculateCost(size: {width:number,height:number}, mode: ImagingMode): number {

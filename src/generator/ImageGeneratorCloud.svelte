@@ -9,7 +9,7 @@
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import type { ImagingMode, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, type ModeChoice, calculateCost, generateImage, textToImageModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { type ModeChoice, calculateCost, generateImage, textToImageModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
   import FluxModes from './TextToImageModes.svelte';
@@ -75,13 +75,6 @@
       }
       const delta = 1 / factorTable[mode.value as ImagingMode] / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
-      let imagingContext: ImagingContext = {
-        awakeWarningToken: false,
-        errorToken: false,
-        total: 0,
-        succeeded: 0,
-        failed: 0,
-      };
 
       const canvases = await executeProcessAndNotify(
         5000, $_('generator.imageGenerated'),

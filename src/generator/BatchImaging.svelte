@@ -21,6 +21,7 @@
     total: 0,
     succeeded: 0,
     failed: 0,
+    refImages: {}
   };
 
   $: updateImageInfo($batchImagingPage);

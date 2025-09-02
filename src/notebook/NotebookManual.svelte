@@ -23,7 +23,7 @@
   import { type Folder } from '../lib/filesystem/fileSystem';
   import { rosterOpen, rosterSelectedCharacter, saveCharacterToRoster } from './rosterStore';
   import { waitForChange } from '../utils/reactUtil';
-  import { buildMedia } from '../lib/layeredCanvas/dataModels/media';
+  import { buildMedia, type Media, ImageMedia } from '../lib/layeredCanvas/dataModels/media';
   import NumberEdit from '../utils/NumberEdit.svelte';
   import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
   import { createPreference } from '../preferences';
@@ -50,6 +50,7 @@
     total: 0,
     succeeded: 0,
     failed: 0,
+    refImages: {},
   };
   let imagingMode: ModeChoice = { type: 'imaging', value: 'schnell' };
   let plotInstruction: string = '';
@@ -366,11 +367,21 @@
       total: 0,
       succeeded: 0,
       failed: 0,
+      refImages: {},
     };
+    // 参考画像として登場人物のポートレートを格納
+    const portraitsRecord: Record<string, HTMLCanvasElement> = {};
+    (notebook?.characters ?? []).forEach((c, idx) => {
+      const p = c.portrait;
+      if (p instanceof ImageMedia) {
+        portraitsRecord[c.ulid] = p.drawSource as HTMLCanvasElement;
+      }
+    });
+    imagingContext.refImages = portraitsRecord;
     await generateMarkedPageImages(
       imagingContext, 
       postfix, 
-      imagingMode.value as ImagingMode,
+      imagingMode,
       (x: number) => {
         imageProgress = Math.max(0.001, x);
         imagingContext = imagingContext;
