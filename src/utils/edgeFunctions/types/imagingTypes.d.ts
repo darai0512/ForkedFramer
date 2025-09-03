@@ -1,7 +1,7 @@
 // @ts-nocheck: Suppress type checking for this file due to complex type definitions
 import { z } from "zod";
 
-export const ImagingBackgroundSchema = z.enum(["opaque", "transparent"]);
+export const ImagingBackgroundSchema = z.enum(["auto", "opaque", "transparent"]);
 export type ImagingBackground = z.infer<typeof ImagingBackgroundSchema>;
 
 export const ImagingModeSchema = z.enum([

@@ -64,7 +64,7 @@ export async function textEditFilm(film: Film) {
     imageSize: { width: request.image.width, height: request.image.height },
     numImages: 1,
     mode: request.model,
-    background: 'opaque' as ImagingBackground,
+    background: 'auto',
     imageDataUrls,
   };
 
