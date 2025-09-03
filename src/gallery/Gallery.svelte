@@ -8,6 +8,7 @@
   export let columnWidth: number;
   export let accessable: boolean = true;
   export let referable: boolean = true;
+  export let viewable: boolean = true; // 詳細（ビューア）ボタンの表示可否
 
   export let chosen: Media | null = null;
   export let refered: Media | null = null;
@@ -39,6 +40,7 @@
       bind:refered
       {accessable}
       {referable}
+      {viewable}
       on:commit={onCommit}
       on:delete={onDelete}
       on:dragstart={onDragStart}

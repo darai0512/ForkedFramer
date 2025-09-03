@@ -11,6 +11,7 @@
   export let refered: Media | null;
   export let accessable: boolean;
   export let referable: boolean;
+  export let viewable: boolean = true;
 
   let medias: Media[] | undefined;
   let observerTarget: HTMLDivElement; // 監視用の DOM 要素
@@ -66,6 +67,7 @@
       media={media}
       {accessable}
       {referable}
+      {viewable}
       on:commit
       on:delete={onDelete}
       on:dragstart

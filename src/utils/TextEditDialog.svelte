@@ -5,13 +5,11 @@
   import AutoSizeTextarea from '../notebook/AutoSizeTextarea.svelte';
   import ImagingModes from '../generator/ImagingModes.svelte';
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { dropzone } from '../utils/dropzone';
-  import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
   import type { Media } from '../lib/layeredCanvas/dataModels/media';
-  import { ImageMedia, VideoMedia } from '../lib/layeredCanvas/dataModels/media';
-  import Gallery from '../gallery/Gallery.svelte';
   import type { GalleryItem } from '../gallery/gallery';
   import { _ } from 'svelte-i18n';
+  import ReferenceImageDropzone from './ReferenceImageDropzone.svelte';
+  import { modeOptions } from '../utils/feathralImaging';
 
   let title: string;
   let imageSource: HTMLCanvasElement;
@@ -38,8 +36,8 @@
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
   
-  // 参考画像が使用可能なモデルかチェック
-  $: referenceImagesSupported = selectedModel === 'gpt-image-1/high' || selectedModel === 'nano-banana';
+  // 参考画像が使用可能なモデルかチェック（定義元に合わせる）
+  $: referenceImagesSupported = !!modeOptions.find(o => o.value === selectedModel)?.refImaging;
   
   // モデルが変更されて参考画像が使用できない場合はリセット
   $: if (!referenceImagesSupported && (referenceImages.length > 0 || referenceMedias.length > 0)) {
@@ -105,43 +103,7 @@
     modalStore.close();
   }
   
-  async function onFileDrop(files: FileList) {
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type.startsWith('image/svg')) continue;
-      
-      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-        // 非同期関数を作成してreferenceImagesに追加
-        const loadMedia = async (): Promise<Media[]> => {
-          let media: Media;
-          if (file.type.startsWith('image/')) {
-            const canvas = await createCanvasFromBlob(file);
-            media = new ImageMedia(canvas);
-          } else {
-            const video = await createVideoFromBlob(file);
-            media = new VideoMedia(video);
-          }
-          // メディアをリストに追加
-          referenceMedias.push(media);
-          referenceMedias = referenceMedias; // リアクティブ更新
-          return [media];
-        };
-        
-        referenceImages.push(loadMedia);
-      }
-    }
-    referenceImages = referenceImages; // リアクティブ更新をトリガー
-  }
-  
-  function onReferenceImageDelete(e: CustomEvent<GalleryItem>) {
-    // Galleryアイテムと対応するメディアを削除
-    const index = referenceImages.indexOf(e.detail as GalleryItem);
-    if (index !== -1) {
-      referenceMedias.splice(index, 1);
-      referenceMedias = referenceMedias; // リアクティブ更新
-    }
-    referenceImages = referenceImages.filter(item => item !== e.detail);
-  }
+  // 参照画像のドロップゾーンはコンポーネントに委譲
 
   function onSubmit() {
     if (!imageSource || !prompt.trim()) return;
@@ -240,26 +202,13 @@
           {#if referenceImagesSupported}
             <div class="setting-section">
               <h3>{$_('dialogs.textEdit.referenceImages')}</h3>
-              <div class="reference-images-container" use:dropzone={onFileDrop}>
-                {#if referenceImages.length > 0}
-                  <Gallery 
-                    columnWidth={100} 
-                    referable={false}
-                    accessable={false}
-                    items={referenceImages}
-                    on:delete={onReferenceImageDelete}
-                  />
-                {:else}
-                  <div class="empty-state">
-                    <p class="empty-message">{$_('dialogs.textEdit.dropReferenceImages')}</p>
-                  </div>
-                {/if}
-              </div>
-              {#if referenceMedias.length > 0}
-                <div class="image-count">
-                  {$_('dialogs.textEdit.referenceImageCount')}: {referenceMedias.length}
-                </div>
-              {/if}
+              <ReferenceImageDropzone
+                bind:referenceImages
+                bind:referenceMedias
+                maxHeight={300}
+                showDeleteButton={false}
+                itemDeletable={true}
+              />
             </div>
           {/if}
         </div>
@@ -325,42 +274,7 @@
     color: rgb(var(--color-primary-500));
   }
   
-  .reference-images-container {
-    min-height: 150px;
-    max-height: 300px;
-    overflow-y: auto;
-    border: 2px dashed rgb(var(--color-surface-300));
-    border-radius: 8px;
-    padding: 12px;
-    background: rgb(var(--color-surface-50));
-    transition: all 0.2s ease;
-  }
-  
-  :global(.reference-images-container.drag-over) {
-    background-color: rgba(0, 123, 255, 0.1) !important;
-    border-color: rgb(var(--color-primary-400)) !important;
-    border-style: solid !important;
-  }
-  
-  .empty-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 120px;
-  }
-  
-  .empty-message {
-    color: rgb(var(--color-surface-500));
-    font-size: 14px;
-    text-align: center;
-  }
-  
-  .image-count {
-    margin-top: 8px;
-    font-size: 12px;
-    color: rgb(var(--color-surface-600));
-    font-weight: 500;
-  }
+  /* 参照画像ドロップゾーンのスタイルはコンポーネント側に移譲 */
   
   .canvas-container {
     display: flex;

@@ -19,6 +19,7 @@
   export let refered: Media | null = null;
   export let accessable: boolean = true;
   export let referable: boolean = true;
+  export let viewable: boolean = true; // 詳細（ビューア）ボタンの表示可否
 
   let height: number = 160;
 
@@ -93,9 +94,11 @@
     <div class="delete-button" on:click={e => onDelete(e)} use:toolTip={$_('gallery.delete')}>
       <img src={drop} alt="delete"/>
     </div>
-    <div class="telescope-button" on:click={e => onView(e)} use:toolTip={$_('gallery.view')}>
-      <img src={telescope} alt="view" />
-    </div>
+    {#if viewable}
+      <div class="telescope-button" on:click={e => onView(e)} use:toolTip={$_('gallery.view')}>
+        <img src={telescope} alt="view" />
+      </div>
+    {/if}
     {#if referable}
       <div class="reference-button" on:click={e => onRefer(e)} use:toolTip={$_('gallery.i2iReference')}>
         {#if refered === media}
