@@ -15,6 +15,8 @@
   import ImagingModes from './ImagingModes.svelte';
   import { ImageMedia, type Media } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
+  import ReferenceImageDropzone from '../utils/ReferenceImageDropzone.svelte';
+  import type { GalleryItem } from '../gallery/gallery';
 
   import clipboardIcon from '../assets/clipboard.webp';
   import FeathralCost from '../utils/FeathralCost.svelte';
@@ -35,6 +37,11 @@
   let uiType: ImagingProvider | undefined;
   let sizeText = "1024x1024";
   let background: ImagingBackground = "opaque";
+
+  // 参考画像UI用（UIのみ。生成処理への結線は未対応）
+  let referenceImages: GalleryItem[] = [];
+  let referenceMedias: Media[] = [];
+  $: referenceImagesSupported = !!unifiedModeOptions.find(o => o.value === mode)?.refImaging;
 
   function onChooseImage({detail}: CustomEvent<Media>) {
     chosen = detail;
@@ -136,6 +143,17 @@
       <img src={clipboardIcon} alt={$_('generator.copyToClipboard')} on:click={copyToClipboard} use:toolTip={$_('generator.copyToClipboard')} />
     </div>
   </div>        
+
+  {#if referenceImagesSupported}
+  <h2>{$_('dialogs.textEdit.referenceImages')}</h2>
+  <ReferenceImageDropzone
+    bind:referenceImages
+    bind:referenceMedias
+    maxHeight={180}
+    showDeleteButton={false}
+    itemDeletable={true}
+  />
+  {/if}
 
   <div class="hbox gap-5 mt-4">
     {#if uiType == 'flux'}
