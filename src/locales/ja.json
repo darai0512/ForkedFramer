@@ -273,6 +273,7 @@
     "pleaseLogIn": "ログインしてください",
     "mode": "モード",
     "perPanel": "1コマあたり",
+    "perPanelEstimate": "1コマあたりの概算",
     "cloud": "クラウド",
     "blank": "白紙",
     "costDisclaimer": "※GPT-1のコストは将来変更の可能性があります",

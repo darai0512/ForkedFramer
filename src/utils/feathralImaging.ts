@@ -194,24 +194,24 @@ function calculateGPTCost(mode: Mode): number {
 }
 */
 
-export type ModeOption = { value: ImagingMode; name: string; uiType: ImagingProvider; preferredGroup: 'imaging' | 'textedit' | 'both' };
+export type ModeOption = { value: ImagingMode; name: string; uiType: ImagingProvider; imaging: boolean; textedit: boolean; refImaging: boolean };
 export const modeOptions: ModeOption[] = [
   // Imaging-oriented
-  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', preferredGroup: 'imaging' },
-  { value: 'gpt-image-1/low', name: 'GPT-image-1 low', uiType: 'gpt-image-1', preferredGroup: 'imaging' },
-  { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', preferredGroup: 'imaging' },
-  { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', preferredGroup: 'imaging' },
-  { value: 'pro', name: 'FLUX Pro', uiType: 'flux', preferredGroup: 'imaging' },
-  { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', preferredGroup: 'imaging' },
-  { value: 'manga', name: 'FLUX まんが', uiType: 'flux', preferredGroup: 'imaging' },
-  { value: 'comibg', name: 'シンプル背景', uiType: 'flux', preferredGroup: 'imaging' },
+  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', imaging: true, textedit: false, refImaging: true },
+  { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', imaging: true, textedit: false, refImaging: true },
+  { value: 'pro', name: 'FLUX Pro', uiType: 'flux', imaging: true, textedit: false, refImaging: true },
+  { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', imaging: true, textedit: false, refImaging: true },
+  { value: 'manga', name: 'FLUX まんが', uiType: 'flux', imaging: true, textedit: false, refImaging: true },
+  { value: 'comibg', name: 'シンプル背景', uiType: 'flux', imaging: true, textedit: false, refImaging: true },
   // Both imaging and text-edit friendly
-  { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', preferredGroup: 'both' },
-  { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', preferredGroup: 'both' },
+  { value: 'gpt-image-1/low', name: 'GPT-image-1 low', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true },
+  { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true },
+  { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true },
+  { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', imaging: true, textedit: true, refImaging: true },
   // Text-edit–oriented
-  { value: 'kontext/pro', name: 'Flux Kontext [Pro]', uiType: 'flux', preferredGroup: 'textedit' },
-  { value: 'kontext/max', name: 'Flux Kontext [Max]', uiType: 'flux', preferredGroup: 'textedit' },
-  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]', uiType: 'flux', preferredGroup: 'textedit' },
+  { value: 'kontext/pro', name: 'Flux Kontext [Pro]', uiType: 'flux', imaging: false, textedit: true, refImaging: false },
+  { value: 'kontext/max', name: 'Flux Kontext [Max]', uiType: 'flux', imaging: false, textedit: true, refImaging: false },
+  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]', uiType: 'flux', imaging: false, textedit: true, refImaging: false },
 ];
 
 // ModeChoice は廃止（すべて ImagingMode で扱う）

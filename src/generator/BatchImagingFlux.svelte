@@ -32,26 +32,34 @@
 
 </script>
 
-<div class="flex flex-col gap-2 mt-2 w-full h-full">
+<div class="flux-panel flex flex-col gap-2 mt-2 w-full h-full">
   {#if $onlineStatus !== 'signed-in'}
     <p>{$_('generator.pleaseLogIn')}</p>
   {:else}
     <p><Feathral/></p>
-    <div class="flex flex-row gap-2 items-center">
-      <h3>{$_('generator.mode')}</h3>
-      <ImagingModes bind:mode={mode} group="imaging" comment={$_('generator.perPanel')}/>
-      <h3>{$_('generator.style')}</h3>
-      <textarea class="textarea textarea-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', onLoad: (v) => postfix = v}}/>
+    <div class="flex flex-col gap-3">
+      <div class="flex flex-row gap-2 items-center">
+        <h3>{$_('generator.mode')}</h3>
+        <ImagingModes bind:mode={mode} group="imaging" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanelEstimate')}/>
       </div>
+      <div class="flex flex-row gap-2 items-start">
+        <h3>{$_('generator.style')}</h3>
+        <textarea class="textarea textarea-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', onLoad: (v) => postfix = v}}/>
+      </div>
+    </div>
     <button class="btn btn-sm variant-filled w-32" disabled={imagingContext.total === imagingContext.succeeded} on:click={execute}>{$_('generator.start')}</button>
   {/if}
 </div>
 
 <style>
+  .flux-panel {
+    font-size: 14px;
+    line-height: 1.4;
+  }
   h3 {
     font-family: '源暎エムゴ';
     font-weight: 500;
-    font-size: 20px;
+    font-size: 16px;
   }
   .textarea-style {
     font-size: 16px;
