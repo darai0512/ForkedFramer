@@ -117,12 +117,12 @@
 
 <div class="drawer-content">
   {#if $onlineStatus === 'signed-in'}
-  <p><Feathral/></p>
-
-  <h2>{$_('generator.mode')}</h2>
+  <div class="mode-header-row">
+    <h2>{$_('generator.mode')}</h2>
+    <Feathral/>
+  </div>
   <div class="vbox left gap-2 mode">
     <ImagingModes bind:mode={mode} group="imaging" imageSize={{ width, height }}/>
-    <p>{$_('generator.costDisclaimer')}</p>
   </div>
 
   <h2>{$_('generator.style')}</h2>
@@ -211,6 +211,12 @@
     display: flex;
     align-items: center;
     margin-top: 8px;
+  }
+  .mode-header-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
   }
   .textarea-container {
     position: relative;
