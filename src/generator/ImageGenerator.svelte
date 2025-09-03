@@ -4,7 +4,6 @@
   import { tick } from "svelte";
   import Drawer from '../utils/Drawer.svelte';
   import ImageGeneratorStableDiffusion from "./ImageGeneratorStableDiffusion.svelte";
-  import ImageGeneratorDalle3 from "./ImageGeneratorDalle3.svelte";
   import ImageGeneratorFlux from "./ImageGeneratorCloud.svelte";
   import ImageGeneratorPlain from "./ImageGeneratorPlain.svelte";
   import { type Media } from "../lib/layeredCanvas/dataModels/media";
@@ -64,15 +63,12 @@
 
     <TabGroup>
       <Tab bind:group={tabSet} name="tab3" value={0}><span class="tab"><img src={sprytIcon} alt="flux" width=24 height=24/>{$_('generator.cloud')}</span></Tab>
-      <Tab bind:group={tabSet} name="tab1" value={1}>Dall・E 3</Tab>
       <Tab bind:group={tabSet} name="tab2" value={2}>Stable Diffusion</Tab>
       <Tab bind:group={tabSet} name="tab4" value={3}>{$_('generator.blank')}</Tab>
       <!-- Tab Panels --->
       <svelte:fragment slot="panel">
         {#if tabSet === 0}
           <ImageGeneratorFlux bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
-          {:else if tabSet === 1}
-          <ImageGeneratorDalle3 bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
           {:else if tabSet === 2}
           <ImageGeneratorStableDiffusion bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
           {:else if tabSet === 3}

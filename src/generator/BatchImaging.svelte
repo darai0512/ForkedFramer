@@ -3,16 +3,14 @@
   import { batchImagingPage, busy } from "./batchImagingStore";
   import { collectLeaves } from '../lib/layeredCanvas/dataModels/frameTree';
   import Drawer from '../utils/Drawer.svelte'
-  import BatchImagingDalle3 from './BatchImagingDalle3.svelte';
   import BatchImagingFlux from './BatchImagingFlux.svelte';
   import type { Page } from "../lib/book/book";
-  import { ProgressRadial } from '@skeletonlabs/skeleton';
   import type { ImagingContext } from '../utils/feathralImaging';
   import ImagingProgressBar from './ImagingProgressBar.svelte';
   import { _ } from 'svelte-i18n';
 
   import "../box.css"  
-  import feathralIcon from '../assets/feathral.webp';
+  import sprytIcon from '../assets/spryt.webp';
 
   let tabSet: number = 0;
   let imagingContext: ImagingContext = {
@@ -43,8 +41,7 @@
 <Drawer open={$batchImagingPage != null} size="240px" on:clickAway={() => $batchImagingPage = null} placement={"top"}>
   <div class="drawer-content flex flex-col">
     <TabGroup regionList="h-12">
-      <Tab regionTab="w-24" bind:group={tabSet} name="tab3" value={0}><span class="tab"><img class="image" src={feathralIcon} alt="flux" width=24 height=24/>Flux</span></Tab>
-      <Tab regionTab="w-24" bind:group={tabSet} name="tab1" value={1}>Dall・E 3</Tab>
+      <Tab regionTab="w-24" bind:group={tabSet} name="tab3" value={0}><span class="tab"><img class="image" src={sprytIcon} alt={$_('generator.cloud')} width=24 height=24/>{$_('generator.cloud')}</span></Tab>
     </TabGroup>  
     <div class="w-full h-full">
       {#if $busy}
@@ -60,11 +57,7 @@
             <div>{imagingContext.succeeded}/{imagingContext.total}</div>
           </div>
           <div class="content h-full flex flex-col justify-center gap-2">
-            {#if tabSet === 0}
-              <BatchImagingFlux bind:imagingContext={imagingContext}/>
-            {:else if tabSet === 1}
-              <BatchImagingDalle3 bind:imagingContext={imagingContext}/>
-            {/if}
+            <BatchImagingFlux bind:imagingContext={imagingContext}/>
           </div>
         </div>
       {/if}
