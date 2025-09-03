@@ -37,7 +37,11 @@
   let referenceMedias: Media[] = [];
   
   // 参考画像が使用可能なモデルかチェック（定義元に合わせる）
-  $: referenceImagesSupported = !!modeOptions.find(o => o.value === selectedModel)?.refImaging;
+  $: referenceImagesSupported = (() => {
+    const opt = modeOptions.find(o => o.value === selectedModel);
+    return !!opt?.refImaging && !!opt?.refRange && (opt.refRange.min > 0 || opt.refRange.max > 0);
+  })();
+  $: refMax = modeOptions.find(o => o.value === selectedModel)?.refRange?.max ?? 0;
   
   // モデルが変更されて参考画像が使用できない場合はリセット
   $: if (!referenceImagesSupported && (referenceImages.length > 0 || referenceMedias.length > 0)) {
@@ -201,7 +205,10 @@
           
           {#if referenceImagesSupported}
             <div class="setting-section">
-              <h3>{$_('dialogs.textEdit.referenceImages')}</h3>
+              <h3>
+                {$_('dialogs.textEdit.referenceImages')}
+                <span class="ref-counter">({referenceMedias.length} / {refMax})</span>
+              </h3>
               <ReferenceImageDropzone
                 bind:referenceImages
                 bind:referenceMedias
@@ -299,5 +306,11 @@
     font-size: 12px;
     color: rgb(var(--color-surface-500));
     padding-left: 4px;
+  }
+  .ref-counter {
+    font-size: 12px;
+    margin-left: 8px;
+    color: rgb(var(--color-surface-600));
+    font-family: '源暎アンチック';
   }
 </style>

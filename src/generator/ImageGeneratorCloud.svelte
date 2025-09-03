@@ -41,7 +41,11 @@
   // 参考画像UI用（UIのみ。生成処理への結線は未対応）
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
-  $: referenceImagesSupported = !!unifiedModeOptions.find(o => o.value === mode)?.refImaging;
+  $: referenceImagesSupported = (() => {
+    const opt = unifiedModeOptions.find(o => o.value === mode);
+    return !!opt?.refImaging && !!opt?.refRange && (opt.refRange.min > 0 || opt.refRange.max > 0);
+  })();
+  $: refMax = unifiedModeOptions.find(o => o.value === mode)?.refRange?.max ?? 0;
 
   function onChooseImage({detail}: CustomEvent<Media>) {
     chosen = detail;
@@ -88,10 +92,23 @@
       const delta = 1 / factorTable[mode] / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
 
+      // 参照画像（上限はrefRange.maxまで）
+      const refMaxLocal = unifiedModeOptions.find(o => o.value === mode)?.refRange?.max ?? 0;
+      const imageDataUrls = referenceMedias
+        .slice(0, Math.max(0, refMaxLocal))
+        .map(m => m.drawSourceCanvas.toDataURL('image/png'));
+
       const canvases = await executeProcessAndNotify(
         5000, $_('generator.imageGenerated'),
         async () => {
-          return await generateImage(`${postfix}\n${prompt}`, {width,height}, mode, batchCount, background);
+          return await generateImage(
+            `${postfix}\n${prompt}`,
+            { width, height },
+            mode,
+            batchCount,
+            background,
+            imageDataUrls.length > 0 ? imageDataUrls : undefined
+          );
           // return { feathral: 99, result: { image: makePlainImage(imageRequest.width, imageRequest.height, "#00ff00ff") } };
         });
       gallery.push(...canvases.map(c => new ImageMedia(c)));
@@ -145,7 +162,10 @@
   </div>        
 
   {#if referenceImagesSupported}
-  <h2>{$_('dialogs.textEdit.referenceImages')}</h2>
+  <h2>
+    {$_('dialogs.textEdit.referenceImages')}
+    <span class="ref-counter">({referenceMedias.length} / {refMax})</span>
+  </h2>
   <ReferenceImageDropzone
     bind:referenceImages
     bind:referenceMedias
@@ -251,5 +271,11 @@
   }
   p {
     font-family: '源暎アンチック';
+  }
+  .ref-counter {
+    font-family: '源暎アンチック';
+    font-size: 12px;
+    margin-left: 8px;
+    color: rgb(var(--color-surface-600));
   }
 </style>

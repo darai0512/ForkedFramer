@@ -11,6 +11,7 @@ import { waitDialog } from './waitDialog';
 import { loading } from './loadingStore';
 import type { ImagingMode, ImagingProvider, TextToImageRequest, ImagingBackground } from '$protocolTypes/imagingTypes';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
+import { modeOptions } from './feathralImaging';
 
 type TextEditDialogResult = {
   image: HTMLCanvasElement;
@@ -43,8 +44,9 @@ export async function textEditFilm(film: Film) {
   const imageDataUrl = request.image.toDataURL("image/png");
   const imageDataUrls = [imageDataUrl];
   
-  // 参考画像を追加
-  for (const media of request.referenceImages) {
+  // 参考画像を追加（refRange.maxを上限に適用）
+  const refMax = modeOptions.find(o => o.value === request.model)?.refRange?.max ?? 0;
+  for (const media of request.referenceImages.slice(0, Math.max(0, refMax))) {
     if (media instanceof ImageMedia) {
       const refImageDataUrl = media.drawSource.toDataURL("image/png");
       imageDataUrls.push(refImageDataUrl);
