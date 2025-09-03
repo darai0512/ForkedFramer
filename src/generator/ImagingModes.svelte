@@ -78,6 +78,9 @@
   let portalTop = 0;
   let portalLeft = 0;
   let portalWidth = 0;
+  let portalMaxHeight = 0;
+  let openUp = false;
+  let portalTransform = '';
   let portalFontFamily = '';
   let portalFontSize = '';
   let portalLineHeight = '';
@@ -88,13 +91,29 @@
     if (!displayEl) return;
     const rect = displayEl.getBoundingClientRect();
     const margin = 4; // space between button and dropdown
-    portalTop = Math.round(rect.bottom + margin);
     // Clamp within viewport width
     const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
     const desiredLeft = Math.round(rect.left);
     portalWidth = Math.round(rect.width);
     // Clamp within viewport without adding artificial margins
     portalLeft = Math.min(Math.max(0, desiredLeft), Math.max(0, vw - portalWidth));
+
+    const spaceBelow = vh - rect.bottom - margin;
+    const spaceAbove = rect.top - margin;
+    // Choose direction: flip upward if below space is tight
+    openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
+
+    if (openUp) {
+      // Place top at trigger top and translate upward by full height + margin
+      portalTop = Math.max(0, Math.round(rect.top - margin));
+      portalTransform = `translateY(calc(-100%))`;
+      portalMaxHeight = Math.max(120, Math.min(Math.floor(spaceAbove), Math.floor(vh * 0.6)));
+    } else {
+      portalTop = Math.round(rect.bottom + margin);
+      portalTransform = '';
+      portalMaxHeight = Math.max(120, Math.min(Math.floor(spaceBelow), Math.floor(vh * 0.6)));
+    }
 
     // Inherit critical text styles from trigger to keep layout consistent
     const cs = getComputedStyle(displayEl);
@@ -163,6 +182,8 @@
         style:top={`${portalTop}px`}
         style:left={`${portalLeft}px`}
         style:width={`${portalWidth}px`}
+        style:max-height={`${portalMaxHeight}px`}
+        style:transform={portalTransform}
         style:font-family={portalFontFamily}
         style:font-size={portalFontSize}
         style:line-height={portalLineHeight}
