@@ -197,12 +197,12 @@ function calculateGPTCost(mode: Mode): number {
 export type ModeOption = { value: ImagingMode; name: string; uiType: ImagingProvider; imaging: boolean; textedit: boolean; refImaging: boolean; refRange: { min: number; max: number } };
 export const modeOptions: ModeOption[] = [
   // Imaging-oriented
-  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
+  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
   { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
   { value: 'pro', name: 'FLUX Pro', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
-  { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
-  { value: 'manga', name: 'FLUX まんが', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
-  { value: 'comibg', name: 'シンプル背景', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
+  { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
+  { value: 'manga', name: 'FLUX まんが', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
+  { value: 'comibg', name: 'シンプル背景', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
   // Both imaging and text-edit friendly
   { value: 'gpt-image-1/low', name: 'GPT-image-1 low', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
