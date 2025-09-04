@@ -332,9 +332,9 @@
         <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
           <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
         </button>
-        <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
+        <!-- <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
           <img draggable={false} src={downloadIcon} alt={$_('frame.actions.textlift')}/>
-        </button>
+        </button> -->
       </div>
     </div>
   </div>
