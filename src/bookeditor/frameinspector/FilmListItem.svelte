@@ -114,6 +114,10 @@
     dispatchFilmTool('video');
   }
 
+  function onTextLift(ev: MouseEvent) {
+    dispatchFilmTool('textlift')
+  }
+
   function onToggleeffectVisible(ev: MouseEvent) {
     ev.stopPropagation();
     ev.preventDefault();
@@ -328,9 +332,12 @@
         <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
           <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
         </button>
-        </div>
+        <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
+          <img draggable={false} src={downloadIcon} alt={$_('frame.actions.textlift')}/>
+        </button>
       </div>
     </div>
+  </div>
 </Popup>
 
 <!-- barrier用Popup -->

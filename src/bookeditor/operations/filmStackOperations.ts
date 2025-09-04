@@ -15,6 +15,7 @@ import { eraserFilm } from "../../utils/eraserFilm";
 import { inpaintFilm } from "../../utils/inpaintFilm";
 import { textEditFilm } from "../../utils/textEditFilm";
 import { mainBook } from '../workspaceStore'; // デバッグ用
+import { textLiftFilm } from "../../utils/textLiftFilm";
 
 // 共通インターフェース - フィルムオペレーション対象
 export interface FilmOperationTarget {
@@ -194,6 +195,14 @@ export async function handleSendToMaterialCollectionCommand<T extends FilmOperat
     message: result.message, 
     timeout: 3000 
   });
+}
+
+export async function handleTextLiftCommand<T extends FilmOperationTarget>(
+  target: T
+): Promise<void> {
+  await textLiftFilm(target.commandTargetFilm!);
+  commit(null);
+  loading.set(false);
 }
 
 // コマンド処理の共通フロー

@@ -78,6 +78,9 @@
       case "textedit":
         onTextEdit(film);
         break;
+      case "textlift":
+        onTextLift({ detail: film } as CustomEvent<Film>);
+        break;
       case "sendToMaterialCollection":
         onSendToMaterialCollection(film);
         break;
@@ -136,6 +139,11 @@
   function onSendToMaterialCollection(film: Film) {
     $frameInspectorTarget!.commandTargetFilm = film;
     $frameInspectorTarget!.command = "sendToMaterialCollection";
+  }
+
+  function onTextLift(e: CustomEvent<Film>) {
+    $frameInspectorTarget!.commandTargetFilm = e.detail;
+    $frameInspectorTarget!.command = "textlift";
   }
 
   function calculateOutPaintingCost(film: Film) {

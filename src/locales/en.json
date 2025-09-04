@@ -251,7 +251,8 @@
       "duplicate": "Duplicate",
       "movieCreation": "Movie Creation",
       "sendToMaterialCollection": "Send to Material Collection",
-      "download": "Download"
+      "download": "Download",
+      "textlift": "Text Lifting"
     },
     "effects": {
       "outline": "Outline",
