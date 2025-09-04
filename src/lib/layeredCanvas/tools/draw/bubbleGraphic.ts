@@ -380,55 +380,95 @@ function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string,
 
     context.save();
 
-    context.beginPath();
-    context.rect(x, y, w, h);
-    context.clip();
-
-    const tailTip = opts?.tailTip ?? [0, 0];
-    const tailMid = tailCoordToWorldCoord([0,0], tailTip, opts?.tailMid ?? [0, 0]);
-  
-    const length = Math.hypot(w, h);
-    const angle = Math.atan2(tailTip[1], tailTip[0]);
-    context.rotate(angle);
-
-    function calculateNormalizedPosition([fx,fy]: Vector): number {
-      const v0: Vector = [length*0.5, 0];
-      const [nx, ny] = rotate2D(v0, angle);
-      const psf = 0.5 - projectionScalingFactor2D([fx, fy], [nx, ny]) * 0.5;
-      return clamp(psf);
-    }
-
-    context.lineWidth = 1;
-    const n = opts.lineCount;
-
-    const psf0 = clamp(0.5 - magnitude2D(tailTip) / length);
-    const psf1 = calculateNormalizedPosition(tailMid);
-
-    // 線を描く
-    for (let i = 0; i < n; i++) {
-      const y = (i + 0.5) / n * length - length/2 + rng() * length * opts.laneJitter;
-      const lx = - length * 0.5 + (rng() - 0.5) * w * opts.startJitter;
-      const lw = h * opts.lineWidth * 0.01 * (rng() + 0.5);
-
-      // グラデーション
-      const gradient = context.createLinearGradient(lx+length, y, lx, y);
-      const color0 = rgba(context.strokeStyle as string); // わざとstrokeStyleを使う
-      const color1 = rgba(context.strokeStyle as string);
-      color0[3] = 0;
-      gradient.addColorStop(psf0, color2string(color0));
-      gradient.addColorStop(psf1, color2string(color1));
-      gradient.addColorStop(1.0, color2string(color1));
-      context.fillStyle = gradient;
-
+    try {
       context.beginPath();
-      context.moveTo(lx, y-lw);
-      context.lineTo(lx+length, y);
-      context.lineTo(lx, y+lw);
-      context.closePath();
-      context.fill();
-    }
+      context.rect(x, y, w, h);
+      context.clip();
 
-    context.restore();
+      const tailTip = opts?.tailTip ?? [0, 0];
+      const tailMid = tailCoordToWorldCoord([0,0], tailTip, opts?.tailMid ?? [0, 0]);
+    
+      const length = Math.hypot(w, h);
+      // lengthの防御のみ: 0や非有限は以降の計算でNaN/Infを誘発する
+      if (!Number.isFinite(length) || length <= 1e-6) {
+        return; // 早期終了（save済みのためfinallyでrestore）
+      }
+
+      const angle = Math.atan2(tailTip[1], tailTip[0]);
+      context.rotate(angle);
+
+      function calculateNormalizedPosition([fx,fy]: Vector): number {
+        const v0: Vector = [length*0.5, 0];
+        const [nx, ny] = rotate2D(v0, angle);
+        const psf = 0.5 - projectionScalingFactor2D([fx, fy], [nx, ny]) * 0.5;
+        return clamp(psf);
+      }
+
+      context.lineWidth = 1;
+      const n = opts.lineCount;
+
+      const psf0 = clamp(0.5 - magnitude2D(tailTip) / length);
+      const psf1 = calculateNormalizedPosition(tailMid);
+
+      // 線を描く
+      for (let i = 0; i < n; i++) {
+        const y = (i + 0.5) / n * length - length/2 + rng() * length * opts.laneJitter;
+        const lx = - length * 0.5 + (rng() - 0.5) * w * opts.startJitter;
+        const lw = h * opts.lineWidth * 0.01 * (rng() + 0.5);
+
+        // グラデーション
+        try {
+          const gradient = context.createLinearGradient(lx+length, y, lx, y);
+          const color0 = rgba(context.strokeStyle as string); // わざとstrokeStyleを使う
+          const color1 = rgba(context.strokeStyle as string);
+          color0[3] = 0;
+          gradient.addColorStop(psf0, color2string(color0));
+          gradient.addColorStop(psf1, color2string(color1));
+          gradient.addColorStop(1.0, color2string(color1));
+          context.fillStyle = gradient;
+        } catch (e) {
+          console.error('drawSpeedLinesBubble: gradient addColorStop failed', {
+            seed,
+            i,
+            length,
+            angle,
+            tailTip,
+            tailMid,
+            psf0,
+            psf1,
+            y,
+            lx,
+            lw,
+            lineCount: n,
+            strokeStyle: context.strokeStyle,
+            opts,
+            error: e,
+          });
+          throw e;
+        }
+
+        context.beginPath();
+        context.moveTo(lx, y-lw);
+        context.lineTo(lx+length, y);
+        context.lineTo(lx, y+lw);
+        context.closePath();
+        context.fill();
+      }
+    } catch (e) {
+      console.error('drawSpeedLinesBubble: unexpected error', {
+        seed,
+        size,
+        rect: [x, y, w, h],
+        tailTip: opts?.tailTip ?? [0, 0],
+        tailMid: opts?.tailMid ?? [0, 0],
+        lineCount: opts?.lineCount,
+        opts,
+        error: e,
+      });
+      throw e; // 握りつぶさず上位へ
+    } finally {
+      context.restore();
+    }
   } else {  // stroke, clip
     // do nothing;
   }
@@ -923,4 +963,3 @@ function addMind(path: paper.PathItem, seed: string, size: Vector, opts: any, ne
   }
   return path;
 }
-
