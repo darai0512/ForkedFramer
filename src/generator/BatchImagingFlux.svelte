@@ -3,11 +3,12 @@
   import Feathral from '../utils/Feathral.svelte';
   import { persistentText } from '../utils/persistentText';
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generatePageImages } from '../utils/feathralImaging';
+  import { type ImagingContext, generatePageImages, portraitsRecordFromNotebook } from '../utils/feathralImaging';
   import { busy, batchImagingPage } from './batchImagingStore';
   import { mainBook, redrawToken } from '../bookeditor/workspaceStore';
   import { commitBook } from '../lib/book/book';
   import ImagingModes from './ImagingModes.svelte';
+  import { modeOptions, getRefMaxForMode } from '../utils/feathralImaging';
   import { _ } from 'svelte-i18n';
   import "../box.css"  
 
@@ -15,6 +16,12 @@
 
   let postfix: string = "";
   let mode: ImagingMode = 'schnell';
+
+  // 選択モードに応じて参照画像の上限を同期
+  $: imagingContext.maxRefImages = getRefMaxForMode(mode);
+
+  // Notebook のキャラクタ画像を参照画像としてセット
+  $: imagingContext.refImages = portraitsRecordFromNotebook($mainBook?.notebook ?? null);
 
   async function execute() {
     console.log('execute');

@@ -2,7 +2,7 @@ import { get } from 'svelte/store';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { text2Image, pollMediaStatus } from '../supabase';
 import { toastStore } from '@skeletonlabs/skeleton';
-import type { Page } from '../lib/book/book';
+import type { Page, NotebookLocal } from '../lib/book/book';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
@@ -22,6 +22,8 @@ export type ImagingContext = {
   succeeded: number;
   failed: number;
   refImages: Record<string, HTMLCanvasElement>;
+  // 最大参照画像枚数（これを超える場合は切り詰める）
+  maxRefImages: number;
 }
 
 export function isContentsPolicyViolationError(error: any): boolean {
@@ -29,6 +31,60 @@ export function isContentsPolicyViolationError(error: any): boolean {
     return error.context.status === 422;
   }
   return false;
+}
+
+// Notebook から登場人物ポートレートの参照画像マップを生成
+export function portraitsRecordFromNotebook(notebook: NotebookLocal | null): Record<string, HTMLCanvasElement> {
+  const portraitsRecord: Record<string, HTMLCanvasElement> = {};
+  (notebook?.characters ?? []).forEach((c) => {
+    const p = c.portrait;
+    if (p instanceof ImageMedia) {
+      const canvas = p.drawSource as HTMLCanvasElement;
+      // ULID キー
+      portraitsRecord[c.ulid] = canvas;
+      // 名前キー（前後空白除去・小文字化）
+      const nameKey = (c.name ?? '').trim().toLowerCase();
+      if (nameKey) portraitsRecord[nameKey] = canvas;
+    }
+  });
+  return portraitsRecord;
+}
+
+// プロンプトから [ref:...] キーを抽出（出現順、重複排除）
+export function extractRefKeysFromPrompt(prompt: string): string[] {
+  const refTagRegex = /\[ref:([^\]]+)\]/g;
+  const refKeys: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = refTagRegex.exec(prompt)) !== null) {
+    const key = m[1].trim();
+    if (key && !refKeys.includes(key)) refKeys.push(key);
+  }
+  return refKeys;
+}
+
+// 参照画像辞書と上限、必要に応じてフォールバック用キャンバスを使って DataURL 配列を構築
+export function buildImageDataUrlsForPrompt(
+  prompt: string,
+  refImages: Record<string, HTMLCanvasElement>,
+  maxRefs: number,
+  fallbackCanvases?: HTMLCanvasElement[]
+): string[] {
+  const limit = Math.max(0, maxRefs ?? 0);
+  if (limit === 0) return [];
+  const urls: string[] = [];
+  const refKeys = extractRefKeysFromPrompt(prompt);
+  for (const key of refKeys) {
+    if (urls.length >= limit) break;
+    const canvas = refImages[key] ?? refImages[key.trim().toLowerCase()];
+    if (canvas) urls.push(canvas.toDataURL('image/png'));
+  }
+  if (urls.length < limit && fallbackCanvases?.length) {
+    const remain = limit - urls.length;
+    for (const c of fallbackCanvases.slice(0, remain)) {
+      urls.push(c.toDataURL('image/png'));
+    }
+  }
+  return urls;
 }
 
 function inferProvider(m: ImagingMode): ImagingProvider {
@@ -135,20 +191,11 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
   try {
     const frame = leafLayout.element;
     const composedPrompt = `${postfix}\n${frame.prompt}`;
-    const imageDataUrls: string[] = [];
-    if (Object.keys(imagingContext.refImages).length > 0) {
-      const refTagRegex = /\[ref:([^\]]+)\]/g;
-      const refKeys: string[] = [];
-      let m: RegExpExecArray | null;
-      while ((m = refTagRegex.exec(composedPrompt)) !== null) {
-        const key = m[1].trim();
-        if (key && !refKeys.includes(key)) refKeys.push(key);
-      }
-      for (const key of refKeys) {
-        const canvas = imagingContext.refImages[key];
-        if (canvas) imageDataUrls.push(canvas.toDataURL('image/png'));
-      }
-    }
+    const imageDataUrls = buildImageDataUrlsForPrompt(
+      composedPrompt,
+      imagingContext.refImages,
+      imagingContext.maxRefImages
+    );
     const canvases = await generateImage(composedPrompt, {width:1024,height:1024}, mode, 1, 'opaque', imageDataUrls.length ? imageDataUrls : undefined);
 
     const media = new ImageMedia(canvases[0]);
@@ -215,3 +262,19 @@ export const modeOptions: ModeOption[] = [
 ];
 
 // ModeChoice は廃止（すべて ImagingMode で扱う）
+
+// 参照画像対応ヘルパ
+export function getRefRangeForMode(mode: ImagingMode): { min: number; max: number } {
+  const found = modeOptions.find(o => o.value === mode)?.refRange;
+  return found ?? { min: 0, max: 0 };
+}
+
+export function getRefMaxForMode(mode: ImagingMode): number {
+  return Math.max(0, getRefRangeForMode(mode).max);
+}
+
+export function supportsRefImages(mode: ImagingMode): boolean {
+  const opt = modeOptions.find(o => o.value === mode);
+  if (!opt) return false;
+  return !!opt.refImaging && (opt.refRange.min > 0 || opt.refRange.max > 0);
+}

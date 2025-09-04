@@ -19,7 +19,8 @@
     total: 0,
     succeeded: 0,
     failed: 0,
-    refImages: {}
+    refImages: {},
+    maxRefImages: 4,
   };
 
   $: updateImageInfo($batchImagingPage);

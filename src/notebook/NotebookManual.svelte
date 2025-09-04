@@ -6,7 +6,7 @@
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError, portraitsRecordFromNotebook } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
@@ -18,6 +18,7 @@
   import Feathral from '../utils/Feathral.svelte';
   import { ProgressBar } from '@skeletonlabs/skeleton';
   import ImagingModes from '../generator/ImagingModes.svelte';
+  import { modeOptions, getRefMaxForMode } from '../utils/feathralImaging';
   import { adviseTheme, adviseCharacters, advisePlot, adviseScenario, adviseStoryboard, adviseCritique } from '../supabase';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import { type Folder } from '../lib/filesystem/fileSystem';
@@ -51,6 +52,7 @@
     succeeded: 0,
     failed: 0,
     refImages: {},
+    maxRefImages: 4,
   };
   let imagingMode: ImagingMode = 'schnell';
   let plotInstruction: string = '';
@@ -368,16 +370,10 @@
       succeeded: 0,
       failed: 0,
       refImages: {},
+      maxRefImages: 4,
     };
-    // 参考画像として登場人物のポートレートを格納
-    const portraitsRecord: Record<string, HTMLCanvasElement> = {};
-    (notebook?.characters ?? []).forEach((c, idx) => {
-      const p = c.portrait;
-      if (p instanceof ImageMedia) {
-        portraitsRecord[c.ulid] = p.drawSource as HTMLCanvasElement;
-      }
-    });
-    imagingContext.refImages = portraitsRecord;
+    // 参考画像として登場人物のポートレートを格納（feathralImaging に集約）
+    imagingContext.refImages = portraitsRecordFromNotebook(notebook ?? null);
     await generateMarkedPageImages(
       imagingContext, 
       postfix, 
@@ -396,6 +392,9 @@
     const preference = createPreference<string>('imaging', 'style');
     postfix = await preference.getOrDefault('Japanese anime style');
   });
+
+  // 選択中のモードに応じて参照画像上限を同期
+  $: imagingContext.maxRefImages = getRefMaxForMode(imagingMode);
 
 </script>
 

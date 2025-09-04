@@ -9,7 +9,7 @@
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import type { ImagingMode, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
-  import { calculateCost, generateImage, modeOptions as unifiedModeOptions, isContentsPolicyViolationError } from '../utils/feathralImaging';
+  import { calculateCost, generateImage, modeOptions as unifiedModeOptions, isContentsPolicyViolationError, getRefMaxForMode, supportsRefImages } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
   import ImagingModes from './ImagingModes.svelte';
@@ -17,6 +17,9 @@
   import { _ } from 'svelte-i18n';
   import ReferenceImageDropzone from '../utils/ReferenceImageDropzone.svelte';
   import type { GalleryItem } from '../gallery/gallery';
+  import { mainBook } from '../bookeditor/workspaceStore';
+  import { get } from 'svelte/store';
+  import { portraitsRecordFromNotebook, buildImageDataUrlsForPrompt } from '../utils/feathralImaging';
 
   import clipboardIcon from '../assets/clipboard.webp';
   import FeathralCost from '../utils/FeathralCost.svelte';
@@ -41,11 +44,8 @@
   // 参考画像UI用（UIのみ。生成処理への結線は未対応）
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
-  $: referenceImagesSupported = (() => {
-    const opt = unifiedModeOptions.find(o => o.value === mode);
-    return !!opt?.refImaging && !!opt?.refRange && (opt.refRange.min > 0 || opt.refRange.max > 0);
-  })();
-  $: refMax = unifiedModeOptions.find(o => o.value === mode)?.refRange?.max ?? 0;
+  $: referenceImagesSupported = supportsRefImages(mode);
+  $: refMax = getRefMaxForMode(mode);
 
   function onChooseImage({detail}: CustomEvent<Media>) {
     chosen = detail;
@@ -92,11 +92,19 @@
       const delta = 1 / factorTable[mode] / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
 
-      // 参照画像（上限はrefRange.maxまで）
-      const refMaxLocal = unifiedModeOptions.find(o => o.value === mode)?.refRange?.max ?? 0;
-      const imageDataUrls = referenceMedias
-        .slice(0, Math.max(0, refMaxLocal))
-        .map(m => m.drawSourceCanvas.toDataURL('image/png'));
+      // 参照画像（上限はrefRange.maxまで）。
+      // プロンプト中の [ref:###] を解析し、Notebook のキャラクタ画像を優先採用し、
+      // 余剰枠をドロップゾーン画像で補完。
+      const refMaxLocal = getRefMaxForMode(mode);
+      const notebook = get(mainBook)?.notebook ?? null;
+      const refMap = portraitsRecordFromNotebook(notebook);
+      const fallbackCanvases = referenceMedias.map(m => m.drawSourceCanvas);
+      const imageDataUrls = buildImageDataUrlsForPrompt(
+        `${postfix}\n${prompt}`,
+        refMap,
+        refMaxLocal,
+        fallbackCanvases
+      );
 
       const canvases = await executeProcessAndNotify(
         5000, $_('generator.imageGenerated'),
