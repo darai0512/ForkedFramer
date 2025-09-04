@@ -195,6 +195,41 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
     interval = 5000;
   }
 
+  // 最初の10回は上記 interval を維持し、以後は徐々に遅くする（上限あり）
+  // 実効インターバル = interval（runResilientTask側の待機） + 追加待機（こちらで付与）
+  let pollCount = 0;
+  const maxInterval = isVideo ? 60000 : 20000; // 合計インターバルの上限
+  const growth = 1.1; // 緩やかな増加率
+
+  const waitVisibleOrTimeout = (ms: number): Promise<void> =>
+    new Promise<void>((resolve) => {
+      let timerId: number | null = null;
+      let finished = false;
+
+      const cleanup = () => {
+        if (finished) return;
+        finished = true;
+        if (timerId !== null) clearTimeout(timerId);
+        document.removeEventListener('visibilitychange', onVisibility);
+        resolve();
+      };
+
+      const onVisibility = () => {
+        if (!document.hidden) {
+          cleanup();
+        } else if (timerId !== null) {
+          clearTimeout(timerId);
+          timerId = null;
+        }
+      };
+
+      document.addEventListener('visibilitychange', onVisibility);
+
+      if (!document.hidden) {
+        timerId = window.setTimeout(cleanup, ms);
+      }
+    });
+
   async function* doIt() {
     let urls: string[] | undefined;
     while (!urls) {
@@ -202,9 +237,28 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
       console.log(status);
       switch (status.status) {
       case "IN_QUEUE":
+        // ポーリング回数をカウントし、11回目以降は追加待機を入れる
+        pollCount += 1;
+        if (pollCount > 10) {
+          const factor = Math.pow(growth, pollCount - 10);
+          const target = Math.min(Math.round(interval * factor), maxInterval);
+          const extra = Math.max(0, target - interval);
+          if (extra > 0) {
+            await waitVisibleOrTimeout(extra);
+          }
+        }
         yield;
         break;
       case "IN_PROGRESS":
+        pollCount += 1;
+        if (pollCount > 10) {
+          const factor = Math.pow(growth, pollCount - 10);
+          const target = Math.min(Math.round(interval * factor), maxInterval);
+          const extra = Math.max(0, target - interval);
+          if (extra > 0) {
+            await waitVisibleOrTimeout(extra);
+          }
+        }
         yield;
         break;
       case "COMPLETED":
