@@ -954,10 +954,18 @@ function addMind(path: paper.PathItem, seed: string, size: Vector, opts: any, ne
   const s = opts.tailTip;
   const v = [s[0] - m[0], s[1] - m[1]];
   const r = Math.min(size[0], size[1]) * 0.5 * opts.tailWidth;
+  // 扁平度（1.0 等倍、<1.0 は水平方向に平たく、>1.0 は垂直方向に平たい）
+  const flattening: number = opts?.flattening ?? 1.0;
   for (let t of trail) {
     const p: Vector = [m[0] + t[0] * v[0], m[1] + t[0] * v[1]];
     const rt = r * t[1] * 2;
     const path2 = getCloudPath([rt,rt], newOpts, seed, 6, 2, 0.15);
+    // 思考の泡を座標軸ベースで扁平化
+    if (flattening && Math.abs(flattening - 1.0) > 1e-6) {
+      const sx = (flattening > 1) ? (1 / flattening) : 1; // >1 で垂直方向に平たい => Xを縮める
+      const sy = (flattening < 1) ? flattening : 1;       // <1 で水平方向に平たい => Yを縮める
+      path2.scale(sx, sy, [0, 0] as any);
+    }
     path2.translate(p);
     path = path.unite(path2);
   }

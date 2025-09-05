@@ -700,6 +700,7 @@ export const bubbleOptionSets: { [key: string]: any } = {
     shapeOutline: {label: "フチ", type: "number", min: 0, max: 0.2, step: 0.01, init: (b: Bubble) => 0},
     shapeOutlineColor:  { label: "フチの色", type: "color", init: (b: Bubble) => "#ffffffff" },
     roughness: { label: "ラフさ", type: "number", min: 0, max: 5, step: 0.1, init: (b: Bubble) => 0 },
+    flattening: { label: "扁平度", type: "number", min: 0.5, max: 2.0, step: 0.1, init: (b: Bubble) => 1.0 },
     // freehand: {label: "手書き風", type:"boolean", init: (b: Bubble) => false},
   },
   "soft-mind": {
@@ -717,6 +718,7 @@ export const bubbleOptionSets: { [key: string]: any } = {
     shapeOutlineColor:  { label: "フチの色", type: "color", init: (b: Bubble) => "#ffffffff" },
     smoothing: { label: "スムース", type: "boolean", init: (b: Bubble) => true },
     roughness: { label: "ラフさ", type: "number", min: 0, max: 5, step: 0.1, init: (b: Bubble) => 0 },
+    flattening: { label: "扁平度", type: "number", min: 0.5, max: 2.0, step: 0.1, init: (b: Bubble) => 1.0 },
     // freehand: {label: "手書き風", type:"boolean", init: (b: Bubble) => false},
   },
   "rounded-mind": {
@@ -730,6 +732,7 @@ export const bubbleOptionSets: { [key: string]: any } = {
     shapeOutline: {label: "フチ", type: "number", min: 0, max: 0.2, step: 0.01, init: (b: Bubble) => 0},
     shapeOutlineColor:  { label: "フチの色", type: "color", init: (b: Bubble) => "#ffffffff" },
     roughness: { label: "ラフさ", type: "number", min: 0, max: 5, step: 0.1, init: (b: Bubble) => 0 },
+    flattening: { label: "扁平度", type: "number", min: 0.5, max: 2.0, step: 0.1, init: (b: Bubble) => 1.0 },
     // freehand: {label: "手書き風", type:"boolean", init: (b: Bubble) => false},
   },
   "none": {},
