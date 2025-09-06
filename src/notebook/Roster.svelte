@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { loadCharactersFromRoster, rosterOpen, rosterSelectedCharacter, saveCharacterToRoster } from "./rosterStore";
+  import { loadCharactersFromRoster, rosterOpen, rosterSelectedCharacter, saveCharacterToRoster, reorderRoster } from "./rosterStore";
   import Drawer from "../utils/Drawer.svelte";
   import { onMount } from "svelte";
   import type { CharacterLocal } from "../lib/book/book";
@@ -11,9 +11,24 @@
   import { _ } from 'svelte-i18n';
   import { saveCharacterToFile, loadCharacterFromFile } from "./characterExport";
   import { toastStore } from "@skeletonlabs/skeleton";
+  import { sortableList } from "../utils/sortableList";
+  import { moveInArray } from "../utils/moveInArray";
 
   let opened = false;
   let characters: CharacterLocal[] = [];
+  
+  async function onSortUpdate(e: { oldIndex: number | undefined; newIndex: number | undefined }) {
+    if (e.oldIndex == null || e.newIndex == null) return;
+    moveInArray(characters, e.oldIndex, e.newIndex);
+    // UIのみの入れ替え（永続化はしない）
+    characters = characters;
+    // ファイルシステム上の順序も更新
+    try {
+      await reorderRoster($gadgetFileSystem!, e.oldIndex, e.newIndex);
+    } catch (err) {
+      console.error('Failed to persist roster order:', err);
+    }
+  }
 
   function onClickAway() {
     $rosterOpen = false;
@@ -83,10 +98,23 @@
           キャラクターをインポート
         </button>
       </div>
-      <div class="character-list">
+      <div 
+        class="character-list"
+        use:sortableList={{ 
+          animation: 150, 
+          handle: ".character-header", 
+          filter: ".header-buttons, .header-buttons *", 
+          preventOnFilter: false,
+          fallbackOnBody: true,
+          fallbackTolerance: 8,
+          ghostClass: "sortable-ghost",
+          chosenClass: "sortable-chosen",
+          onUpdate: onSortUpdate 
+        }}
+      >
         {#each characters as character (character.ulid)}
           <div class="character-card">
-            <div class="character-header" style="border-left: 4px solid {character.themeColor};">
+            <div class="character-header" style="border-left: 4px solid {character.themeColor};" title="ドラッグして並べ替え">
               <div class="character-name-container">
                 <span class="character-name">{character.name}</span>
                 <div
@@ -206,7 +234,17 @@
     padding: 0.75rem 1rem;
     background-color: rgb(var(--color-surface-200));
     border-bottom: 1px solid rgb(var(--color-surface-300));
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
   }
+  .character-header:active { cursor: grabbing; }
+  .character-header *, .character-name { 
+    user-select: none; 
+    -webkit-user-select: none; 
+  }
+  
+  /* 旧ハンドルは不要になったため削除 */
   
   .character-name-container {
     display: flex;
@@ -272,6 +310,13 @@
   .trash-icon {
     width: 20px;
     height: 20px;
+  }
+  
+  :global(.sortable-ghost) {
+    opacity: 0.5;
+  }
+  :global(.sortable-chosen) {
+    box-shadow: 0 0 0 2px rgba(0, 100, 255, 0.2) inset;
   }
   
   .character-content {

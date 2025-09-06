@@ -58,3 +58,22 @@ export async function loadCharactersFromRoster(fs: FileSystem): Promise<Characte
   }
   return characters;
 }
+
+/**
+ * ファイルシステム上の順序を移動（oldIndex -> newIndex）。
+ * 名前(ulid)やファイルIDはそのまま、bindIdのみ再発行されます。
+ */
+export async function reorderRoster(fs: FileSystem, oldIndex: number, newIndex: number): Promise<void> {
+  const folder = (await getNodeByPath(fs, "AI/キャラクター")).asFolder()!;
+  const entries = await folder.list();
+  if (oldIndex < 0 || oldIndex >= entries.length) return;
+  if (newIndex < 0 || newIndex >= entries.length) newIndex = entries.length - 1;
+
+  const [bindId, name, nodeId] = entries[oldIndex];
+  // いったん削除
+  await folder.unlink(bindId);
+  // 削除によってインデックスが1つ詰まるので調整
+  const adjustedNewIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+  // 同じ名前（ulid）で希望位置に再挿入
+  await folder.insert(name, nodeId, adjustedNewIndex);
+}
