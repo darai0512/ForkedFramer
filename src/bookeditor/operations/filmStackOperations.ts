@@ -147,6 +147,8 @@ export async function handleCoverCommand<T extends FilmOperationTarget>(
   targetStore: any
 ): Promise<void> {
   const size = calculateSize();
+  size[0] = Math.max(size[0], 256);
+  size[1] = Math.max(size[1], 256);
   console.log("handleCoverCommand", size);
   const media = new ImageMedia(makePlainCanvas(size[0], size[1], "#ffffff00"));
   const film = new Film(media);
