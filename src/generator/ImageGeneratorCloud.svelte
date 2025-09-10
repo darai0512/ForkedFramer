@@ -73,6 +73,21 @@
     try {
       progress = 0;
       let pixelRatio = width * height / 1024 / 1024;
+
+      // 参照画像（上限はrefRange.maxまで）。
+      // プロンプト中の [ref:###] を解析し、Notebook のキャラクタ画像を優先採用し、
+      // 余剰枠をドロップゾーン画像で補完。
+      const refMaxLocal = getRefMaxForMode(mode);
+      const notebook = get(mainBook)?.notebook ?? null;
+      const refMap = portraitsRecordFromNotebook(notebook);
+      const fallbackCanvases = referenceMedias.map(m => m.drawSourceCanvas);
+      const imageDataUrls = buildImageDataUrlsForPrompt(
+        `${postfix}\n${prompt}`,
+        refMap,
+        refMaxLocal,
+        fallbackCanvases
+      );
+
       const factorTable: {[key in ImagingMode]: number}= {
         "schnell": 5,
         "pro": 12,
@@ -90,22 +105,11 @@
         "nano-banana": 12,
         "seedream/v4": 12,
       }
-      const delta = 1 / factorTable[mode] / pixelRatio;
+      // 参照画像の枚数で推定時間を増やす: 0枚=1x, 1枚=2x, 2枚以上=3x
+      const refMultiplier = 1 + Math.min(2, imageDataUrls.length);
+      const delta = 1 / (factorTable[mode] * refMultiplier) / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
 
-      // 参照画像（上限はrefRange.maxまで）。
-      // プロンプト中の [ref:###] を解析し、Notebook のキャラクタ画像を優先採用し、
-      // 余剰枠をドロップゾーン画像で補完。
-      const refMaxLocal = getRefMaxForMode(mode);
-      const notebook = get(mainBook)?.notebook ?? null;
-      const refMap = portraitsRecordFromNotebook(notebook);
-      const fallbackCanvases = referenceMedias.map(m => m.drawSourceCanvas);
-      const imageDataUrls = buildImageDataUrlsForPrompt(
-        `${postfix}\n${prompt}`,
-        refMap,
-        refMaxLocal,
-        fallbackCanvases
-      );
 
       const canvases = await executeProcessAndNotify(
         5000, $_('generator.imageGenerated'),
