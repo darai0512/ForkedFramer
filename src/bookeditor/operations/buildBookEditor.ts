@@ -33,6 +33,9 @@ export function buildBookEditor(
   );
   layeredCanvas.rootPaper.addLayer(floorLayer);
 
+  const undoLayer = new UndoLayer(() => editor.undo(), () => editor.redo());
+  layeredCanvas.rootPaper.addLayer(undoLayer);
+
   let papers: Paper[] = [];
   let pageNumber = 0;
   for (const page of book.pages) {
@@ -194,10 +197,6 @@ function buildPaper(
   defaultBubbleSlot: DefaultBubbleSlot
 ) {
   const paper = new Paper(page.paperSize, false);
-
-  // undo
-  const undoLayer = new UndoLayer(() => operators.undo(), () => operators.redo());
-  paper.addLayer(undoLayer);
 
   // renderer
   const paperRendererLayer = new PaperRendererLayer(true);
