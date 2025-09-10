@@ -324,7 +324,7 @@
       const canvases = await executeProcessAndNotify(
         5000, imageGeneratedMessage,
         async () => {
-          return await generateImage(`${postfix}\n${c.appearance}, white background`, {width:512,height:512}, imagingMode, 1, "opaque");
+          return await generateImage(`${postfix}\n${c.appearance}, white background`, {width:512,height:512}, imagingMode, 1, "opaque", []);
         });
 
       c.portrait = buildMedia(canvases[0]); // HTMLImageElement
