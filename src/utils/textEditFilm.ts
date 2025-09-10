@@ -11,7 +11,7 @@ import { waitDialog } from './waitDialog';
 import { loading } from './loadingStore';
 import type { ImagingMode, ImagingProvider, TextToImageRequest, ImagingBackground } from '$protocolTypes/imagingTypes';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
-import { modeOptions } from './feathralImaging';
+import { modeOptions, inferProvider } from './feathralImaging';
 
 type TextEditDialogResult = {
   image: HTMLCanvasElement;
@@ -55,12 +55,6 @@ export async function textEditFilm(film: Film) {
   console.log(`Added ${request.referenceImages.length} reference images to request`);
   
   // TextToImageRequest を構築（refImage>=1 で i2i/textedit 扱い）
-  const inferProvider = (m: ImagingMode): ImagingProvider => {
-    if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
-    if (m === 'qwen-image') return 'qwen';
-    if (m === 'seedream/v4') return 'seedream';
-    return 'flux';
-  };
   const req: TextToImageRequest = {
     provider: inferProvider(request.model),
     prompt: request.prompt,
