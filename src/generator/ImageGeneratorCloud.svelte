@@ -88,6 +88,7 @@
         "kontext/max": 12,
         "kontext/inscene": 12,
         "nano-banana": 12,
+        "seedream/v4": 12,
       }
       const delta = 1 / factorTable[mode] / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
@@ -115,7 +116,7 @@
             mode,
             batchCount,
             background,
-            imageDataUrls.length > 0 ? imageDataUrls : undefined
+            imageDataUrls
           );
           // return { feathral: 99, result: { image: makePlainImage(imageRequest.width, imageRequest.height, "#00ff00ff") } };
         });

@@ -19,6 +19,7 @@ export const ImagingModeSchema = z.enum([
   "kontext/max",
   "kontext/inscene",
   "nano-banana",
+  "seedream/v4",
 ]);
 export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 

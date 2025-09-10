@@ -18,11 +18,13 @@ const legacyPerMp: Record<ImagingMode, number> = {
   'kontext/pro': 0,
   'kontext/max': 0,
   'nano-banana': 0,
+  'seedream/v4': 0,
 };
 const legacyFixed: Partial<Record<ImagingMode, number>> = {
   'kontext/pro': 6,
   'kontext/max': 13,
   'nano-banana': 6,
+  'seedream/v4': 4,
 };
 
 function ceilMpCost(size: { width: number; height: number }, perMp: number) {
@@ -45,7 +47,7 @@ describe('calculateImagingCost unified equals legacy behavior', () => {
   const modes: ImagingMode[] = [
     'schnell','pro','chibi','comibg','manga',
     'gpt-image-1/low','gpt-image-1/medium','gpt-image-1/high','qwen-image',
-    'kontext/pro','kontext/max','kontext/inscene','nano-banana',
+    'kontext/pro','kontext/max','kontext/inscene','nano-banana','seedream/v4',
   ];
 
   for (const mode of modes) {
@@ -77,4 +79,3 @@ describe('calculateRequestCost ignores reference images', () => {
     expect(r0).toBe(r3);
   });
 });
-

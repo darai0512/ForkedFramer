@@ -114,7 +114,7 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
 
 // 旧個別実装は廃止し、単一の submitImagingRequest に統合
 
-export async function generateImage(prompt: string, image_size: {width: number, height: number}, mode: ImagingMode, num_images: number, background: ImagingBackground, imageDataUrls?: string[]): Promise<HTMLCanvasElement[]> {
+export async function generateImage(prompt: string, image_size: {width: number, height: number}, mode: ImagingMode, num_images: number, background: ImagingBackground, imageDataUrls: string[]): Promise<HTMLCanvasElement[]> {
   const req: TextToImageRequest = {
     provider: inferProvider(mode),
     prompt,
@@ -255,6 +255,7 @@ export const modeOptions: ModeOption[] = [
   { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
+  { value: 'seedream/v4', name: 'Seedream v4', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   // Text-edit–oriented
   { value: 'kontext/pro', name: 'Flux Kontext [Pro]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },
   { value: 'kontext/max', name: 'Flux Kontext [Max]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },
