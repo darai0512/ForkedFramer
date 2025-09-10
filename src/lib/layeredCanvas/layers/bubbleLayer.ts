@@ -1546,12 +1546,7 @@ export class BubbleLayer extends LayerBase {
     this.redraw();
   }
 
-  videoRedrawFrameId: number | undefined;
   stopVideo(bubble: Bubble | null) {
-    if (this.videoRedrawFrameId !== undefined) {
-      cancelAnimationFrame(this.videoRedrawFrameId);
-      this.videoRedrawFrameId = undefined;
-    }
     if (bubble) {
       for (const film of bubble.filmStack.films) {
         film.media.player?.pause();
@@ -1569,22 +1564,10 @@ export class BubbleLayer extends LayerBase {
         film.media.player.play();
       }
     }
-    if (playFlag) {
-      const redraw = () => {
-        this.redraw();
-        this.videoRedrawFrameId = requestAnimationFrame(redraw);
-      };
-      this.videoRedrawFrameId = requestAnimationFrame(redraw);
-    }
+    // rAFは中央ループからのtickで処理
   }
 
   tearDown() {
-    // 動画再生のrequestAnimationFrameをキャンセル
-    if (this.videoRedrawFrameId !== undefined) {
-      cancelAnimationFrame(this.videoRedrawFrameId);
-      this.videoRedrawFrameId = undefined;
-    }
-
     // 選択中のバブルの動画を停止
     if (this.selected) {
       this.stopVideo(this.selected);
@@ -1595,6 +1578,20 @@ export class BubbleLayer extends LayerBase {
   }
 
   get interactable(): boolean { return this.mode == null; }
+
+  tick(_now: number): void {
+    if (this.selected) {
+      for (const film of this.selected.filmStack.films) {
+        const src = film.media.drawSource as any;
+        if (src instanceof HTMLVideoElement) {
+          if (!src.paused && !src.ended) {
+            this.redraw();
+            break;
+          }
+        }
+      }
+    }
+  }
 
   setFold(n: number) {
     this.fold = n;
@@ -1626,4 +1623,3 @@ export class BubbleLayer extends LayerBase {
   } 
 }
 sequentializePointer(BubbleLayer);
-

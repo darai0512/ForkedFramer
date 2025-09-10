@@ -157,12 +157,7 @@ export class ViewerLayer extends LayerBase {
     this.redraw();
   }
 
-  videoRedrawFrameId: number | undefined;
   stopVideo(target: Layout | Bubble | null) {
-    if (this.videoRedrawFrameId !== undefined) {
-      cancelAnimationFrame(this.videoRedrawFrameId);
-      this.videoRedrawFrameId = undefined;
-    }
     if (target) {
       const filmStack = this.getFilmStack(target);
       for (const film of filmStack.films) {
@@ -182,13 +177,21 @@ export class ViewerLayer extends LayerBase {
         film.media.player.play();
       }
     }
-    if (playFlag) {
-      const redraw = () => {
-        this.redraw();  // 毎フレーム描画
-        this.videoRedrawFrameId = requestAnimationFrame(redraw);
-      };
+    // rAFは中央ループからのtickで処理
+  }
 
-      this.videoRedrawFrameId = requestAnimationFrame(redraw);
+  tick(_now: number): void {
+    if (this.selected) {
+      const filmStack = this.getFilmStack(this.selected);
+      for (const film of filmStack.films) {
+        const src = film.media.drawSource as any;
+        if (src instanceof HTMLVideoElement) {
+          if (!src.paused && !src.ended) {
+            this.redraw();
+            break;
+          }
+        }
+      }
     }
   }
 

@@ -388,6 +388,12 @@ export class ArrayLayer extends LayerBase {
     }
   }
 
+  tick(now: number): void {
+    for (let paper of this.array.papers) {
+      paper.paper.tick(now);
+    }
+  }
+
   renderDepths(): number[] { 
     // paper全部から集めてsort/uniq
     const depths = this.array.papers.flatMap(p => p.paper.renderDepths());

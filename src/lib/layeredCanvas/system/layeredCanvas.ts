@@ -78,6 +78,8 @@ export interface Layer {
   getPaperSize(): void;
   rebuildPageLayouts(matrix: DOMMatrix): void;
   redraw(): void;
+  // 毎フレーム呼ばれる。必要に応じて this.redraw() を発火する
+  tick(now: number): void;
   pierce(): void;
   showHint(rect: Rect | null, message: string | null): void;
 
@@ -136,6 +138,7 @@ export class LayerBase implements Layer {
   pointerUp(position: Vector, payload: any) {}
   pointerCancel(position: Vector, payload: any) {}
   prerender() {}
+  tick(_now: number) {}
   render(ctx: CanvasRenderingContext2D, depth: number) {}
   dropped(position: Vector, media: HTMLCanvasElement | HTMLVideoElement) { return false; }
   pasted(position: Vector, media: HTMLCanvasElement | HTMLVideoElement) { return false; }
@@ -325,6 +328,12 @@ export class Paper {
     }
   }
 
+  tick(now: number): void {
+    for (let layer of this.layers) {
+      layer.tick(now);
+    }
+  }
+
   render(ctx: CanvasRenderingContext2D, depth: number): void {
     // canvasの外なら表示しない
     if (!this.root) {
@@ -431,6 +440,7 @@ export class LayeredCanvas {
   rootPaper: Paper;
   listeners: [string, ((event: Event) => void)][] = [];
   dragging: Dragging | null = null;
+  private rafId: number | null = null;
 
   // layeredCanvasより長い寿命を持つ
   get pointerCursor(): Vector | null {return (this.viewport.canvas as any)["pointerCursor"];}
@@ -496,7 +506,8 @@ export class LayeredCanvas {
         }
       }, 1000);
 
-      setInterval(() => {this.redrawIfRequired();}, 33);
+      // Start RAF-driven redraw loop instead of setInterval polling
+      this.startRafLoop();
     }
   }
 
@@ -511,6 +522,10 @@ export class LayeredCanvas {
   cleanup(): void {
     if (this.keyDownHandler) {
       document.removeEventListener('keydown', this.keyDownHandler);
+    }
+    if (this.rafId !== null) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
     }
     for (let listener of this.listeners) {
       this.viewport.canvas.removeEventListener(...listener);
@@ -729,6 +744,17 @@ export class LayeredCanvas {
       this.render();
       return;
     }
+  }
+
+  private startRafLoop() {
+    const tick = () => {
+      const now = performance.now();
+      // 各レイヤーに毎フレーム通知し、必要なら redraw を発火させる
+      this.rootPaper.tick(now);
+      this.redrawIfRequired();
+      this.rafId = requestAnimationFrame(tick);
+    };
+    this.rafId = requestAnimationFrame(tick);
   }
 
   pierceIfRequired(): void {

@@ -1245,12 +1245,7 @@ export class FrameLayer extends LayerBase {
     this.onFocus(layout);
   }
 
-  videoRedrawFrameId: number | undefined;
   stopVideo(layout: Layout | null) {
-    if (this.videoRedrawFrameId !== undefined) {
-      cancelAnimationFrame(this.videoRedrawFrameId);
-      this.videoRedrawFrameId = undefined;
-    }
     if (layout) {
       for (const film of layout.element.filmStack.films) {
         film.media.player?.pause();
@@ -1268,19 +1263,27 @@ export class FrameLayer extends LayerBase {
         film.media.player.play();
       }
     }
-    if (playFlag) {
-      const redraw = () => {
-        this.redraw();  // 毎フレーム描画
-        this.videoRedrawFrameId = requestAnimationFrame(redraw);
-      };
-
-      this.videoRedrawFrameId = requestAnimationFrame(redraw);
-    }
+    // rAFは中央ループでtick()から発火
   }
 
   selectLayout(layout: Layout | null): void {
     this.doSelectLayout(layout);
     this.focusKeeper.setFocus(layout == null ? null : this);
+  }
+
+  tick(_now: number): void {
+    if (this.selectedLayout) {
+      const films = this.selectedLayout.element.filmStack.films;
+      for (const film of films) {
+        const src = film.media.drawSource as any;
+        if (src instanceof HTMLVideoElement) {
+          if (!src.paused && !src.ended) {
+            this.redraw();
+            break;
+          }
+        }
+      }
+    }
   }
 
   drawFilmBorders(ctx: CanvasRenderingContext2D, layout: Layout) {
@@ -1308,12 +1311,6 @@ export class FrameLayer extends LayerBase {
   get interactable(): boolean { return this.mode == null; }
 
   tearDown() {
-    // 動画再生のrequestAnimationFrameをキャンセル
-    if (this.videoRedrawFrameId !== undefined) {
-      cancelAnimationFrame(this.videoRedrawFrameId);
-      this.videoRedrawFrameId = undefined;
-    }
-
     // 選択中のレイアウトの動画を停止
     if (this.selectedLayout) {
       this.stopVideo(this.selectedLayout);
