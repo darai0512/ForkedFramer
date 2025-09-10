@@ -32,7 +32,7 @@
 </script>
 
 <div class="gallery">
-  {#each items as item}
+  {#each items as item (item)}
     <GalleryMember
       item={item}
       {columnWidth}

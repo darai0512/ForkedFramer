@@ -19,6 +19,8 @@
   const distach = createEventDispatcher();
 
   function onDelete(e: CustomEvent<Media>) {
+    // 子の削除イベントはここで止めて、親(Gallery)に二重で届かないようにする
+    e.stopPropagation();
     console.log('GalleryMember.onDelete(before)', e.detail, medias!.length);
     medias = medias!.filter(c => c !== e.detail);
     console.log('GalleryMember.onDelete(after)', e.detail, medias!.length);
@@ -59,7 +61,7 @@
     <MediaLoading width={columnWidth} />
   </div>
 {:else}
-  {#each medias as media}
+  {#each medias as media (media)}
     <GalleryElement
       bind:chosen
       bind:refered

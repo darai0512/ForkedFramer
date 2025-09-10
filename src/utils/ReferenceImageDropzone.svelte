@@ -17,6 +17,8 @@
   export let itemDeletable: boolean = true;    // 各アイテムの削除ボタン
 
   const dispatch = createEventDispatcher();
+  // GalleryItem(ローダ関数 or Media) と 実体Mediaの対応を保持
+  const mediaMap: WeakMap<GalleryItem, Media[]> = new WeakMap();
 
   async function onFileDrop(files: FileList) {
     const newGalleryItems: GalleryItem[] = [];
@@ -39,6 +41,11 @@
           }
           // 実際にロードされたタイミングでメディアを更新
           referenceMedias = [...referenceMedias, media];
+          // ローダ関数とMediaの対応を保存
+          try {
+            const existing = mediaMap.get(loadMedia) ?? [];
+            mediaMap.set(loadMedia, [...existing, media]);
+          } catch {}
           // 親へ反映
           dispatch('update', { referenceImages, referenceMedias });
           return [media];
@@ -56,13 +63,16 @@
   }
   
   function onReferenceImageDelete(e: CustomEvent<GalleryItem>) {
-    // Galleryアイテムと対応するメディアを削除
-    const index = referenceImages.indexOf(e.detail as GalleryItem);
-    if (index !== -1) {
-      referenceMedias.splice(index, 1);
-      referenceMedias = [...referenceMedias]; // リアクティブ更新
+    // Galleryアイテムと対応するメディアを削除（マップベースで確実に対応づけ）
+    const item = e.detail as GalleryItem;
+    const mediasToRemove = mediaMap.get(item) ?? [];
+    if (mediasToRemove.length > 0) {
+      referenceMedias = referenceMedias.filter(m => !mediasToRemove.includes(m));
     }
-    referenceImages = referenceImages.filter(item => item !== e.detail);
+    // アイテム自体を削除
+    referenceImages = referenceImages.filter(i => i !== item);
+    // マップのクリーンアップ
+    mediaMap.delete(item);
     
     // 親コンポーネントに変更を通知
     dispatch('update', {
@@ -74,6 +84,7 @@
   function onClearAll() {
     referenceImages = [];
     referenceMedias = [];
+    // マップのクリアは不要（WeakMapなので参照がなくなればGCされる）
     
     // 親コンポーネントに変更を通知
     dispatch('update', {
