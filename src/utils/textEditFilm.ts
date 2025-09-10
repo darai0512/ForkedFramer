@@ -58,6 +58,7 @@ export async function textEditFilm(film: Film) {
   const inferProvider = (m: ImagingMode): ImagingProvider => {
     if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
     if (m === 'qwen-image') return 'qwen';
+    if (m === 'seedream/v4') return 'seedream';
     return 'flux';
   };
   const req: TextToImageRequest = {

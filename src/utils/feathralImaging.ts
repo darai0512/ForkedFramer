@@ -90,6 +90,7 @@ export function buildImageDataUrlsForPrompt(
 function inferProvider(m: ImagingMode): ImagingProvider {
   if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
   if (m === 'qwen-image') return 'qwen';
+  if (m === 'seedream/v4') return 'seedream';
   return 'flux';
 }
 
@@ -255,7 +256,7 @@ export const modeOptions: ModeOption[] = [
   { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  { value: 'seedream/v4', name: 'Seedream v4', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
+  { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   // Text-edit–oriented
   { value: 'kontext/pro', name: 'Flux Kontext [Pro]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },
   { value: 'kontext/max', name: 'Flux Kontext [Max]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },

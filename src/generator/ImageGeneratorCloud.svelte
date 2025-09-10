@@ -185,17 +185,17 @@
   {/if}
 
   <div class="hbox gap-5 mt-4">
-    {#if uiType == 'flux'}
-    <div class="hbox gap-5">
-      <div class="vbox" style="width: 400px;">
-        <SliderEdit label="width" bind:value={width} min={512} max={1536} step={128}/>
-        <SliderEdit label="height" bind:value={height} min={512} max={1536} step={128}/>
+    {#if uiType == 'flux' || uiType == 'seedream'}
+      <div class="hbox gap-5">
+        <div class="vbox" style="width: 400px;">
+          <SliderEdit label="width" bind:value={width} min={512} max={1536} step={128}/>
+          <SliderEdit label="height" bind:value={height} min={512} max={1536} step={128}/>
+        </div>
       </div>
-    </div>
 
-    <div class="vbox">
-      <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
-    </div>
+      <div class="vbox">
+        <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
+      </div>
     {/if}
     {#if uiType == 'gpt-image-1'}
       <select class="select h-8 p-0 w-64" bind:value={sizeText}>
