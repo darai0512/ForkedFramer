@@ -2,7 +2,7 @@ import { decode, encode } from 'cbor-x'
 import { ulid } from 'ulid';
 import { unpackFrameMedias, unpackBubbleMedias, unpackNotebookMedias, packFrameMedias, packBubbleMedias, packNotebookMedias } from "./imagePacking";
 import type { SaveMediaFunc, MediaResource, MediaType } from "./imagePacking";
-import type { Book, Page, WrapMode, ReadingDirection, SerializedPage, SerializedNotebook, SerializedNewPageProperty, NotebookLocal } from "./book";
+import type { Book, Page, WrapMode, ReadingDirection, SerializedPage, SerializedNotebook, SerializedNewPageProperty, NotebookLocal, EnvelopeBookAttributes } from "./book";
 import { emptyNotebook, trivialNewPageProperty } from "./book";
 import { Bubble } from "../layeredCanvas/dataModels/bubble";
 import { FrameElement } from "../layeredCanvas/dataModels/frameTree";
@@ -10,15 +10,26 @@ import { createCanvasFromImage, getFirstFrameOfVideo, canvasToBlob } from "../la
 
 // 互換性維持のため、imagesは残してmediasを追加する
 
-export type EnvelopedBook = {
-  pages: SerializedPage[],
-  direction: ReadingDirection,
-  wrapMode: WrapMode,
-  images?: { [fileId: string]: Uint8Array },
-  medias?: { [fileId: string]: { type: MediaType, data: Uint8Array, format?: string } },
-  notebook: SerializedNotebook | null,
-  newPageProperty: SerializedNewPageProperty | null,
+type EnvelopedBookBase = {
+  pages: SerializedPage[];
+  direction: ReadingDirection;
+  wrapMode: WrapMode;
+  notebook: SerializedNotebook | null;
+  newPageProperty: SerializedNewPageProperty | null;
+  attributes?: EnvelopeBookAttributes | null;
 };
+
+export type EnvelopedBookWithImages = EnvelopedBookBase & {
+  images: { [fileId: string]: Uint8Array };
+  medias?: undefined;
+};
+
+export type EnvelopedBookWithMedias = EnvelopedBookBase & {
+  medias: { [fileId: string]: { type: MediaType; data: Uint8Array; format?: string } };
+  images?: undefined;
+};
+
+export type EnvelopedBook = EnvelopedBookWithImages | EnvelopedBookWithMedias;
 
 export type CanvasBag = { [fileId: string]: { type: MediaType, data: HTMLCanvasElement | HTMLVideoElement } };
 
@@ -27,7 +38,7 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
   const envelopedBook: EnvelopedBook = decode(uint8Array);
 
   const bag: CanvasBag = {};
-  if (envelopedBook.images) {
+  if ("images" in envelopedBook && envelopedBook.images) {
     progress(0);
     for (const imageId in envelopedBook.images) {
       const blob = new Blob([envelopedBook.images[imageId]], { type: 'image/png' });
@@ -42,7 +53,7 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
       progress(Object.keys(bag).length / Object.keys(envelopedBook.images).length);
     }
   }
-  if (envelopedBook.medias) {
+  if ("medias" in envelopedBook && envelopedBook.medias) {
     progress(0);
     for (const mediaId in envelopedBook.medias) {
       const media = envelopedBook.medias[mediaId];
@@ -74,6 +85,9 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
     ? await unpackNotebookMedias(envelopedBook.notebook, async (imageId: string) => bag[imageId].data) 
     : emptyNotebook();
 
+  // attributes は publishUrl を含まないため、Book側で publishUrl のみ既定値を付与
+  const envelopeAttributes: EnvelopeBookAttributes | null = envelopedBook.attributes ?? null;
+
   const book: Book = {
     revision: { id: 'not visited', revision: 1, prefix: 'envelope-' },
     pages: [],
@@ -82,7 +96,7 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
     wrapMode: envelopedBook.wrapMode,
     chatLogs: [],
     notebook,
-    attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
+    attributes: { publishUrl: null, ...(envelopeAttributes ?? {}) },
     newPageProperty: envelopedBook.newPageProperty ?? {...trivialNewPageProperty},
   };
 
@@ -116,6 +130,10 @@ export async function writeEnvelope(book: Book, progress: (n: number) => void): 
     notebook: null,
     medias: {},
     newPageProperty: book.newPageProperty,
+    attributes: {
+      showVideoPlayButton: book.attributes?.showVideoPlayButton,
+      showVideoDottedBorder: book.attributes?.showVideoDottedBorder,
+    },
   };
 
   envelopedBook.notebook = await putNotebookMedias(book.notebook, envelopedBook.medias!);

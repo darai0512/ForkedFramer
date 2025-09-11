@@ -114,6 +114,12 @@ export type SerializedBookAttributes = {
   showVideoDottedBorder?: boolean,
 }
 
+// Envelope用: 公開URLは含めない
+export type EnvelopeBookAttributes = {
+  showVideoPlayButton?: boolean,
+  showVideoDottedBorder?: boolean,
+}
+
 export type SerializedCharacter = {
   name: string;
   personality: string;
