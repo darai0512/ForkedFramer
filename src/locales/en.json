@@ -170,7 +170,11 @@
     "wrapMode": "Wrap Mode",
     "none": "None",
     "scale": "Scale",
-    "directionAndWrap": "Direction & Wrap"
+    "directionAndWrap": "Direction & Wrap",
+    "videoDisplay": "Video Display",
+    "showVideoPlayButton": "Show play button on video panels/bubbles",
+    "showVideoDottedBorder": "Show dotted border on video panels/bubbles",
+    "videoDisplayNote": "Video display settings apply only when posting to Manga Farm."
   },
   "bubble": {
     "text": "Text",

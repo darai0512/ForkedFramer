@@ -145,6 +145,17 @@ export async function loadBookFrom(fileSystem: FileSystem, file: File): Promise<
       templateName: "standard",
     }
   }
+  const defaultAttributes = {
+    publishUrl: null as string | null,
+    showVideoPlayButton: true,
+    showVideoDottedBorder: true,
+  };
+
+  const mergedAttributes = {
+    ...defaultAttributes,
+    ...(serializedBook.attributes ?? {}),
+  };
+
   const book: Book = {
     revision: serializedBook.revision,
     pages: [],
@@ -156,7 +167,7 @@ export async function loadBookFrom(fileSystem: FileSystem, file: File): Promise<
     wrapMode: serializedBook.wrapMode ?? 'none',
     chatLogs,
     notebook: notebook,
-    attributes: serializedBook.attributes ?? { publishUrl: null },
+    attributes: mergedAttributes,
     newPageProperty: serializedBook.newPageProperty
   };
 
@@ -210,7 +221,7 @@ async function wrapPageAsBook(serializedPage: any, frameTree: FrameElement, bubb
     wrapMode: 'none',
     chatLogs: [],
     notebook: emptyNotebook(),
-    attributes: { publishUrl: null },
+    attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: {
       paperSize: [840, 1188],
       paperColor: "#FFFFFF",

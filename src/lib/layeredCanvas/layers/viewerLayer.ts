@@ -6,23 +6,37 @@ import type { FocusKeeper } from "../tools/focusKeeper";
 import { keyDownFlags } from "../system/keyCache";
 import { ClickableIcon } from "../tools/draw/clickableIcon";
 import { type FilmStack } from "../dataModels/film";
+import { drawSelectionFrame } from "../tools/draw/selectionFrame";
+import { rectToTrapezoid } from "../tools/geometry/trapezoid";
 
 export class ViewerLayer extends LayerBase {
   private selected: Layout | Bubble | null = null;
   private playIcon: ClickableIcon;
+  private dashPhase: number = 0;
+  private lastNow: number | null = null;
+  private readonly dashSpeed: number = 10; // px/sec 相当（ゆっくり）
+  private readonly showPlayButton: boolean;
+  private readonly showDottedBorder: boolean;
 
   constructor(
     private frameTree: FrameElement,
     private bubbles: Bubble[],
     private onFocus: (target: Layout | Bubble | null) => void,
     private focusKeeper: FocusKeeper,
+    showPlayButton: boolean,
+    showDottedBorder: boolean,
   ) {
     super();
 
     this.playIcon = new ClickableIcon(["viewerLayer/play.webp"],[32,32],[1,1],"再生", () => true, () => this.paper.matrix);
 
     focusKeeper.subscribe(this.changeFocus.bind(this));
+
+    this.showPlayButton = showPlayButton;
+    this.showDottedBorder = showDottedBorder;
   }
+
+  renderDepths(): number[] { return [0,1]; }
 
   calculateRootLayout(): Layout {
     return calculatePhysicalLayout(this.frameTree, this.getPaperSize(), [0, 0]);
@@ -63,11 +77,27 @@ export class ViewerLayer extends LayerBase {
 
   private renderFramePlayButtons(ctx: CanvasRenderingContext2D, layout: Layout): void {
     if (this.hasVideo(layout?.element.filmStack)) {
+      // 動画枠の点線（ゆっくり回転するマーチングアリ）
+      if (this.showDottedBorder) {
+        drawSelectionFrame(
+          ctx,
+          "rgba(128, 128, 128, 1)",
+          layout.corners,
+          2,
+          5,
+          false,
+          this.dashPhase,
+          [20, 20]
+        );
+      }
+
       // 再生ボタンを描画
-      this.playIcon.position = subtract2D(layout.corners.bottomRight, [8,8]);
-      this.playIcon.pivot = [1, 1];      
-      this.playIcon.shadowColor = "rgba(0, 0, 0, 0.5)";
-      this.playIcon.render(ctx);
+      if (this.showPlayButton) {
+        this.playIcon.position = subtract2D(layout.corners.bottomRight, [8,8]);
+        this.playIcon.pivot = [1, 1];      
+        this.playIcon.shadowColor = "rgba(0, 0, 0, 0.5)";
+        this.playIcon.render(ctx);
+      }
     }
 
     // 子レイアウトを再帰的に描画
@@ -83,11 +113,27 @@ export class ViewerLayer extends LayerBase {
         const [x0, y0, w, h] = bubble.getPhysicalRect(paperSize);
         const p: Vector = [x0 + w / 2, y0];
 
+        // 動画フキダシの点線（回転）
+        if (this.showDottedBorder) {
+          drawSelectionFrame(
+            ctx,
+            "rgba(128, 128, 128, 1)",
+            rectToTrapezoid([x0, y0, w, h]),
+            2,
+            5,
+            false,
+            this.dashPhase,
+            [20, 20]
+          );
+        }
+
         // 再生ボタンを描画
-        this.playIcon.position = p;
-        this.playIcon.pivot = [0.5, 0];
-        this.playIcon.shadowColor = "rgba(0, 0, 0, 0.5)";
-        this.playIcon.render(ctx);
+        if (this.showPlayButton) {
+          this.playIcon.position = p;
+          this.playIcon.pivot = [0.5, 0];
+          this.playIcon.shadowColor = "rgba(0, 0, 0, 0.5)";
+          this.playIcon.render(ctx);
+        }
       }
     }
   }
@@ -180,7 +226,17 @@ export class ViewerLayer extends LayerBase {
     // rAFは中央ループからのtickで処理
   }
 
-  tick(_now: number): void {
+  tick(now: number): void {
+    // 点線回転を進める（動画がある場合のみ）
+    if (this.hasAnyVideo() && this.showDottedBorder) {
+      if (this.lastNow == null) { this.lastNow = now; }
+      const dt = now - this.lastNow;
+      this.lastNow = now;
+      this.dashPhase = (this.dashPhase + (this.dashSpeed * dt) / 1000) % 10000;
+      this.redraw();
+    }
+
+    // 再生中動画があればレイヤーを更新（従来のロジック）
     if (this.selected) {
       const filmStack = this.getFilmStack(this.selected);
       for (const film of filmStack.films) {
@@ -208,6 +264,25 @@ export class ViewerLayer extends LayerBase {
       if (film.media.player) {
         return true;
       }
+    }
+    return false;
+  }
+
+  private hasAnyVideoInLayout(layout: Layout): boolean {
+    if (this.hasVideo(layout.element.filmStack)) { return true; }
+    if (layout.children) {
+      for (const child of layout.children) {
+        if (this.hasAnyVideoInLayout(child)) { return true; }
+      }
+    }
+    return false;
+  }
+
+  private hasAnyVideo(): boolean {
+    const root = this.calculateRootLayout();
+    if (this.hasAnyVideoInLayout(root)) { return true; }
+    for (const b of this.bubbles) {
+      if (this.hasVideo(b.filmStack)) { return true; }
     }
     return false;
   }

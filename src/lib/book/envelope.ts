@@ -82,7 +82,7 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
     wrapMode: envelopedBook.wrapMode,
     chatLogs: [],
     notebook,
-    attributes: { publishUrl: null },
+    attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: envelopedBook.newPageProperty ?? {...trivialNewPageProperty},
   };
 
@@ -227,7 +227,7 @@ export async function readOldEnvelope(json: string): Promise<Book> {
     wrapMode: envelopedBook.wrapMode,
     chatLogs: [],
     notebook: envelopedBook.notebook ?? emptyNotebook(),
-    attributes: { publishUrl: null },
+    attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: {...trivialNewPageProperty},
   };
 

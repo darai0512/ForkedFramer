@@ -174,7 +174,9 @@ function addViewerLayer(
   paper: Paper,
   page: Page,
   focusKeeper: FocusKeeper,
-  operators: BookOperators
+  operators: BookOperators,
+  showPlayButton: boolean,
+  showDottedBorder: boolean,
 ): ViewerLayer {
   const viewerLayer = new ViewerLayer(
     page.frameTree,
@@ -182,7 +184,9 @@ function addViewerLayer(
     (layout: Layout | Bubble | null) => {
       console.log('viewer: Clicked', layout);
     },
-    focusKeeper
+    focusKeeper,
+    showPlayButton,
+    showDottedBorder
   );
   paper.addLayer(viewerLayer);
   return viewerLayer;
@@ -204,44 +208,54 @@ function buildPaper(
   paperRendererLayer.setBubbles(page.bubbles);
   paper.addLayer(paperRendererLayer);
 
-  // frame and viewer
-  const frameLayer = addFrameLayer(paper, page, paperRendererLayer, focusKeeper, operators);
+  if (false) {
+    // frame
+    const frameLayer = addFrameLayer(paper, page, paperRendererLayer, focusKeeper, operators);
 
-  // bubbles
-  const bubbleLayer = new BubbleLayer(
-    layeredCanvas.viewport,
-    focusKeeper,
-    paperRendererLayer,
-    defaultBubbleSlot,
-    page.bubbles,
-    2,
-    (bubble: Bubble | null) => {
-      operators.focusBubble(page, bubble);
-    },
-    (weak?: boolean) => {
-      operators.commit(weak ? 'bubble' : null);
-    },
-    () => {
-      operators.revert();
-    },
-    (bubble: Bubble) => {
-      potentialCrossPage(layeredCanvas, book, page, bubble);
-    },
-    (bubble: Bubble) => {
-      operators.coverBubble(page, bubble);      
-    },
-    (bubble: Bubble) => {
-      operators.scribbleBubble(page, bubble);      
-    }
-  );
-  paper.addLayer(bubbleLayer);
+    // bubble
+    const bubbleLayer = new BubbleLayer(
+      layeredCanvas.viewport,
+      focusKeeper,
+      paperRendererLayer,
+      defaultBubbleSlot,
+      page.bubbles,
+      2,
+      (bubble: Bubble | null) => {
+        operators.focusBubble(page, bubble);
+      },
+      (weak?: boolean) => {
+        operators.commit(weak ? 'bubble' : null);
+      },
+      () => {
+        operators.revert();
+      },
+      (bubble: Bubble) => {
+        potentialCrossPage(layeredCanvas, book, page, bubble);
+      },
+      (bubble: Bubble) => {
+        operators.coverBubble(page, bubble);      
+      },
+      (bubble: Bubble) => {
+        operators.scribbleBubble(page, bubble);      
+      }
+    );
+    paper.addLayer(bubbleLayer);
 
-  // viewer (debug)
-  // addViewerLayer(paper, page, focusKeeper, operators);
+    // inline painter
+    const inlinePainterLayer = new InlinePainterLayer(frameLayer, () => operators.chase());
+    paper.addLayer(inlinePainterLayer);
 
-  // inline painter
-  const inlinePainterLayer = new InlinePainterLayer(frameLayer, () => operators.chase());
-  paper.addLayer(inlinePainterLayer);
+  } else {
+    // viewer (debug)
+    addViewerLayer(
+      paper,
+      page,
+      focusKeeper,
+      operators,
+      book.attributes.showVideoPlayButton ?? true,
+      book.attributes.showVideoDottedBorder ?? true
+    );
+  }
 
   return paper;
 }

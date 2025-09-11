@@ -63,6 +63,8 @@ export type VideoSettings = {
 
 export type BookAtributes = {
   publishUrl: string | null;
+  showVideoPlayButton?: boolean;
+  showVideoDottedBorder?: boolean;
 }
 
 export type NewPageProperty = {
@@ -108,6 +110,8 @@ export type SerializedPage = {
 
 export type SerializedBookAttributes = {
   publishUrl: string | null,
+  showVideoPlayButton?: boolean,
+  showVideoDottedBorder?: boolean,
 }
 
 export type SerializedCharacter = {
@@ -257,7 +261,7 @@ export function newBook(id: string, prefix: Prefix, exampleName: string): Book {
     wrapMode: 'two-pages',
     chatLogs: [],
     notebook: emptyNotebook(),
-    attributes: { publishUrl: null },
+    attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: {...trivialNewPageProperty},
   }
   commitBook(book, null);
@@ -290,7 +294,7 @@ export function newImageBook(id: string, media: (HTMLCanvasElement | HTMLVideoEl
     wrapMode: 'none',
     chatLogs: [],
     notebook: emptyNotebook(),
-    attributes: { publishUrl: null },
+    attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty,
   }
   commitBook(book, null);

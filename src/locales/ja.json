@@ -170,7 +170,11 @@
     "wrapMode": "折り返し",
     "none": "なし",
     "scale": "拡大率",
-    "directionAndWrap": "進行方向・折り返し"
+    "directionAndWrap": "進行方向・折り返し",
+    "videoDisplay": "動画表示",
+    "showVideoPlayButton": "動画コマ/フキダシに再生ボタンを表示",
+    "showVideoDottedBorder": "動画コマ/フキダシに点線枠を表示",
+    "videoDisplayNote": "動画表示設定はまんがファーム投稿時にだけ適用されます。"
   },
   "bubble": {
     "text": "テキスト",

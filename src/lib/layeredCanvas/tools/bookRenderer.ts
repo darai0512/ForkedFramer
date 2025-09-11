@@ -53,7 +53,9 @@ export function buildBookRenderer(canvas: HTMLCanvasElement, book: Book, startIn
     for (const bubble of page.bubbles) {
       bubble.pageNumber = i;
     }
-    papers.push(buildPaper(page, focusKeeper));
+    const showPlayButton = book.attributes?.showVideoPlayButton ?? true;
+    const showDottedBorder = book.attributes?.showVideoDottedBorder ?? true;
+    papers.push(buildPaper(page, focusKeeper, showPlayButton, showDottedBorder));
   }
   const direction = getDirectionFromReadingDirection(book.direction);
   const {fold, gapX, gapY} = getFoldAndGapFromWrapMode(book.wrapMode);
@@ -79,7 +81,7 @@ export function destroyBookRenderer(renderer: BookRenderer) {
   renderer.cleanup();
 }
 
-function buildPaper(page: Page, focusKeeper: FocusKeeper): Paper {
+function buildPaper(page: Page, focusKeeper: FocusKeeper, showPlayButton: boolean, showDottedBorder: boolean): Paper {
   const paper = new Paper(page.paperSize, false);
 
   // renderer
@@ -95,7 +97,9 @@ function buildPaper(page: Page, focusKeeper: FocusKeeper): Paper {
     (target: Layout | Bubble | null)=>{
       console.log(target);
     }, 
-    focusKeeper)
+    focusKeeper,
+    showPlayButton,
+    showDottedBorder)
   paper.addLayer(viewerLayer);
 
   // frame

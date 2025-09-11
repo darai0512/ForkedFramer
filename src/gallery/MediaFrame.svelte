@@ -16,6 +16,16 @@
   let canvas: HTMLCanvasElement;
   let containerDiv: HTMLDivElement;
 
+  // iOS Safari向けベンダー属性を型安全に付与するためのアクション
+  function webkitPlaysinline(node: HTMLVideoElement) {
+    node.setAttribute('webkit-playsinline', '');
+    return {
+      destroy() {
+        node.removeAttribute('webkit-playsinline');
+      }
+    };
+  }
+
   async function updateMediaDisplay() {
     if (media.type === 'image' && media.drawSourceCanvas) {
       if (!useCanvas) {
@@ -73,7 +83,7 @@
         src={getVideoSource(media)}
         controls={showControls}
         playsinline
-        webkit-playsinline
+        use:webkitPlaysinline
         class="media-element"
         draggable="true"
         on:click

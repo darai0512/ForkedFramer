@@ -123,6 +123,8 @@
       pages: book.pages.map(p => ({id:p.id, size:p.paperSize})),
       direction: book.direction,
       wrapMode: book.wrapMode,
+      showVideoPlayButton: book.attributes?.showVideoPlayButton ?? true,
+      showVideoDottedBorder: book.attributes?.showVideoDottedBorder ?? true,
     };
     return JSON.stringify(s);
   }

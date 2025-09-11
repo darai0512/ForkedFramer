@@ -7,6 +7,7 @@
   import ExponentialSliderEdit from '../utils/ExponentialSliderEdit.svelte';
   import SliderEdit from '../utils/SliderEdit.svelte';
   import type { Book } from '../lib/book/book';
+  import { commit } from '../bookeditor/operations/commitOperations';
   import { _ } from 'svelte-i18n';
 
   let min = 256;
@@ -54,6 +55,55 @@
 
   $: book = $mainBook!;
 
+  // direction / wrap / video flags を変更時に即コミットする派生ストア
+  const readingDirection = writableDerived(
+    mainBook,
+    (b) => b?.direction!,
+    (s, b) => {
+      if (b && s) {
+        b.direction = s as any;
+        commit(null);
+      }
+      return b;
+    }
+  );
+
+  const wrapModeStore = writableDerived(
+    mainBook,
+    (b) => b?.wrapMode!,
+    (s, b) => {
+      if (b && s) {
+        b.wrapMode = s as any;
+        commit(null);
+      }
+      return b;
+    }
+  );
+
+  const showVideoPlayButtonStore = writableDerived(
+    mainBook,
+    (b) => b?.attributes.showVideoPlayButton ?? true,
+    (s, b) => {
+      if (b) {
+        b.attributes.showVideoPlayButton = !!s;
+        commit(null);
+      }
+      return b;
+    }
+  );
+
+  const showVideoDottedBorderStore = writableDerived(
+    mainBook,
+    (b) => b?.attributes.showVideoDottedBorder ?? true,
+    (s, b) => {
+      if (b) {
+        b.attributes.showVideoDottedBorder = !!s;
+        commit(null);
+      }
+      return b;
+    }
+  );
+
   function setDimensions(w: number, h: number) {
     // 入れ物ごと交換するとbindが崩れる模様
     const p = $mainBook!.newPageProperty;
@@ -64,6 +114,15 @@
 
   $: onBookChanged(book);
   function onBookChanged(b: Book) {
+    // attributesのデフォルト補完（ドキュメント保存用）
+    if (b && b.attributes) {
+      if (b.attributes.showVideoPlayButton == null) {
+        b.attributes.showVideoPlayButton = true;
+      }
+      if (b.attributes.showVideoDottedBorder == null) {
+        b.attributes.showVideoDottedBorder = true;
+      }
+    }
     $mainBook = b;
   }
 
@@ -106,16 +165,16 @@
           <h2>{$_('editor.direction')}</h2>
           <div class="radio-box hbox">
             <RadioGroup active="variant-filled-primary" hover="hover:variant-soft-primary">
-              <RadioItem bind:group={book.direction} name="direction" value={'right-to-left'}><span class="radio-text">◀</span></RadioItem>
-              <RadioItem bind:group={book.direction} name="direction" value={'left-to-right'}><span class="radio-text">▶</span></RadioItem>
+              <RadioItem bind:group={$readingDirection} name="direction" value={'right-to-left'}><span class="radio-text">◀</span></RadioItem>
+              <RadioItem bind:group={$readingDirection} name="direction" value={'left-to-right'}><span class="radio-text">▶</span></RadioItem>
             </RadioGroup>
           </div>
           <h2>{$_('editor.wrap')}</h2>
           <div class="radio-box hbox">
             <RadioGroup active="variant-filled-primary" hover="hover:variant-soft-primary">
-              <RadioItem bind:group={book.wrapMode} name="wrap-mode" value={'none'}><span class="radio-text">{$_('editor.none')}</span></RadioItem>
-              <RadioItem bind:group={book.wrapMode} name="wrap-mode" value={'two-pages'}><span class="radio-text">2p</span></RadioItem>
-              <RadioItem bind:group={book.wrapMode} name="wrap-omde" value={'one-page'}><span class="radio-text">1p</span></RadioItem>
+              <RadioItem bind:group={$wrapModeStore} name="wrap-mode" value={'none'}><span class="radio-text">{$_('editor.none')}</span></RadioItem>
+              <RadioItem bind:group={$wrapModeStore} name="wrap-mode" value={'two-pages'}><span class="radio-text">2p</span></RadioItem>
+              <RadioItem bind:group={$wrapModeStore} name="wrap-omde" value={'one-page'}><span class="radio-text">1p</span></RadioItem>
             </RadioGroup>
           </div>
         </div>
@@ -128,6 +187,27 @@
             <SliderEdit bind:value={$scale} min={10} max={400} step={1}/>％
           </div>
           <button class="btn btn-sm variant-filled paper-size" on:click={() => $scale=100}>100%</button>
+        </div>
+      </details>
+
+      <details open>
+        <summary>{$_('editor.videoDisplay')}</summary>
+        <div class="section">
+          <label class="flex flex-row items-center gap-2">
+            <input 
+              type="checkbox" 
+              bind:checked={$showVideoPlayButtonStore}
+            >
+            <span>{$_('editor.showVideoPlayButton')}</span>
+          </label>
+          <label class="flex flex-row items-center gap-2">
+            <input 
+              type="checkbox" 
+              bind:checked={$showVideoDottedBorderStore}
+            >
+            <span>{$_('editor.showVideoDottedBorder')}</span>
+          </label>
+          <p>{$_('editor.videoDisplayNote')}</p>
         </div>
       </details>
     </div>

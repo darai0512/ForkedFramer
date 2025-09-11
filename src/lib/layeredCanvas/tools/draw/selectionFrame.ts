@@ -4,7 +4,16 @@ import paper from 'paper';
 
 const SHEET_MARGIN = 16;
 
-export function drawSelectionFrame(ctx: CanvasRenderingContext2D, color: string, trapezoid: Trapezoid, nearLineWidth: number = 7, farLineWidth = 10, drawsCircles = true) {
+export function drawSelectionFrame(
+  ctx: CanvasRenderingContext2D,
+  color: string,
+  trapezoid: Trapezoid,
+  nearLineWidth: number = 7,
+  farLineWidth: number = 10,
+  drawsCircles: boolean = true,
+  dashOffset: number = 0,
+  dashPattern: number[] = [20, 20]
+) {
   ctx.save();
 
   // まず白で枠を描く
@@ -18,7 +27,8 @@ export function drawSelectionFrame(ctx: CanvasRenderingContext2D, color: string,
   // 指定された色で点線を描く
   ctx.strokeStyle = color;
   ctx.lineWidth = nearLineWidth;
-  ctx.setLineDash([20, 20]);
+  ctx.setLineDash(dashPattern);
+  ctx.lineDashOffset = dashOffset;
   ctx.beginPath();
   trapezoidPath(ctx, trapezoid);
   ctx.stroke();

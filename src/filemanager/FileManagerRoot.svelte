@@ -320,7 +320,7 @@
         wrapMode: 'none',
         chatLogs: [],
         notebook: emptyNotebook(),
-        attributes: { publishUrl: null },
+        attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
         newPageProperty: {...trivialNewPageProperty}
       }
       commitBook(book, null);
