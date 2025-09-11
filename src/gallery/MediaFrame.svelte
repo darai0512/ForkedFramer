@@ -72,6 +72,8 @@
       <video 
         src={getVideoSource(media)}
         controls={showControls}
+        playsinline
+        webkit-playsinline
         class="media-element"
         draggable="true"
         on:click

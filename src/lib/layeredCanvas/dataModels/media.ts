@@ -145,6 +145,15 @@ export class VideoMedia extends MediaBase {
   }
 
   setVideo(video: HTMLVideoElement) {
+    // iOS Safari でのインライン再生を確実にする
+    try {
+      (video as any).playsInline = true;
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      (video as any).disablePictureInPicture = true;
+      // レイヤー内で独自再生するためコントロールは不要
+      video.controls = false;
+    } catch {}
     this.video = video;
     this.remoteMediaReference = undefined
     this.setLoaded(true);

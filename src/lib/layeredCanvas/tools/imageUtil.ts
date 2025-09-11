@@ -94,7 +94,17 @@ export async function canvasToBlob(canvas: HTMLCanvasElement, format: string = "
 }
 
 export async function getFirstFrameOfVideo(video: HTMLVideoElement): Promise<HTMLCanvasElement> {
-  video.muted = true;
+  // iOS Safariでフルスクリーン化を避けインライン再生させるための下準備
+  video.muted = true; // 自動再生用のサイレント設定（初期フレーム取得時）
+  try {
+    // playsinline/webkit-playsinline は属性・プロパティ両方を立てる
+    (video as any).playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    // 不要なUIやピクチャインピクチャを抑止（念のため）
+    video.controls = false;
+    (video as any).disablePictureInPicture = true;
+  } catch {}
   await video.play();
   video.pause();
   const canvas = document.createElement("canvas");
@@ -112,6 +122,13 @@ export async function imageToBlob(image: HTMLImageElement): Promise<Blob> {
 
 export async function createVideoFromDataUrl(dataUrl: string): Promise<HTMLVideoElement> {
   const video = document.createElement("video");
+  // iOSでインライン再生させるための属性セット
+  try {
+    (video as any).playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    (video as any).disablePictureInPicture = true;
+  } catch {}
   video.muted = true;
   video.src = dataUrl;
   await getFirstFrameOfVideo(video);
