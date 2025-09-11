@@ -87,6 +87,7 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
 
   // attributes は publishUrl を含まないため、Book側で publishUrl のみ既定値を付与
   const envelopeAttributes: EnvelopeBookAttributes | null = envelopedBook.attributes ?? null;
+  console.log("readEnvelope", envelopedBook.attributes, envelopeAttributes);
 
   const book: Book = {
     revision: { id: 'not visited', revision: 1, prefix: 'envelope-' },
@@ -155,6 +156,7 @@ export async function writeEnvelope(book: Book, progress: (n: number) => void): 
     progress(envelopedBook.pages.length / book.pages.length);
   }
 
+  console.log("writeEnvelope", book.attributes, envelopedBook.attributes);
   const encoded = encode(envelopedBook);
   return new Blob([encoded], { type: 'application/cbor' });
 }

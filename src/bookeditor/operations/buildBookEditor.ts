@@ -208,7 +208,7 @@ function buildPaper(
   paperRendererLayer.setBubbles(page.bubbles);
   paper.addLayer(paperRendererLayer);
 
-  if (false) {
+  if (true) {
     // frame
     const frameLayer = addFrameLayer(paper, page, paperRendererLayer, focusKeeper, operators);
 
