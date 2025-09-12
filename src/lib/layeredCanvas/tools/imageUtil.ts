@@ -104,14 +104,88 @@ export async function getFirstFrameOfVideo(video: HTMLVideoElement): Promise<HTM
     // 不要なUIやピクチャインピクチャを抑止（念のため）
     video.controls = false;
     (video as any).disablePictureInPicture = true;
+    // データの事前取得を促す
+    video.preload = 'auto';
   } catch {}
-  await video.play();
-  video.pause();
+
+  // 安定した初期フレーム取得のためのユーティリティ
+  const waitEvent = (target: EventTarget, type: string, timeoutMs: number) =>
+    new Promise<void>((resolve, reject) => {
+      let finished = false;
+      const onResolve = () => {
+        if (finished) return;
+        finished = true;
+        target.removeEventListener(type, onResolve as any);
+        target.removeEventListener('error', onError as any);
+        clearTimeout(timer);
+        resolve();
+      };
+      const onError = () => {
+        if (finished) return;
+        finished = true;
+        target.removeEventListener(type, onResolve as any);
+        target.removeEventListener('error', onError as any);
+        clearTimeout(timer);
+        reject(new Error(`Video ${type} event error`));
+      };
+      // error も拾う
+      target.addEventListener('error', onError as any, { once: true });
+      target.addEventListener(type, onResolve as any, { once: true });
+      const timer = window.setTimeout(() => {
+        if (finished) return;
+        finished = true;
+        target.removeEventListener(type, onResolve as any);
+        target.removeEventListener('error', onError as any);
+        resolve(); // タイムアウト時も先へ進む（後段で readyState を再確認）
+      }, timeoutMs);
+    });
+
+  // メタデータ（寸法）を待つ
+  if (video.readyState < HTMLMediaElement.HAVE_METADATA) {
+    try { video.load(); } catch {}
+    await waitEvent(video, 'loadedmetadata', 15000);
+  }
+
+  // 可能なら最初のフレームのデータが利用可能になるまで待つ
+  const hasCurrentFrame = () =>
+    video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0 && video.videoHeight > 0;
+
+  if (!hasCurrentFrame()) {
+    // シークでデコーダを起こす（0 だとイベントが来ない環境があるため微小値）
+    try {
+      const t = Math.max(0, Math.min(video.duration || 0, 0.000001));
+      if (!Number.isNaN(t)) {
+        video.currentTime = t;
+      }
+    } catch {}
+    // loadeddata/seeked/canplay のいずれかで十分
+    const waitAny = Promise.race([
+      waitEvent(video, 'loadeddata', 10000),
+      waitEvent(video, 'seeked', 10000),
+      waitEvent(video, 'canplay', 10000),
+    ]);
+    try { await waitAny; } catch {}
+  }
+
+  // それでも用意できていなければ、最後の手段として軽く play→pause を試みる（失敗は無視）
+  if (!hasCurrentFrame()) {
+    try { await (video as any).play?.(); } catch {}
+    try { (video as any).pause?.(); } catch {}
+  }
+
+  // キャンバスへ描画
+  const w = video.videoWidth || 1;
+  const h = video.videoHeight || 1;
   const canvas = document.createElement("canvas");
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext("2d")!;
-  ctx.drawImage(video, 0, 0);
+  try {
+    ctx.drawImage(video, 0, 0, w, h);
+  } catch {
+    // まれに描画に失敗する環境では 1x1 を返す
+    canvas.width = 1; canvas.height = 1;
+  }
   return canvas;
 }
 
@@ -130,7 +204,9 @@ export async function createVideoFromDataUrl(dataUrl: string): Promise<HTMLVideo
     (video as any).disablePictureInPicture = true;
   } catch {}
   video.muted = true;
+  video.preload = 'auto';
   video.src = dataUrl;
+  try { video.load(); } catch {}
   await getFirstFrameOfVideo(video);
   return video;
 }
