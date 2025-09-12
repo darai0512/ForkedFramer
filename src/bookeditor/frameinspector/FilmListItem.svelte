@@ -244,7 +244,7 @@
       on:click={onClick}
     >
       <div class="media-container">
-          <MediaFrame media={film.media} showControls={false} useCanvas={true}/>
+          <MediaFrame media={film.media} showControls={false} dragAsImage={false}/>
       </div>
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete}/>

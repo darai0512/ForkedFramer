@@ -16,6 +16,8 @@ export interface Media {
   readonly size: Vector;
   readonly fileId: { [key: string]: string };
   readonly isLoaded: boolean;
+  readonly isFailed: boolean;
+  readonly isFailure: boolean;
   setMedia(media: MaterializedType): void;
   fail(): void;
 }
@@ -79,6 +81,10 @@ export abstract class MediaBase implements Media {
   }
 
   get isFailed(): boolean {
+    return this._isFailed;
+  }
+
+  get isFailure(): boolean {
     return this._isFailed;
   }
 

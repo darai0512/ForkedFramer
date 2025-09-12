@@ -22,6 +22,7 @@ filmProcessorQueue.subscribe(async (film: Film) => {
       const msg = typeof e?.message === 'string' ? e.message : `${e}`;
       toastStore.trigger({ message: `メディアの取得に失敗しました: ${msg}`, timeout: 4000 });
       film.media.fail();
+      redrawToken.set(true);
       return; // 以降のエフェクト処理は行わない
     }
   }
