@@ -28,9 +28,18 @@ export interface Player {
 export abstract class MediaBase implements Media {
   fileId: { [key: string]: string }; // filesystemId => fileId
   protected _isLoaded: boolean = false;
+  // ローディング表示用（簡易スピナー）
   private static loadingCanvas: HTMLCanvasElement;
-  static { 
-    MediaBase.loadingCanvas = MediaBase.createLoadingCanvas(512, 512); 
+  private static loadingAngle = 0; // rad
+  private static lastTs = 0; // ms
+  private static loadingPlayer: Player = {
+    play: () => {},
+    pause: () => {},
+    seek: async () => {},
+  };
+  static {
+    // 画像サイズはフィット側で調整されるため、キャンバスサイズは既定のまま保持
+    MediaBase.loadingCanvas = MediaBase.createLoadingCanvas(512, 512);
   }
 
   constructor() {
@@ -67,27 +76,54 @@ export abstract class MediaBase implements Media {
     this.fileId[fileSystemId] = fileId;
   }
 
+  private static drawLoadingSpinner(canvas: HTMLCanvasElement, ts: number) {
+    const ctx = canvas.getContext('2d')!;
+    const w = canvas.width, h = canvas.height;
+
+    // 時間差分から角度更新（1回の描画で最大進行を制限）
+    const dt = Math.min(50, MediaBase.lastTs ? (ts - MediaBase.lastTs) : 16);
+    MediaBase.lastTs = ts;
+    MediaBase.loadingAngle = (MediaBase.loadingAngle + (dt / 1000) * Math.PI * 2 * 0.5) % (Math.PI * 2);
+
+    // 背景は透明のまま（clear のみ）
+    ctx.clearRect(0, 0, w, h);
+
+    // スピナー（ドーナツ）
+    const cx = w / 2, cy = h / 2;
+    const r = Math.min(w, h) * 0.15; // 小さめに表示
+    const lw = Math.max(4, Math.round(r * 0.12));
+    ctx.save();
+    ctx.lineWidth = lw;
+    ctx.lineCap = 'round';
+    // 薄い全周（半透明）
+    ctx.strokeStyle = 'rgba(120, 120, 120, 0.25)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.stroke();
+    // 強調セグメント
+    const seg = Math.PI * 0.9;
+    ctx.strokeStyle = 'rgba(80, 80, 80, 0.85)';
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, MediaBase.loadingAngle, MediaBase.loadingAngle + seg);
+    ctx.stroke();
+    ctx.restore();
+
+    // テキストは描かず、全体を透明寄りに
+  }
+
   static createLoadingCanvas(width: number, height: number): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext('2d')!;
-    
-    // グレーの背景
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(0, 0, width, height);
-    
-    // "Loading..."テキスト
-    ctx.fillStyle = '#666666';
-    ctx.font = '40px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Loading...', width / 2, height / 2);
-    
+    MediaBase.drawLoadingSpinner(canvas, performance.now());
     return canvas;
   }
 
   protected getLoadingCanvas(): HTMLCanvasElement {
+    // 呼び出し毎にアニメーション更新
+    try {
+      MediaBase.drawLoadingSpinner(MediaBase.loadingCanvas, performance.now());
+    } catch {}
     return MediaBase.loadingCanvas;
   }
 

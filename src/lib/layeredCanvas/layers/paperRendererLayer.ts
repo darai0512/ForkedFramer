@@ -46,6 +46,28 @@ export class PaperRendererLayer extends LayerBase {
 
   renderDepths(): number[] { return [0,1]; }
 
+  tick(now: number): void {
+    // ローディング中のメディアがある場合は再描画してスピナーを滑らかに更新
+    if (!this.frameTree) { return; }
+    const hasLoadingMediaInFrames = (e: FrameElement): boolean => {
+      if (e.filmStack?.films?.some(f => !f.media.isLoaded)) return true;
+      if (e.children) {
+        for (const c of e.children) { if (hasLoadingMediaInFrames(c)) return true; }
+      }
+      return false;
+    };
+    const hasLoadingMediaInBubbles = (): boolean => {
+      if (!this.rawBubbles) return false;
+      for (const b of this.rawBubbles) {
+        if (b.filmStack?.films?.some(f => !f.media.isLoaded)) return true;
+      }
+      return false;
+    };
+    if (hasLoadingMediaInFrames(this.frameTree) || hasLoadingMediaInBubbles()) {
+      this.redraw();
+    }
+  }
+
   prerender() {
     const size = this.getPaperSize();
     const layout = calculatePhysicalLayout(this.frameTree!, size, [0, 0]);
