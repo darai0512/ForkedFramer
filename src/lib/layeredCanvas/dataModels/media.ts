@@ -17,6 +17,7 @@ export interface Media {
   readonly fileId: { [key: string]: string };
   readonly isLoaded: boolean;
   setMedia(media: MaterializedType): void;
+  fail(): void;
 }
 
 export interface Player {
@@ -28,6 +29,7 @@ export interface Player {
 export abstract class MediaBase implements Media {
   fileId: { [key: string]: string }; // filesystemId => fileId
   protected _isLoaded: boolean = false;
+  protected _isFailed: boolean = false;
   // ローディング表示用（簡易スピナー）
   private static loadingCanvas: HTMLCanvasElement;
   private static loadingAngle = 0; // rad
@@ -37,9 +39,12 @@ export abstract class MediaBase implements Media {
     pause: () => {},
     seek: async () => {},
   };
+  // 失敗表示用（簡易の壊れた画像/ビデオ風）
+  private static failureCanvas: HTMLCanvasElement;
   static {
     // 画像サイズはフィット側で調整されるため、キャンバスサイズは既定のまま保持
     MediaBase.loadingCanvas = MediaBase.createLoadingCanvas(512, 512);
+    MediaBase.failureCanvas = MediaBase.createFailureCanvas(512, 512);
   }
 
   constructor() {
@@ -63,9 +68,18 @@ export abstract class MediaBase implements Media {
   }
 
   abstract setMedia(media: MaterializedType): void;
+  abstract fail(): void;
 
   setLoaded(isLoaded: boolean): void {
     this._isLoaded = isLoaded;
+  }
+
+  setFailed(isFailed: boolean): void {
+    this._isFailed = isFailed;
+  }
+
+  get isFailed(): boolean {
+    return this._isFailed;
   }
 
   getFileId(fileSystemId: string): string {
@@ -88,9 +102,9 @@ export abstract class MediaBase implements Media {
     // 背景は透明のまま（clear のみ）
     ctx.clearRect(0, 0, w, h);
 
-    // スピナー（ドーナツ）
+    // スピナー（ドーナツ）: 見た目サイズを半分に（定数のみ調整）
     const cx = w / 2, cy = h / 2;
-    const r = Math.min(w, h) * 0.15; // 小さめに表示
+    const r = Math.min(w, h) * 0.075; // 0.15 -> 0.075 に縮小
     const lw = Math.max(4, Math.round(r * 0.12));
     ctx.save();
     ctx.lineWidth = lw;
@@ -119,12 +133,85 @@ export abstract class MediaBase implements Media {
     return canvas;
   }
 
+  private static drawFailureMark(canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext('2d')!;
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+
+    // 背景: 斜線模様（据え置き）
+    ctx.fillStyle = '#f2f2f2';
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = 16;
+    const step = 28;
+    for (let x = -h; x < w + h; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + h, h);
+      ctx.stroke();
+    }
+
+    // 内側の描画領域を 1/2 に縮小（定数のみ）
+    const pad = Math.round(Math.min(w, h) * 0.12);
+    const rx0 = pad, ry0 = pad, rw0 = w - pad * 2, rh0 = h - pad * 2;
+    const k = 0.5; // 縮小率（1/2）
+    const rw = rw0 * k, rh = rh0 * k;
+    const rx = rx0 + (rw0 - rw) / 2;
+    const ry = ry0 + (rh0 - rh) / 2;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,120,120,0.8)';
+    ctx.lineWidth = Math.max(2, Math.round(Math.min(rw, rh) * 0.02));
+    ctx.strokeRect(rx, ry, rw, rh);
+
+    // 山と太陽（画像のプレースホルダーっぽい）
+    ctx.beginPath();
+    const baseY = ry + rh * 0.75;
+    ctx.moveTo(rx + rw * 0.12, baseY);
+    ctx.lineTo(rx + rw * 0.38, ry + rh * 0.45);
+    ctx.lineTo(rx + rw * 0.6, baseY);
+    ctx.lineTo(rx + rw * 0.88, ry + rh * 0.55);
+    ctx.stroke();
+
+    // 太陽
+    ctx.beginPath();
+    ctx.arc(rx + rw * 0.78, ry + rh * 0.28, Math.min(rw, rh) * 0.06, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // バツ印（失敗を示す）
+    ctx.strokeStyle = 'rgba(200,60,60,0.9)';
+    ctx.lineWidth = Math.max(3, Math.round(Math.min(rw, rh) * 0.03));
+    ctx.beginPath();
+    ctx.moveTo(rx + rw * 0.2, ry + rh * 0.2);
+    ctx.lineTo(rx + rw * 0.8, ry + rh * 0.8);
+    ctx.moveTo(rx + rw * 0.8, ry + rh * 0.2);
+    ctx.lineTo(rx + rw * 0.2, ry + rh * 0.8);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  static createFailureCanvas(width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    MediaBase.drawFailureMark(canvas);
+    return canvas;
+  }
+
   protected getLoadingCanvas(): HTMLCanvasElement {
     // 呼び出し毎にアニメーション更新
     try {
       MediaBase.drawLoadingSpinner(MediaBase.loadingCanvas, performance.now());
     } catch {}
     return MediaBase.loadingCanvas;
+  }
+
+  protected getFailureCanvas(): HTMLCanvasElement {
+    return MediaBase.failureCanvas;
+  }
+
+  protected getFallbackCanvas(): HTMLCanvasElement {
+    return this.isFailed ? this.getFailureCanvas() : this.getLoadingCanvas();
   }
 
 }
@@ -146,14 +233,22 @@ export class ImageMedia extends MediaBase {
     this.setCanvas(media);
   }
 
+  fail() {
+    this.setLoaded(false);
+    this.canvas = undefined;
+    this.remoteMediaReference = { mediaType: 'image', mode: 'failure', requestId: 'failure', model: 'failure' };
+    this.setFailed(true);
+  }
+
   setCanvas(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     this.remoteMediaReference = undefined;
     this.setLoaded(true);
+    this.setFailed(false);
   }
 
   get player(): Player | null { return null; }
-  get drawSource(): HTMLCanvasElement { return this.canvas ?? this.getLoadingCanvas(); }
+  get drawSource(): HTMLCanvasElement { return this.canvas ?? this.getFallbackCanvas(); }
   get drawSourceCanvas(): HTMLCanvasElement { return this.drawSource; }
   get persistentSource(): MediaResource { 
     return this.remoteMediaReference ?? this.drawSource; 
@@ -180,6 +275,13 @@ export class VideoMedia extends MediaBase {
     this.setVideo(media);
   }
 
+  fail() {
+    this.setLoaded(false);
+    this.video = undefined;
+    this.remoteMediaReference = { mediaType: 'video', mode: 'failure', requestId: 'failure', model: 'failure' };
+    this.setFailed(true);
+  }
+
   setVideo(video: HTMLVideoElement) {
     // iOS Safari でのインライン再生を確実にする
     try {
@@ -193,6 +295,7 @@ export class VideoMedia extends MediaBase {
     this.video = video;
     this.remoteMediaReference = undefined
     this.setLoaded(true);
+    this.setFailed(false);
   }
 
   get player(): Player {
@@ -223,9 +326,9 @@ export class VideoMedia extends MediaBase {
       }
     };
   }
-  get drawSource(): MaterializedType { return this.video ?? this.getLoadingCanvas(); }
+  get drawSource(): MaterializedType { return this.video ?? this.getFallbackCanvas(); }
   get drawSourceCanvas(): HTMLCanvasElement { 
-    if (!this.video) { return this.getLoadingCanvas(); }
+    if (!this.video) { return this.getFallbackCanvas(); }
     const canvas = document.createElement('canvas');
     canvas.width = this.naturalWidth;
     canvas.height = this.naturalHeight;
@@ -234,8 +337,8 @@ export class VideoMedia extends MediaBase {
     return canvas;
   }
   get persistentSource(): MediaResource { return this.remoteMediaReference ?? this.video!; }
-  get naturalWidth(): number { return this.video ? this.video.videoWidth : this.getLoadingCanvas().width; }
-  get naturalHeight(): number { return this.video ? this.video.videoHeight : this.getLoadingCanvas().height; }
+  get naturalWidth(): number { return this.video ? this.video.videoWidth : this.getFallbackCanvas().width; }
+  get naturalHeight(): number { return this.video ? this.video.videoHeight : this.getFallbackCanvas().height; }
   get type(): MediaType { return 'video'; }
 }
 

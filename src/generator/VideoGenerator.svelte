@@ -9,6 +9,7 @@
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { _ } from 'svelte-i18n';
   import { calculateSeedanceCost } from '../utils/edgeFunctions/calculateCost';
+  import { developmentFlag } from '../utils/developmentFlagStore';
   
   let prompt = '';
   let duration: "1" | "2" | "3" | "4" | "5" | "10" = "5";
@@ -114,6 +115,20 @@
           default:
             throw new Error(`Unsupported resolution: ${resolution}`);
         }
+      }
+    },
+    "failure": { // テスト用の失敗モデル
+      durations: [
+        { value: "1", label: $_('generator.fiveSeconds') },
+      ],
+      aspectRatios: [
+        { value: "1:1", label: $_('generator.squareRatio') },
+      ],
+      resolution: [
+        { value: "480p", label: "480p" },
+      ],
+      cost: (duration: number, pixels: number, resolution: string) => {
+        return 0;
       }
     }
   };
@@ -229,6 +244,9 @@
             <option value="seedance/lite">Seedance Lite</option>
             <option value="seedance/pro">Seedance Pro</option>
             <option value="wan/v2.2-a14b/turbo">WAN v2.2-a14b Turbo</option>
+            {#if $developmentFlag}
+              <option value="failure">failure</option>
+            {/if}
           </select>
         </label>
 

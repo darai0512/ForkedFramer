@@ -189,7 +189,8 @@ export async function notifyShare(text: string) {
 
 export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'video', mode: string, requestId: string, model: string }) {
   const isVideo = mediaReference.mediaType === 'video';
-  let interval = isVideo ? 10000 : 1000;
+  let interval = isVideo && mediaReference.mode != 'failure' ? 10000 : 1000;
+  console.log("pollMediaStatus", mediaReference, interval);
 
   if (mediaReference.mode.startsWith('gpt')) {
     interval = 5000;
@@ -288,6 +289,9 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
       return true;
     }, 
     {interval});
+
+  // たまに次のfetchが失敗することがあるようなので、待ってみる
+  await new Promise(resolve => setTimeout(resolve, 1000)); 
 
   const mediaResources: (HTMLCanvasElement | HTMLVideoElement)[] = await Promise.all(
     urls.map(async url => {
