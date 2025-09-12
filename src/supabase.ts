@@ -231,8 +231,10 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
     });
 
   async function* doIt() {
+    console.log("doit");
     let urls: string[] | undefined;
     while (!urls) {
+      console.log("polling...");
       const status = await imagingStatus(mediaReference);
       console.log(status);
       switch (status.status) {
@@ -272,6 +274,11 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
   const urls = await runResilientTask(
     doIt, 
     (error) => { 
+      console.log("polling error", error);
+      // ZodError は不正なレスポンススキーマ等の恒久的エラーとみなし、再試行せず即座に伝播
+      if (error instanceof z.ZodError) {
+        throw error;
+      }
       if (error instanceof FunctionsHttpError) {
         const code = error.context?.status;
         if (code === 422 || code === 404 || code === 401 || code === 500) {

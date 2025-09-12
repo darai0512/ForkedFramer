@@ -156,7 +156,6 @@ export async function writeEnvelope(book: Book, progress: (n: number) => void): 
     progress(envelopedBook.pages.length / book.pages.length);
   }
 
-  console.log("writeEnvelope", book.attributes, envelopedBook.attributes);
   const encoded = encode(envelopedBook);
   return new Blob([encoded], { type: 'application/cbor' });
 }

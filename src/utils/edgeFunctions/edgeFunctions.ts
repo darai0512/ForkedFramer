@@ -8,8 +8,6 @@ export async function invoke<ResSchema extends ZodSchema>(
   responseSchema: ResSchema,
 ): Promise<z.infer<ResSchema>> {
   const parsedReq = requestSchema.strip().parse(req);
-  console.log("invoke", req, parsedReq);
-
   const startTime = performance.now();
   
   try {

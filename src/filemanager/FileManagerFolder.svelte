@@ -93,6 +93,7 @@
           return;
         }
         if (fileName.endsWith(".envelope")) {
+          console.log("loading envelope")
           // 新タイプのenvelope
           try {
             $progress = 0;
