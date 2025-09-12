@@ -17,6 +17,7 @@ export class ViewerLayer extends LayerBase {
   private readonly dashSpeed: number = 10; // px/sec 相当（ゆっくり）
   private readonly showPlayButton: boolean;
   private readonly showDottedBorder: boolean;
+  private onVisibilityChangeBound: (() => void) | null = null;
 
   constructor(
     private frameTree: FrameElement,
@@ -34,6 +35,10 @@ export class ViewerLayer extends LayerBase {
 
     this.showPlayButton = showPlayButton;
     this.showDottedBorder = showDottedBorder;
+
+    // タブ復帰時に選択中ターゲットの動画再生を確実に再開する
+    this.onVisibilityChangeBound = this.onVisibilityChange.bind(this);
+    document.addEventListener('visibilitychange', this.onVisibilityChangeBound);
   }
 
   renderDepths(): number[] { return [0,1]; }
@@ -192,8 +197,23 @@ export class ViewerLayer extends LayerBase {
     }
   }
 
+  private isSameTarget(a: Layout | Bubble | null, b: Layout | Bubble | null): boolean {
+    if (a === b) { return true; }
+    if (!a || !b) { return false; }
+    const isLayout = (x: any): x is Layout => (x as Layout).element !== undefined;
+    if (isLayout(a) && isLayout(b)) {
+      return a.element === b.element;
+    }
+    if (!isLayout(a) && !isLayout(b)) {
+      // Bubble は参照同一性で十分
+      return a === b;
+    }
+    return false;
+  }
+
   selectTarget(target: Layout | Bubble | null): void {
-    if (target === this.selected) { return; }
+    // Layout は毎回再構築されるため参照ではなく要素同一性で比較
+    if (this.isSameTarget(target, this.selected)) { return; }
     this.stopVideo(this.selected);
     this.selected = target;
     this.startVideo(target);
@@ -224,6 +244,21 @@ export class ViewerLayer extends LayerBase {
       }
     }
     // rAFは中央ループからのtickで処理
+  }
+
+  private onVisibilityChange() {
+    // タブがアクティブ化されたら、選択中ターゲットの動画を再生しておく
+    if (!document.hidden && this.selected) {
+      const filmStack = this.getFilmStack(this.selected);
+      for (const film of filmStack.films) {
+        const src = film.media.drawSource as any;
+        if (src instanceof HTMLVideoElement) {
+          if (src.paused && film.media.player) {
+            film.media.player.play();
+          }
+        }
+      }
+    }
   }
 
   tick(now: number): void {
@@ -288,6 +323,18 @@ export class ViewerLayer extends LayerBase {
   }
 
   get interactable(): boolean { return this.mode == null; }
+
+  tearDown() {
+    // リスナー解除と動画停止（選択中があれば）
+    if (this.onVisibilityChangeBound) {
+      document.removeEventListener('visibilitychange', this.onVisibilityChangeBound);
+      this.onVisibilityChangeBound = null;
+    }
+    if (this.selected) {
+      this.stopVideo(this.selected);
+    }
+    super.tearDown();
+  }
 }
 
 sequentializePointer(ViewerLayer);
