@@ -8,8 +8,10 @@
   import { resizeCanvasIfNeeded } from '../lib/layeredCanvas/tools/imageUtil';
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { _ } from 'svelte-i18n';
-  import { calculateSeedanceCost } from '../utils/edgeFunctions/calculateCost';
+  import { calculateI2VCost } from '../utils/edgeFunctions/calculateCost';
   import { developmentFlag } from '../utils/developmentFlagStore';
+  
+  type Option = { value: string; label: string };
   
   let prompt = '';
   let duration: "1" | "2" | "3" | "4" | "5" | "10" = "5";
@@ -21,7 +23,7 @@
   let cost: number = 50;
 
   // モデルごとの利用可能なオプション
-  $: modelOptions = {
+  $: modelOptions = ({
     FramePack: {
       durations: [
         { value: "1", label: $_('generator.oneSecond') },
@@ -37,10 +39,7 @@
       resolution: [
         { value: "480p", label: "480p" },
         { value: "720p", label: "720p" },
-      ],
-      cost: (duration: number, pixels: number, resolution: string) => {
-        return duration * 5;
-      }
+      ]
     },
     kling: {
       durations: [
@@ -53,10 +52,7 @@
       ],
       resolution: [
         { value: "720p", label: "720p" },
-      ],
-      cost: (duration: number, pixels: number, resolution: string) => {
-        return 125;
-      }
+      ]
     },
     "seedance/lite": {
       durations: [
@@ -71,10 +67,7 @@
         { value: "480p", label: "480p" },
         { value: "720p", label: "720p" },
         { value: "1080p", label: "1080p" },
-      ],
-      cost: (duration: number, pixels: number, resolution: string) => {
-        return calculateSeedanceCost(1.8, duration, pixels);
-      }
+      ]
     },
     "seedance/pro": {
       durations: [
@@ -88,10 +81,7 @@
       resolution: [
         { value: "480p", label: "480p" },
         { value: "1080p", label: "1080p" },
-      ],
-      cost: (duration: number, pixels: number, resolution: string) => {
-        return calculateSeedanceCost(2.5, duration, pixels);
-      }
+      ]
     },
     "wan/v2.2-a14b/turbo": {
       durations: [
@@ -105,17 +95,19 @@
       resolution: [
         { value: "480p", label: "480p" },
         { value: "720p", label: "720p" },
+      ]
+    },
+    "decart/lucy-14b": {
+      durations: [
+        { value: "5", label: $_('generator.fiveSeconds') },
       ],
-      cost: (duration: number, pixels: number, resolution: string) => {
-        switch (resolution) {
-          case "480p":
-            return 8;
-          case "720p":
-            return 16;
-          default:
-            throw new Error(`Unsupported resolution: ${resolution}`);
-        }
-      }
+      aspectRatios: [
+        { value: "16:9", label: $_('generator.landscapeRatio') },
+        { value: "9:16", label: $_('generator.portraitRatio') }
+      ],
+      resolution: [
+        { value: "720p", label: "720p" },
+      ]
     },
     "failure": { // テスト用の失敗モデル
       durations: [
@@ -126,12 +118,12 @@
       ],
       resolution: [
         { value: "480p", label: "480p" },
-      ],
-      cost: (duration: number, pixels: number, resolution: string) => {
-        return 0;
-      }
+      ]
     }
-  };
+  }) as Record<
+    ImageToVideoModel,
+    { durations: Option[]; aspectRatios: Option[]; resolution: Option[] }
+  >;
   
   // モデル変更時に互換性のあるオプションに自動調整
   $: if (model) {
@@ -152,11 +144,7 @@
       resolution = availableResolutions[0] as any;
     }
 
-    // 解像度に基づいてピクセル数を計算
-    const height = parseInt(resolution.replace('p', '')) || 720;
-    const width = height * (16 / 9);     // seedanceしか使ってないので固定
-    const pixels = width * height;
-    cost = modelOptions[model].cost(parseInt(duration), pixels, resolution);
+    cost = calculateI2VCost(model, parseInt(duration), resolution, aspectRatio);
     console.log(`Model: ${model}, Duration: ${duration}, Resolution: ${resolution}, Cost: ${cost}`);
   }
 
@@ -244,6 +232,7 @@
             <option value="seedance/lite">Seedance Lite</option>
             <option value="seedance/pro">Seedance Pro</option>
             <option value="wan/v2.2-a14b/turbo">WAN v2.2-a14b Turbo</option>
+            <!-- <option value="decart/lucy-14b">Lucy-14b</option> -->
             {#if $developmentFlag}
               <option value="failure">failure</option>
             {/if}

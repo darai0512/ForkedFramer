@@ -23,7 +23,7 @@ export const ImagingModeSchema = z.enum([
 ]);
 export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 
-export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "qwen", "seedream"]);
+export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "qwen", "seedream", "decart"]);
 export type ImagingProvider = z.infer<typeof ImagingProviderSchema>;
 
 // TextEditMode は ImagingMode に統合したため削除
@@ -103,6 +103,7 @@ export const ImageToVideoModelSchema = z.enum([
   "seedance/pro", 
   "seedance/lite", 
   "wan/v2.2-a14b/turbo",
+  "decart/lucy-14b",
   "failure"
 ]);
 export type ImageToVideoModel = z.infer<typeof ImageToVideoModelSchema>;

@@ -1,7 +1,7 @@
 // このモジュールはFramePlanner側で定義してコピーしているので、
 // FramePlannerSupabaseで変更してはだめ
 
-import type { ImagingMode, ImageToVideoModel, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes";
+import type { ImagingMode, ImageToVideoModel, ImageToVideoResolution, ImageToVideoRequest, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes";
 
 /**
  * 画像サイズからメガピクセル単位でのコストを計算する
@@ -38,14 +38,61 @@ const COST_SPEC: Record<ImagingMode, CostSpec> = {
     "seedream/v4": { kind: 'fixed', value: 5 },
 };
 
-export function culculateI2vCost(model: ImageToVideoModel, duration: string): number {
+// 互換のための内部ヘルパ（アスペクト比からピクセル数を推定）
+function pixelsFrom(resolution: ImageToVideoResolution, aspectRatio: ImageToVideoRequest['aspectRatio']): number {
+    const height = parseInt(resolution.replace('p', '')) || 720;
+    const ratio = (() => {
+        switch (aspectRatio) {
+            case '1:1': return 1;
+            case '16:9': return 16 / 9;
+            case '9:16': return 9 / 16;
+        }
+    })();
+    const width = Math.round(height * ratio);
+    return width * height;
+}
+
+/**
+ * 画像→動画の概算コスト（feathral）
+ * VideoGenerator.svelte のモデル仕様に合わせる
+ */
+export function calculateI2VCost(
+    model: ImageToVideoModel,
+    duration: number,
+    resolution: ImageToVideoResolution,
+    aspectRatio: ImageToVideoRequest['aspectRatio']
+): number {
     switch (model) {
-        case "kling":
-            return 125;
-        case "FramePack":
-            return parseInt(duration) * 5;
+        case 'FramePack':
+            return duration * 5;
+        case 'kling':
+            return duration * 8;
+        case 'seedance/lite': {
+            const px = pixelsFrom(resolution, aspectRatio);
+            return calculateSeedanceCost(1.8, duration, px);
+        }
+        case 'seedance/pro': {
+            const px = pixelsFrom(resolution, aspectRatio);
+            return calculateSeedanceCost(2.5, duration, px);
+        }
+        case 'wan/v2.2-a14b/turbo': {
+            switch (resolution) {
+                case '480p': return 8;
+                case '720p': return 16;
+                default: return 0; // 未対応
+            }
+        }
+        case 'decart/lucy-14b':
+            return duration * 11;
+        case 'failure':
+        default:
+            return 0;
     }
-    return 0;
+}
+
+// 旧つづり互換（未使用想定）
+export function culculateI2vCost(model: ImageToVideoModel, duration: string): number {
+    return calculateI2VCost(model, parseInt(duration, 10), '720p', '16:9');
 }
 
 export function calculateOutPaintingCost(size: { width: number; height: number }, padding: Padding) {
