@@ -135,7 +135,7 @@ export class BubbleLayer extends LayerBase {
     return [1,2];
   }
 
-  prerender(): void {
+  prerender(_viewport: Viewport): void {
     const bubbles = [...this.bubbles];
     if (this.creatingBubble) {
       bubbles.push(this.creatingBubble);

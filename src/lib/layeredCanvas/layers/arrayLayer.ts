@@ -299,9 +299,9 @@ export class ArrayLayer extends LayerBase {
     paper.handleCancel(q, innerDragging);
   }
 
-  prerender(): void {
+  prerender(viewport: Viewport): void {
     for (let i = 0; i < this.array.papers.length; i++) {
-      this.array.papers[i].paper.prerender();
+      this.array.papers[i].paper.prerender(viewport);
     }
   }
 

@@ -1,5 +1,5 @@
 import { reverse2D } from "../tools/geometry/geometry";
-import { LayerBase } from "../system/layeredCanvas";
+import { LayerBase, type Viewport } from "../system/layeredCanvas";
 import { getPath } from "../tools/draw/bubbleGraphic";
 import { makeFrameClip } from '../tools/geometry/frameGeometry';
 import { trapezoidBoundingRect } from "../tools/geometry/trapezoid";
@@ -68,14 +68,18 @@ export class PaperRendererLayer extends LayerBase {
     }
   }
 
-  prerender() {
+  prerender(_viewport: Viewport) {
     const size = this.getPaperSize();
     const layout = calculatePhysicalLayout(this.frameTree!, size, [0, 0]);
     this.thisFrameRenderData = this.setUpRenderData(layout);
   }
 
   render(ctx: CanvasRenderingContext2D, depth: number) {
-    const { backgrounds, foregrounds, embeddedBubbles, floatingBubbles } = this.thisFrameRenderData!;
+    if (!this.thisFrameRenderData) {
+      // prerenderがスキップされた（不可視ページなど）場合の防御
+      return;
+    }
+    const { backgrounds, foregrounds, embeddedBubbles, floatingBubbles } = this.thisFrameRenderData;
 
     if (depth === 0) {
       // not leaf

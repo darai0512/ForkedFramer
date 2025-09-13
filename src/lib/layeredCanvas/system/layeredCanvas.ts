@@ -92,7 +92,7 @@ export interface Layer {
   pointerMove(position: Vector, payload: any): void;
   pointerUp(position: Vector, payload: any): void;
   pointerCancel(position: Vector, payload: any): void;
-  prerender(): void;
+  prerender(viewport: Viewport): void;
   render(ctx: CanvasRenderingContext2D, depth: number): void;
   dropped(position: Vector, media: HTMLCanvasElement | HTMLVideoElement | string): boolean;
   pasted(position: Vector, media: HTMLCanvasElement | HTMLVideoElement | string): boolean;
@@ -137,7 +137,7 @@ export class LayerBase implements Layer {
   pointerMove(position: Vector, payload: any) {}
   pointerUp(position: Vector, payload: any) {}
   pointerCancel(position: Vector, payload: any) {}
-  prerender() {}
+  prerender(_viewport: Viewport) {}
   tick(_now: number) {}
   render(ctx: CanvasRenderingContext2D, depth: number) {}
   dropped(position: Vector, media: HTMLCanvasElement | HTMLVideoElement) { return false; }
@@ -322,9 +322,20 @@ export class Paper {
     return picked;
   }
 
-  prerender(): void {
+  prerender(viewport: Viewport): void {
+    // 非rootのPaperは可視範囲でなければprerenderをスキップ
+    if (!this.root) {
+      const q0 = this.matrix.transformPoint({ x: 0, y: 0 });
+      const q1 = this.matrix.transformPoint({ x: this.size[0], y: this.size[1] });
+      const r: Rect = [q0.x, q0.y, q1.x - q0.x, q1.y - q0.y];
+      const [cw, ch] = viewport.getCanvasSize();
+      if (!rectIntersectsRect(r, [0, 0, cw, ch])) {
+        return;
+      }
+    }
+
     for (let layer of this.layers) {
-      layer.prerender();
+      layer.prerender(viewport);
     }
   }
 
@@ -716,8 +727,7 @@ export class LayeredCanvas {
     const canvas = this.viewport.canvas;
     const ctx = this.viewport.ctx;
     const renderTimes: {depth: number, time: number}[] = [];
-
-    this.rootPaper.prerender();
+    this.rootPaper.prerender(this.viewport);
 
     const depths = this.rootPaper.renderDepths();
     for (let depth of depths) {

@@ -1,4 +1,4 @@
-import { type Layer, LayerBase, sequentializePointer, type Picked } from "../system/layeredCanvas";
+import { type Layer, LayerBase, sequentializePointer, type Picked, type Viewport } from "../system/layeredCanvas";
 import { FrameElement, type Layout,type Border, type PaddingHandle, calculatePhysicalLayout, findLayoutAt, findLayoutOf, findBorderAt, findPaddingOn, findPaddingOf, makeBorderCorners, makeBorderFormalCorners, calculateOffsettedCorners, listLayoutsAt } from "../dataModels/frameTree";
 import { Film, FilmStackTransformer } from "../dataModels/film";
 import { type Media, ImageMedia, VideoMedia } from "../dataModels/media";
@@ -189,7 +189,7 @@ export class FrameLayer extends LayerBase {
     return [0,2];
   }
 
-  prerender(): void {
+  prerender(_viewport: Viewport): void {
     this.renderLayer.setFrameTree(this.frameTree);
   }
 
