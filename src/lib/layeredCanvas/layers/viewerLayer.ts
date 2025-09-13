@@ -303,19 +303,19 @@ export class ViewerLayer extends LayerBase {
     return false;
   }
 
-  private hasAnyVideoInLayout(layout: Layout): boolean {
-    if (this.hasVideo(layout.element.filmStack)) { return true; }
-    if (layout.children) {
-      for (const child of layout.children) {
-        if (this.hasAnyVideoInLayout(child)) { return true; }
+  // レイアウト再計算を避けるため、FrameElement ツリーを直接走査
+  private hasAnyVideoInFrames(element: FrameElement): boolean {
+    if (this.hasVideo(element.filmStack)) { return true; }
+    if (element.children) {
+      for (const child of element.children) {
+        if (this.hasAnyVideoInFrames(child)) { return true; }
       }
     }
     return false;
   }
 
   private hasAnyVideo(): boolean {
-    const root = this.calculateRootLayout();
-    if (this.hasAnyVideoInLayout(root)) { return true; }
+    if (this.hasAnyVideoInFrames(this.frameTree)) { return true; }
     for (const b of this.bubbles) {
       if (this.hasVideo(b.filmStack)) { return true; }
     }
