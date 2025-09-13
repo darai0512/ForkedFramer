@@ -334,8 +334,8 @@ export class Paper {
       }
     }
 
-    for (let layer of this.layers) {
-      layer.prerender(viewport);
+    for (let i = this.layers.length - 1; i >= 0; i--) {
+      this.layers[i].prerender(viewport);
     }
   }
 
