@@ -69,17 +69,19 @@ export class PaperRendererLayer extends LayerBase {
   }
 
   prerender(_viewport: Viewport) {
-    const size = this.getPaperSize();
-    const layout = calculatePhysicalLayout(this.frameTree!, size, [0, 0]);
-    this.thisFrameRenderData = this.setUpRenderData(layout);
+    // このフレームのレンダーデータを無効化し、renderで必要時に構築する
+    this.thisFrameRenderData = null;
   }
 
   render(ctx: CanvasRenderingContext2D, depth: number) {
     if (!this.thisFrameRenderData) {
-      // prerenderがスキップされた（不可視ページなど）場合の防御
-      return;
+      // 初回描画時にだけレイアウトを構築（不可視ページではPaper.renderのカリングでここに来ない）
+      if (!this.frameTree) { return; }
+      const size = this.getPaperSize();
+      const layout = calculatePhysicalLayout(this.frameTree, size, [0, 0]);
+      this.thisFrameRenderData = this.setUpRenderData(layout);
     }
-    const { backgrounds, foregrounds, embeddedBubbles, floatingBubbles } = this.thisFrameRenderData;
+    const { backgrounds, foregrounds, embeddedBubbles, floatingBubbles } = this.thisFrameRenderData!;
 
     if (depth === 0) {
       // not leaf
