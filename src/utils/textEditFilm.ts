@@ -26,11 +26,11 @@ export async function textEditFilm(film: Film) {
     return;
   }
 
-  if (!(film.media instanceof ImageMedia)) { 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
     toastStore.trigger({ message: `対話編集は画像のみ使えます`, timeout: 3000});
     return; 
   }
-  const imageMedia = film.media as ImageMedia;
+  const imageMedia = film.content.media as ImageMedia;
 
   const request = await waitDialog<TextEditDialogResult>('textedit', { title: "対話編集", imageSource: imageMedia.drawSource });
   console.log(request);

@@ -43,7 +43,7 @@
     bubble.shape = "none";
     bubble.initOptions();
     bubble.text = "";
-    const film = new Film(buildMedia(e.detail.persistentSource));
+    const film = Film.fromMedia(buildMedia(e.detail.persistentSource));
     bubble.filmStack.films.push(film);
     page.bubbles.push(bubble);
     $bookOperators!.focusBubble(page, bubble);

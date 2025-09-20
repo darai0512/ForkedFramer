@@ -12,7 +12,7 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import { onlineStatus } from './accountStore';
 
 export async function generateMovie(filmStack: FilmStack, film: Film) {
-  if (!(film.media instanceof ImageMedia)) { 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
     toastStore.trigger({ message: `内部エラー: 動画生成は画像に対してしか使えません`, timeout: 3000});
     return; 
   }
@@ -22,7 +22,7 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
     return;
   }
 
-  const request = await waitDialog<ImageToVideoRequest>('videoGenerator', { media: film.media });
+  const request = await waitDialog<ImageToVideoRequest>('videoGenerator', { media: film.content.media });
   console.log("modalFrameVideo", request);
 
   if (!request) { return; }
@@ -33,7 +33,7 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
     await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id, model);
 
     const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id, model });
-    const newFilm = new Film(newMedia);
+    const newFilm = Film.fromMedia(newMedia);
     filmProcessorQueue.publish(newFilm);
 
     const index = filmStack.films.indexOf(film);

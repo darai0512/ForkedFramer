@@ -92,7 +92,7 @@ async function onBubbleCommand(bit: BubbleInspectorTarget | null) {
       (film, target) => {
         const paperSize = target.page.paperSize;
         const bubbleSize = target.bubble.getPhysicalSize(paperSize);
-        return minimumBoundingScale(film.media.size, bubbleSize);
+        return minimumBoundingScale(film.getContentSize(paperSize), bubbleSize);
       },
       bubbleInspectorTarget,
       target.bubble

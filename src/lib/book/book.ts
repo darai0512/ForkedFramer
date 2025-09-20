@@ -281,7 +281,7 @@ export function newImageBook(id: string, media: (HTMLCanvasElement | HTMLVideoEl
   const pages = [];
   for (const m of media) {
     const frameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
-    const film = new Film(buildMedia(m));
+    const film = Film.fromMedia(buildMedia(m));
     frameTree.children[0].filmStack.films = [film];
   
     const page = newPage(frameTree, []);

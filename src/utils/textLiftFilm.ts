@@ -14,11 +14,11 @@ export async function textLiftFilm(film: Film) {
     return null;
   }
 
-  if (!(film.media instanceof ImageMedia)) {
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) {
     toastStore.trigger({ message: `テキスト抽出は画像のみ使えます`, timeout: 3000});
     return null;
   }
-  const imageMedia = film.media as ImageMedia;
+  const imageMedia = film.content.media as ImageMedia;
   const sourceCanvas = imageMedia.drawSource;
 
   // APIからテキストマスク情報を取得

@@ -50,11 +50,14 @@ export async function handleScribbleCommand<T extends FilmOperationTarget>(
   console.log("handleScribbleCommand", target, target.page?.id, get(mainBook)?.pages.map(p => p.id));
   
   toolTipRequest.set(null);
-  await painterRun(target.page, element, target.commandTargetFilm!);
-  const media = target.commandTargetFilm!.media;
-  if (media instanceof ImageMedia) {
-    const canvas = media.drawSource;
-    (canvas as any)["clean"] = {};
+  const film = target.commandTargetFilm!;
+  await painterRun(target.page, element, film);
+  if (film.content.kind === 'media') {
+    const media = film.content.media;
+    if (media instanceof ImageMedia) {
+      const canvas = media.drawSource;
+      (canvas as any)["clean"] = {};
+    }
   }
   commit(null);
 }
@@ -76,7 +79,7 @@ export async function handleGenerateCommand<T extends FilmOperationTarget>(
   if (!r) { return; }
 
   const { media, prompt: outputPrompt } = r;
-  const film = new Film(media);
+  const film = Film.fromMedia(media);
   film.prompt = outputPrompt;
   
   const scale = calculateScale(film, target);
@@ -101,7 +104,8 @@ export async function handlePunchCommand<T extends FilmOperationTarget>(
   }
 
   const film = target.commandTargetFilm!;
-  if (!(film.media instanceof ImageMedia)) { return; }
+  if (film.content.kind !== 'media') { return; }
+  if (!(film.content.media instanceof ImageMedia)) { return; }
 
   loading.set(true);
   await punchFilm(film);
@@ -119,7 +123,8 @@ export async function handleUpscaleCommand<T extends FilmOperationTarget>(
   }
 
   const film = target.commandTargetFilm!;
-  if (!(film.media instanceof ImageMedia)) { return; }
+  if (film.content.kind !== 'media') { return; }
+  if (!(film.content.media instanceof ImageMedia)) { return; }
 
   await upscaleFilm(film);
   commit(null);
@@ -137,6 +142,7 @@ export async function handleVideoCommand<T extends FilmOperationTarget & { bubbl
     return;
   }
   
+  if (target.commandTargetFilm?.content.kind !== 'media') { return; }
   await generateMovie(actualFilmStack, target.commandTargetFilm!);
   commit(null);
 }
@@ -151,7 +157,7 @@ export async function handleCoverCommand<T extends FilmOperationTarget>(
   size[1] = Math.max(size[1], 256);
   console.log("handleCoverCommand", size);
   const media = new ImageMedia(makePlainCanvas(size[0], size[1], "#ffffff00"));
-  const film = new Film(media);
+  const film = Film.fromMedia(media);
   film.setShiftedScale(target.page.paperSize, 1.0);
   
   target.filmStack.films.push(film);
@@ -191,7 +197,8 @@ export async function handleSendToMaterialCollectionCommand<T extends FilmOperat
 ): Promise<void> {
   const { sendMediaToMaterialCollection } = await import('../../materialBucket/materialOperations');
   
-  const result = await sendMediaToMaterialCollection(target.commandTargetFilm!.media);
+  if (target.commandTargetFilm?.content.kind !== 'media') { return; }
+  const result = await sendMediaToMaterialCollection(target.commandTargetFilm.content.media);
   
   toastStore.trigger({ 
     message: result.message, 

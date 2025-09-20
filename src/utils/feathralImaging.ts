@@ -200,7 +200,7 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     const canvases = await generateImage(composedPrompt, {width:1024,height:1024}, mode, 1, 'opaque', imageDataUrls);
 
     const media = new ImageMedia(canvases[0]);
-    const film = new Film(media);
+    const film = Film.fromMedia(media);
     frame.filmStack.films.push(film);
     frame.gallery.push(media);
 

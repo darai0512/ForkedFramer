@@ -2,7 +2,7 @@ import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
 import { Film, FilmStack } from "../../lib/layeredCanvas/dataModels/film";
 import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Vector } from "../../lib/layeredCanvas/tools/geometry/geometry";
-import { drawFilmStack } from "../../lib/layeredCanvas/tools/draw/drawFilmStack";
+import { renderProceduralEffect } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
 
 /**
  * 選択されたレイヤー（未選択の場合は全レイヤー）を結合する
@@ -86,12 +86,11 @@ function calculateBoundingRect(films: Film[], paperSize: Vector): { left: number
  * 変換されたフィルムの4つの角の座標を取得（paperSize座標系）
  */
 function getTransformedFilmCorners(film: Film, paperSize: Vector): Vector[] {
-  const media = film.media;
   const scale = film.getShiftedScale(paperSize);
   const translation = film.getShiftedTranslation(paperSize);
-  
-  const width = media.naturalWidth * scale;
-  const height = media.naturalHeight * scale;
+  const [contentWidth, contentHeight] = film.getContentSize(paperSize);
+  const width = contentWidth * scale;
+  const height = contentHeight * scale;
   
   // フィルムのローカル座標での4つの角（スケール済み）
   const localCorners: Vector[] = [
@@ -164,23 +163,31 @@ function renderMergedFilms(films: Film[], boundingRect: { left: number, top: num
     ctx.scale(scale * film.reverse[0], scale * film.reverse[1]);
     
     // メディア描画（エフェクトも考慮）
-    let media = film.media;
-    for (let i = film.effects.length - 1; 0 <= i; i--) {
-      if (film.effects[i].outputMedia) {
-        media = film.effects[i].outputMedia!;
-        break;
+    if (film.content.kind === 'media') {
+      let media = film.content.media;
+      for (let i = film.effects.length - 1; 0 <= i; i--) {
+        if (film.effects[i].outputMedia) {
+          media = film.effects[i].outputMedia!;
+          break;
+        }
       }
+      ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
+      ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
+    } else {
+      if (!film.transientCanvas) {
+        film.transientCanvas = renderProceduralEffect(film.content.effect, paperSize);
+      }
+      const canvasSource = film.transientCanvas;
+      ctx.translate(-canvasSource.width * 0.5, -canvasSource.height * 0.5);
+      ctx.drawImage(canvasSource, 0, 0, canvasSource.width, canvasSource.height);
     }
-    
-    ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
-    ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
     
     ctx.restore();
   }
   
   // 新しいImageMediaを作成
   const imageMedia = new ImageMedia(canvas);
-  const mergedFilm = new Film(imageMedia);
+  const mergedFilm = Film.fromMedia(imageMedia);
   
   // 結合レイヤーの位置とスケールを設定
   // バウンディングボックスの中心座標（paperSize座標系）

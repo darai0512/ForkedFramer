@@ -7,7 +7,8 @@ import { saveRequest } from '../filemanager/warehouse.js';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore.js';
 
 export async function punchFilm(film: Film) {
-  const imageMedia = film.media as ImageMedia;
+  if (film.content.kind !== 'media') { return; }
+  const imageMedia = film.content.media;
   if (!(imageMedia instanceof ImageMedia)) { return; }
 
   const dataUrl = imageMedia.drawSourceCanvas.toDataURL("image/png");

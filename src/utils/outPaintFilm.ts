@@ -12,7 +12,10 @@ import { saveRequest } from '../filemanager/warehouse';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 
 export async function outPaintFilm(film: Film, padding: {left: number, top: number, right: number, bottom: number}) {
-  const imageMedia = film.media as ImageMedia;
+  if (film.content.kind !== 'media') {
+    return;
+  }
+  const imageMedia = film.content.media;
   if (!(imageMedia instanceof ImageMedia)) { 
     return; 
   }
@@ -44,7 +47,7 @@ export async function outPaintFilm(film: Film, padding: {left: number, top: numb
 
   // 画像スケール
   // 元画像が大きすぎる場合、fal.aiがアスペクト比を維持したまま縮小するケースがあるので対応する
-  const oldImageSize = Math.min(film.media.naturalWidth, film.media.naturalHeight) ;
+  const oldImageSize = Math.min(imageMedia.naturalWidth, imageMedia.naturalHeight) ;
   const newActualImageSize = Math.min(canvas.width, canvas.height);
   const newIdealImageSize = Math.min(size.width + padding.left + padding.right, size.height + padding.top + padding.bottom);
   const newScale = film.n_scale / oldImageSize * newActualImageSize;
@@ -78,6 +81,9 @@ export function calculatePadding(outer: Rect, size: Vector, scale: number, trans
 }
 
 export function calculateFramePadding(page: Page, frame: FrameElement, film: Film): {left: number, top: number, right: number, bottom: number} {
+  if (film.content.kind !== 'media') {
+    throw new Error('calculateFramePaddingはメディアフィルムのみ対応しています');
+  }
   const paperSize = page.paperSize;
   const pageLayout = calculatePhysicalLayout(page.frameTree, paperSize, [0,0]);
   const leafLayout = findLayoutOf(pageLayout, frame);
@@ -85,6 +91,6 @@ export function calculateFramePadding(page: Page, frame: FrameElement, film: Fil
   const center = getRectCenter(outerRect);
   const scale = film.getShiftedScale(paperSize);
   const translation = add2D(film.getShiftedTranslation(paperSize), center);
-  const padding = calculatePadding(outerRect, film.media.size, scale, translation);
+  const padding = calculatePadding(outerRect, film.content.media.size, scale, translation);
   return padding;
 }

@@ -44,7 +44,8 @@ export async function cue(timeTable: TimeTableEntry[]): Promise<void> {
   for (const tt of timeTable) {
     const filmStack = tt.entry.layout.element.filmStack;
     for (const film of filmStack.films) {
-      await film.media.player?.seek(0);
+      if (film.content.kind !== 'media') { continue; }
+      await film.content.media.player?.seek(0);
     }
   }
 }
@@ -74,7 +75,8 @@ export async function renderAtTime(layeredCanvas: LayeredCanvas, arrayLayer: Arr
       const tt = timeTable[index];
       const filmStack = tt.entry.layout.element.filmStack;
       for (const film of filmStack.films) {
-        await film.media.player?.seek(seekTime);
+        if (film.content.kind !== 'media') { continue; }
+        await film.content.media.player?.seek(seekTime);
       }
     }
 

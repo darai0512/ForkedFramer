@@ -3,6 +3,13 @@ import type { Media } from './media';
 import type { Effect } from './effect';
 import { ulid } from 'ulid';
 import { ImageMedia } from "./media";
+import type { FilmProceduralEffect } from "./proceduralEffects";
+
+export type FilmProceduralEffectType = FilmProceduralEffect['type'];
+
+export type FilmContent =
+  | { kind: 'media'; media: Media }
+  | { kind: 'procedural'; effect: FilmProceduralEffect };
 
 export type Barriers = {
   top: boolean;
@@ -13,7 +20,7 @@ export type Barriers = {
 
 export class Film  {
   ulid: string;
-  media: Media;
+  content: FilmContent;
   n_scale: number;
   n_translation: Vector;
   rotation: number; // degree
@@ -26,10 +33,11 @@ export class Film  {
   selected: boolean; // 揮発性
   matrix: DOMMatrix | undefined; // 揮発性
   index: number | undefined; // 揮発性
+  transientCanvas: HTMLCanvasElement | undefined; // 揮発性
 
-  constructor(media: Media) {
+  constructor(content: FilmContent) {
     this.ulid = ulid();
-    this.media = media;
+    this.content = content;
     this.n_scale = 1;
     this.n_translation = [0, 0];
     this.rotation = 0;
@@ -42,7 +50,7 @@ export class Film  {
   }
 
   clone() {
-    const f = new Film(this.media);
+    const f = new Film(this.cloneContent());
     f.n_translation = [...this.n_translation];
     f.n_scale = this.n_scale;
     f.rotation = this.rotation;
@@ -54,34 +62,116 @@ export class Film  {
     return f;
   }
 
-  getPlainRect() {
-    const [w, h] = [this.media.naturalWidth, this.media.naturalHeight];
+  static fromMedia(media: Media): Film {
+    return new Film({ kind: 'media', media });
+  }
+
+  static fromProcedural(effect: FilmProceduralEffect): Film {
+    return new Film({ kind: 'procedural', effect });
+  }
+
+  get media(): Media {
+    if (this.content.kind !== 'media') {
+      throw new Error('media accessed on procedural film');
+    }
+    return this.content.media;
+  }
+
+  set media(media: Media) {
+    this.content = { kind: 'media', media };
+    this.transientCanvas = undefined;
+  }
+
+  get proceduralEffect(): FilmProceduralEffect | undefined {
+    return this.content.kind === 'procedural' ? this.content.effect : undefined;
+  }
+
+  set proceduralEffect(effect: FilmProceduralEffect | undefined) {
+    if (!effect) {
+      throw new Error('procedural effect must be defined');
+    }
+    this.content = { kind: 'procedural', effect };
+    this.transientCanvas = undefined;
+  }
+
+  isProcedural(): boolean {
+    return this.content.kind === 'procedural';
+  }
+
+  private cloneContent(): FilmContent {
+    if (this.content.kind === 'media') {
+      return { kind: 'media', media: this.content.media };
+    }
+    return {
+      kind: 'procedural',
+      effect: {
+        type: this.content.effect.type,
+        params: { ...this.content.effect.params },
+      },
+    };
+  }
+
+  getContentSize(paperSize: Vector): Vector {
+    if (this.content.kind === 'media') {
+      return [this.content.media.naturalWidth, this.content.media.naturalHeight];
+    }
+    if (this.transientCanvas) {
+      const expectedWidth = Math.max(1, Math.round(paperSize[0] || 0));
+      const expectedHeight = Math.max(1, Math.round(paperSize[1] || 0));
+      if (this.transientCanvas.width === expectedWidth && this.transientCanvas.height === expectedHeight) {
+        return [this.transientCanvas.width, this.transientCanvas.height];
+      }
+    }
+    const width = this.readNumericParam('width', paperSize[0]);
+    const height = this.readNumericParam('height', paperSize[1]);
+    return [width, height];
+  }
+
+  private readNumericParam(name: string, fallback: number): number {
+    if (this.content.kind !== 'procedural') {
+      return fallback;
+    }
+    const value = this.content.effect.params[name];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  getPlainRect(paperSize: Vector) {
+    const [w, h] = this.getContentSize(paperSize);
     const rect: Rect = [- w/2, - h/2, w, h];
     return rect;
   }
 
   // Shifted = Physicalとscaleは一緒だが、translationはコマの中心から相対
 
-  static getShiftedScale(paperSize: Vector, media: Media, n_scale: number): number {
-    const imageSize = Math.min(media.naturalWidth, media.naturalHeight) ;
+  static getShiftedScale(paperSize: Vector, contentSize: Vector, n_scale: number): number {
+    const imageSize = Math.max(1, Math.min(contentSize[0], contentSize[1]));
     const pageSize = Math.min(paperSize[0], paperSize[1]);
     const scale = pageSize / imageSize
     return n_scale * scale;
   }
 
   getShiftedScale(paperSize: Vector): number {
-    return Film.getShiftedScale(paperSize, this.media, this.n_scale);
+    return Film.getShiftedScale(paperSize, this.getContentSize(paperSize), this.n_scale);
   }
 
   setShiftedScale(paperSize: Vector, scale: number): void {
-    const image = this.media;
-    const imageSize = Math.min(image.naturalWidth, image.naturalHeight) ;
+    const contentSize = this.getContentSize(paperSize);
+    const imageSize = Math.max(1, Math.min(contentSize[0], contentSize[1]));
     const pageSize = Math.min(paperSize[0], paperSize[1]);
     this.n_scale = scale / (pageSize / imageSize);
   }
 
-  static getShiftedTranslation(paperSize: Vector, media: Media, n_translation: Vector): Vector {
-    const imageSize = Math.min(media.naturalWidth, media.naturalHeight) ;
+  static getShiftedTranslation(paperSize: Vector, contentSize: Vector, n_translation: Vector): Vector {
+    const imageSize = Math.max(1, Math.min(contentSize[0], contentSize[1]));
     const pageSize = Math.min(paperSize[0], paperSize[1]);
     const scale = pageSize / imageSize;
     const translation: Vector = [n_translation[0] * scale, n_translation[1] * scale];
@@ -89,28 +179,28 @@ export class Film  {
   }
 
   getShiftedTranslation(paperSize: Vector): Vector {
-    return Film.getShiftedTranslation(paperSize, this.media, this.n_translation);
+    return Film.getShiftedTranslation(paperSize, this.getContentSize(paperSize), this.n_translation);
   }
 
   setShiftedTranslation(paperSize: Vector, translation: Vector): void {
-    const image = this.media;
-    const imageSize = Math.min(image.naturalWidth, image.naturalHeight) ;
+    const contentSize = this.getContentSize(paperSize);
+    const imageSize = Math.max(1, Math.min(contentSize[0], contentSize[1]));
     const pageSize = Math.min(paperSize[0], paperSize[1]);
     const scale = pageSize / imageSize;
     this.n_translation = [translation[0] / scale, translation[1] / scale];
   }
 
-  static getShiftedRect(paperSize: Vector, media: Media, n_scale: number, n_translation: Vector, rotation: number): Rect {
-    const scale = Film.getShiftedScale(paperSize, media, n_scale);
-    const translation = Film.getShiftedTranslation(paperSize, media, n_translation);
-    const [w, h] = [media.naturalWidth * scale, media.naturalHeight * scale];
+  static getShiftedRect(paperSize: Vector, contentSize: Vector, n_scale: number, n_translation: Vector, rotation: number): Rect {
+    const scale = Film.getShiftedScale(paperSize, contentSize, n_scale);
+    const translation = Film.getShiftedTranslation(paperSize, contentSize, n_translation);
+    const [w, h] = [contentSize[0] * scale, contentSize[1] * scale];
     const [x, y] = translation;
     const rect: Rect = [x - w/2, y - h/2, w, h];
     return rect;
   }
 
   getShiftedRect(paperSize: Vector): Rect {
-    return Film.getShiftedRect(paperSize, this.media, this.n_scale, this.n_translation, this.rotation);
+    return Film.getShiftedRect(paperSize, this.getContentSize(paperSize), this.n_scale, this.n_translation, this.rotation);
   }
   
   makeMatrix(paperSize: Vector): DOMMatrix {
@@ -207,7 +297,7 @@ export function calculateMinimumBoundingRect(paperSize: Vector, films: Film[]): 
 }
 
 function transformFilm(paperSize: Vector, film: Film): Vector[] {
-  const rect: Rect = film.getPlainRect();
+  const rect: Rect = film.getPlainRect(paperSize);
   const corners = rectToCorners(rect);
 
   const matrix = film.makeMatrix(paperSize);
@@ -242,9 +332,11 @@ export function insertFilms(paperSize: Vector, constraintRect: Rect, index: numb
   targetFilms.splice(index, 0, ...films);
 
   for (const film of films) {     
-    const media = film.media;
-    if (media instanceof ImageMedia) {
-      gallery.push(media);
+    if (film.content.kind === 'media') {
+      const media = film.content.media;
+      if (media instanceof ImageMedia) {
+        gallery.push(media);
+      }
     }
   }
 }

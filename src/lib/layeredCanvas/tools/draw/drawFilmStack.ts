@@ -1,5 +1,6 @@
 import type { FilmStack, Film } from '../../dataModels/film';
 import type { Vector } from '../geometry/geometry';
+import { renderProceduralEffect } from "../../dataModels/proceduralEffects";
 
 export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStack, paperSize: Vector, center: Vector, clipFrame: ((ctx: CanvasRenderingContext2D, film: Film) => void) | null) {
   const films = filmStack.films;
@@ -19,16 +20,32 @@ export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStac
     ctx.rotate(-film.rotation * Math.PI / 180);
     ctx.scale(scale * film.reverse[0], scale * film.reverse[1]);
 
-    let media = film.media;
-    for (let i = film.effects.length - 1; 0 <= i; i--) {
-      if (film.effects[i].outputMedia) {
-        media = film.effects[i].outputMedia!;
-        break;
+    if (film.content.kind === 'media') {
+      let media = film.content.media;
+      for (let i = film.effects.length - 1; 0 <= i; i--) {
+        if (film.effects[i].outputMedia) {
+          media = film.effects[i].outputMedia!;
+          break;
+        }
       }
-    }
 
-    ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
-    ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
+      ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
+      ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
+    } else {
+      const needsRegeneration = !film.transientCanvas
+        || film.transientCanvas.width !== Math.max(1, Math.round(paperSize[0] || 0))
+        || film.transientCanvas.height !== Math.max(1, Math.round(paperSize[1] || 0));
+      if (needsRegeneration) {
+        film.transientCanvas = renderProceduralEffect(film.content.effect, paperSize);
+      }
+      const canvas = film.transientCanvas;
+      if (!canvas) {
+        ctx.restore();
+        continue;
+      }
+      ctx.translate(-canvas.width * 0.5, -canvas.height * 0.5);
+      ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+    }
 
     ctx.restore();
   }
@@ -50,8 +67,9 @@ export function drawFilmStackBorders(ctx: CanvasRenderingContext2D, filmStack: F
     if (film.visible) {
       const sx = scale * film.reverse[0];
       const sy = scale * film.reverse[1];
-      const iw = sx * film.media.naturalWidth;
-      const ih = sy * film.media.naturalHeight;
+      const [contentWidth, contentHeight] = film.getContentSize(paperSize);
+      const iw = sx * contentWidth;
+      const ih = sy * contentHeight;
 
       ctx.save();
       ctx.translate(-iw * 0.5, -ih * 0.5);

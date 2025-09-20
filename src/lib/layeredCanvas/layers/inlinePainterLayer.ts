@@ -134,6 +134,12 @@ export class InlinePainterLayer extends LayerBase {
       return; 
     }
 
+    if (film.content.kind !== 'media') {
+      this.film = null;
+      this.redraw();
+      return;
+    }
+
     const paperSize = this.frameLayer.getPaperSize();
 
     const [x0, y0, w, h] = trapezoidBoundingRect(trapezoid!);
@@ -148,7 +154,8 @@ export class InlinePainterLayer extends LayerBase {
       filmScale * film.reverse[1]
     ];
 
-    const [iw, ih] = [film.media.naturalWidth, film.media.naturalHeight];
+    const media = film.content.media;
+    const [iw, ih] = [media.naturalWidth, media.naturalHeight];
 
     this.translation = translation;
     this.scale = scale;
@@ -170,7 +177,7 @@ export class InlinePainterLayer extends LayerBase {
     canvas.width = iw;
     canvas.height = ih;
     const ctx = canvas.getContext('2d')!;
-    ctx.drawImage(film.media.drawSource, 0, 0);
+    ctx.drawImage(media.drawSource, 0, 0);
 
     this.history=[canvas];
     this.historyIndex = 1;
@@ -179,7 +186,10 @@ export class InlinePainterLayer extends LayerBase {
 
   get canvas(): HTMLCanvasElement | null{
     if (!this.film) { return null; }
-    const media = this.film.media;
+    if (this.film.content.kind !== 'media') {
+      return null;
+    }
+    const media = this.film.content.media;
     if (!(media instanceof ImageMedia)) {
       return null;
     }

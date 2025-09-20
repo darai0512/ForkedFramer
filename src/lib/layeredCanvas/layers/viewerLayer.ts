@@ -227,7 +227,8 @@ export class ViewerLayer extends LayerBase {
     if (target) {
       const filmStack = this.getFilmStack(target);
       for (const film of filmStack.films) {
-        film.media.player?.pause();
+        if (film.content.kind !== 'media') { continue; }
+        film.content.media.player?.pause();
       }
     }
   }
@@ -235,12 +236,11 @@ export class ViewerLayer extends LayerBase {
   startVideo(target: Layout | Bubble | null) {
     if (!target) { return; }
 
-    let playFlag = false;
     const filmStack = this.getFilmStack(target);
     for (const film of filmStack.films) {
-      if (film.media.player) {
-        playFlag = true;
-        film.media.player.play();
+      if (film.content.kind !== 'media') { continue; }
+      if (film.content.media.player) {
+        film.content.media.player.play();
       }
     }
     // rAFは中央ループからのtickで処理
@@ -251,10 +251,11 @@ export class ViewerLayer extends LayerBase {
     if (!document.hidden && this.selected) {
       const filmStack = this.getFilmStack(this.selected);
       for (const film of filmStack.films) {
-        const src = film.media.drawSource as any;
+        if (film.content.kind !== 'media') { continue; }
+        const src = film.content.media.drawSource as any;
         if (src instanceof HTMLVideoElement) {
-          if (src.paused && film.media.player) {
-            film.media.player.play();
+          if (src.paused && film.content.media.player) {
+            film.content.media.player.play();
           }
         }
       }
@@ -275,7 +276,8 @@ export class ViewerLayer extends LayerBase {
     if (this.selected) {
       const filmStack = this.getFilmStack(this.selected);
       for (const film of filmStack.films) {
-        const src = film.media.drawSource as any;
+        if (film.content.kind !== 'media') { continue; }
+        const src = film.content.media.drawSource as any;
         if (src instanceof HTMLVideoElement) {
           if (!src.paused && !src.ended) {
             this.redraw();
@@ -296,7 +298,8 @@ export class ViewerLayer extends LayerBase {
 
   hasVideo(filmStack: FilmStack): boolean {
     for (const film of filmStack.films) {
-      if (film.media.player) {
+      if (film.content.kind !== 'media') { continue; }
+      if (film.content.media.player) {
         return true;
       }
     }

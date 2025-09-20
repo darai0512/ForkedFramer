@@ -162,16 +162,30 @@
   function makeSnapshot(b: Bubble) {
     let films = [];
     for (let film of b.filmStack.films) {
-      const f = {
-        media: film.media.fileId,
+      const base = {
         n_scale: film.n_scale,
         n_translation: film.n_translation,
         rotation: film.rotation,
         reverse: film.reverse,
         visible: film.visible,
         prompt: film.prompt,
+      };
+      if (film.content.kind === 'media') {
+        films.push({
+          ...base,
+          kind: 'media',
+          media: film.content.media.fileId,
+        });
+      } else {
+        films.push({
+          ...base,
+          kind: 'procedural',
+          effect: {
+            type: film.content.effect.type,
+            params: { ...film.content.effect.params },
+          },
+        });
       }
-      films.push(f);
     }
     const jsonObject = Bubble.decompile(b);
     jsonObject.films = films;

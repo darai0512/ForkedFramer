@@ -43,6 +43,8 @@
   let inPaintingCost = 0;
   let popupVisible = false;
   let popupButton: HTMLButtonElement;
+
+  $: filmMedia = film && film.content.kind === 'media' ? film.content.media : null;
   
   // barrier用Popupの状態管理
   let barrierPopupVisible = false;
@@ -51,7 +53,7 @@
   const dispatch = createEventDispatcher();
 
   function onClick(e: MouseEvent) {
-    console.log("film scale", film?.n_scale, "film size", film?.media.naturalWidth, film?.media.naturalHeight);
+    console.log("film scale", film?.n_scale, "film size", filmMedia?.naturalWidth, filmMedia?.naturalHeight);
     dispatch('select', { film, ctrlKey: e.ctrlKey, metaKey: e.metaKey });
   }
 
@@ -180,14 +182,14 @@
   }
 
   onMount(() => {
-    if (calculateOutPaintingCost) {
-      const source = film?.media.drawSource;
+    if (calculateOutPaintingCost && filmMedia) {
+      const source = filmMedia.drawSource;
       if (source) {
         outPaintingCost = calculateOutPaintingCost!(film!);
       }
     }
-    if (calculateInPaintingCost) {
-      const source = film?.media.drawSource;
+    if (calculateInPaintingCost && filmMedia) {
+      const source = filmMedia.drawSource;
       if (source) {
         inPaintingCost = calculateInPaintingCost!(film!);
       }
@@ -199,12 +201,12 @@
     console.log("onDownload");
     ev.stopPropagation();
     ev.preventDefault();
-    if (!film || !film.media) {
+    if (!film || !filmMedia) {
       toastStore.trigger({ message: $_('frame.errors.noDownloadableImage'), timeout: 2000 });
       return;
     }
 
-    const mediaResource = film.media.persistentSource;
+    const mediaResource = filmMedia.persistentSource;
 
     // 画像データ取得
     if (mediaResource instanceof HTMLCanvasElement) {
@@ -236,7 +238,7 @@
         ＋
       </div>
     </div>
-  {:else if film.media} <!-- ほぼ確定だけど!が使えずエラーになるため -->
+  {:else if filmMedia} <!-- ほぼ確定だけど!が使えずエラーになるため -->
     <div 
       class="image-panel" 
       class:variant-filled-primary={film.selected}
@@ -244,7 +246,7 @@
       on:click={onClick}
     >
       <div class="media-container">
-          <MediaFrame media={film.media} showControls={false} dragAsImage={false}/>
+          <MediaFrame media={filmMedia} showControls={false} dragAsImage={false}/>
       </div>
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete}/>

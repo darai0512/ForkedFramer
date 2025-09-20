@@ -26,7 +26,7 @@
 
   function onAcceptDrop(newIndex: number, mediaResources: (HTMLCanvasElement | HTMLVideoElement)[]) {
     const index = filmStack.films.length - newIndex;
-    const films = mediaResources.map(buildMedia).map(media => new Film(media));
+    const films = mediaResources.map(buildMedia).map(media => Film.fromMedia(media));
     dispatch('accept', {index, films});
   }
 

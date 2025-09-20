@@ -12,11 +12,11 @@ import { upscale, pollMediaStatus } from "../supabase.js";
 import { loading } from './loadingStore.js';
 
 export async function upscaleFilm(film: Film) {
-  if (!(film.media instanceof ImageMedia)) { 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
     toastStore.trigger({ message: `内部エラー: アップスケールは画像に対してしか使えません`, timeout: 3000});
     return; 
   }
-  const imageMedia = film.media as ImageMedia;
+  const imageMedia = film.content.media as ImageMedia;
 
   const newCanvas = await upscaleCanvas(imageMedia.drawSourceCanvas);
   if (!newCanvas) { return; }

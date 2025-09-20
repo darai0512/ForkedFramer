@@ -247,7 +247,7 @@ export class BookWorkspaceOperators implements BookOperators {
 
     const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
     const frameTree = rootFrameTree.children[0];
-    const film = new Film(buildMedia(media));
+    const film = Film.fromMedia(buildMedia(media));
     frameTree.filmStack.films = [film];
 
     const page = newPage(rootFrameTree, []);

@@ -147,21 +147,27 @@
   }
 
   function calculateOutPaintingCost(film: Film) {
+    if (film.content.kind !== 'media') {
+      return 0;
+    }
     const fit = $frameInspectorTarget!;
     const padding = calculateFramePadding(fit.page, fit.frame, film);
     
     const size = {
-      width: film.media.naturalWidth,
-      height: film.media.naturalHeight
+      width: film.content.media.naturalWidth,
+      height: film.content.media.naturalHeight
     };
     
     return calcOutPaintCost(size, padding);
   }
 
   function calculateInPaintingCost(film: Film) {
+    if (film.content.kind !== 'media') {
+      return 0;
+    }
     const size = {
-      width: film.media.naturalWidth,
-      height: film.media.naturalHeight
+      width: film.content.media.naturalWidth,
+      height: film.content.media.naturalHeight
     };
     
     return calcInPaintCost(size);

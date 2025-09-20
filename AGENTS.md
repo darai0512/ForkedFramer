@@ -14,6 +14,7 @@
 - `npm run preview`: Serve the production build locally.
 - `npm run check`: Run `svelte-check` type diagnostics.
 - `npm run vitest` (or `npx vitest --run`): Run unit tests.
+- テスト実行時は `npx tsc --noEmit && npm run vitest -- --run` のように型チェックも併せて行うこと。
 - Deploy: `npm run deploy` (publishes via Cloudflare Pages only on `sns_main`).
 
 ## Coding Style & Naming Conventions
@@ -43,6 +44,6 @@
 # Notice
 
 - 応答は日本語で
-- gitコミットは指示するまでするな、コミットメッセージは英語で
+- gitコミットはユーザーが指示するまでするな。指示されてコミットするときはコミットメッセージは英語で
 - ビルド・実行は不要
 - npm run checkは必要ならしてください

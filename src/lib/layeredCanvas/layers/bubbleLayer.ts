@@ -590,7 +590,8 @@ export class BubbleLayer extends LayerBase {
 
     const bubble = new Bubble();
     const paperSize = this.getPaperSize();
-    const imageSize = film.media.size;
+    if (film.content.kind !== 'media') { return; }
+    const imageSize = film.content.media.size;
     const x = Math.random() * (paperSize[0] - imageSize[0]);
     const y = Math.random() * (paperSize[1] - imageSize[1]);
     bubble.setPhysicalRect(paperSize, [x, y, ...imageSize] as Rect);
@@ -869,10 +870,12 @@ export class BubbleLayer extends LayerBase {
     const film = this.newMediaFilm(media);
     bubble.filmStack.films.push(film);
     const bubbleSize = bubble.getPhysicalSize(paperSize);
-    const scale = minimumBoundingScale(film.media.size, bubbleSize);
-    film.setShiftedScale(paperSize, scale);
-    if (media instanceof HTMLCanvasElement) {
-      bubble.gallery.push(film.media);
+    if (film.content.kind === 'media') {
+      const scale = minimumBoundingScale(film.content.media.size, bubbleSize);
+      film.setShiftedScale(paperSize, scale);
+      if (media instanceof HTMLCanvasElement) {
+        bubble.gallery.push(film.content.media);
+      }
     }
     this.onFocus(bubble);
     this.focusKeeper.setFocus(this);
@@ -1549,7 +1552,8 @@ export class BubbleLayer extends LayerBase {
   stopVideo(bubble: Bubble | null) {
     if (bubble) {
       for (const film of bubble.filmStack.films) {
-        film.media.player?.pause();
+        if (film.content.kind !== 'media') { continue; }
+        film.content.media.player?.pause();
       }
     }
   }
@@ -1557,11 +1561,10 @@ export class BubbleLayer extends LayerBase {
   startVideo(bubble: Bubble | null) {
     if (!bubble) { return; }
 
-    let playFlag = false;
     for (const film of bubble.filmStack.films) {
-      if (film.media.player) {
-        playFlag = true;
-        film.media.player.play();
+      if (film.content.kind !== 'media') { continue; }
+      if (film.content.media.player) {
+        film.content.media.player.play();
       }
     }
     // rAFは中央ループからのtickで処理
@@ -1582,7 +1585,8 @@ export class BubbleLayer extends LayerBase {
   tick(_now: number): void {
     if (this.selected) {
       for (const film of this.selected.filmStack.films) {
-        const src = film.media.drawSource as any;
+        if (film.content.kind !== 'media') { continue; }
+        const src = film.content.media.drawSource as any;
         if (src instanceof HTMLVideoElement) {
           if (!src.paused && !src.ended) {
             this.redraw();
@@ -1604,9 +1608,9 @@ export class BubbleLayer extends LayerBase {
 
   newMediaFilm(media: HTMLCanvasElement | HTMLVideoElement): Film {
     if (media instanceof HTMLCanvasElement) {
-      return new Film(new ImageMedia(media));
+      return Film.fromMedia(new ImageMedia(media));
     } else {
-      return new Film(new VideoMedia(media));
+      return Film.fromMedia(new VideoMedia(media));
     }
   }
 

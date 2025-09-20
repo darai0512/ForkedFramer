@@ -36,7 +36,7 @@ export async function buildMovie(program: DisplayProgramEntry[], vs: VideoSettin
 
   function isVideo(frameTree: FrameElement) {
     for (const film of frameTree.filmStack.films) {
-      if (film.media instanceof VideoMedia) {
+      if (film.content.kind === 'media' && film.content.media instanceof VideoMedia) {
         return true;
       }
     }
@@ -89,4 +89,3 @@ export async function buildMovie(program: DisplayProgramEntry[], vs: VideoSettin
   console.log(url);
   return url;
 }
-

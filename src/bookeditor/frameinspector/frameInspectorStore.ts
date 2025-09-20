@@ -102,7 +102,7 @@ async function onFrameCommand(fit: FrameInspectorTarget | null) {
         const pageLayout = calculatePhysicalLayout(target.page.frameTree, target.page.paperSize, [0,0]);
         const leafLayout = findLayoutOf(pageLayout, target.frame);
         const frameRect = trapezoidBoundingRect(leafLayout!.corners);
-        return minimumBoundingScale(film.media.size, [frameRect[2], frameRect[3]]);
+        return minimumBoundingScale(film.getContentSize(target.page.paperSize), [frameRect[2], frameRect[3]]);
       },
       frameInspectorTarget,
       target.frame
@@ -125,7 +125,7 @@ async function outPaintFrameFilm(fit: FrameInspectorTarget) {
   }
 
   const film = fit.commandTargetFilm!;
-  if (!(film.media instanceof ImageMedia)) { return; }
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { return; }
 
   loading.set(true);
   const padding = calculateFramePadding(fit.page, fit.frame, film);

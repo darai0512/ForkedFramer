@@ -1095,7 +1095,7 @@ export class FrameLayer extends LayerBase {
 
   importMedia(element: FrameElement, media: Media): void {
     const paperSize = this.getPaperSize();
-    const film = new Film(media);
+    const film = Film.fromMedia(media);
     insertFrameLayers(this.frameTree, paperSize, element, element.filmStack.films.length, [film]);
 
     this.onCommit();
@@ -1248,7 +1248,8 @@ export class FrameLayer extends LayerBase {
   stopVideo(layout: Layout | null) {
     if (layout) {
       for (const film of layout.element.filmStack.films) {
-        film.media.player?.pause();
+        if (film.content.kind !== 'media') { continue; }
+        film.content.media.player?.pause();
       }
     }
   }
@@ -1256,11 +1257,10 @@ export class FrameLayer extends LayerBase {
   startVideo(layout: Layout | null) {
     if (!layout) { return; }
 
-    let playFlag = false;
     for (const film of layout.element.filmStack.films) {
-      if (film.media.player) {
-        playFlag = true;
-        film.media.player.play();
+      if (film.content.kind !== 'media') { continue; }
+      if (film.content.media.player) {
+        film.content.media.player.play();
       }
     }
     // rAFは中央ループでtick()から発火
@@ -1275,7 +1275,8 @@ export class FrameLayer extends LayerBase {
     if (this.selectedLayout) {
       const films = this.selectedLayout.element.filmStack.films;
       for (const film of films) {
-        const src = film.media.drawSource as any;
+        if (film.content.kind !== 'media') { continue; }
+        const src = film.content.media.drawSource as any;
         if (src instanceof HTMLVideoElement) {
           if (!src.paused && !src.ended) {
             this.redraw();

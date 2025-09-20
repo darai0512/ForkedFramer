@@ -76,7 +76,7 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
         const markUpTranlation = markUp.translation ?? [0,0];
         const n_translation: Vector = [markUpTranlation[0] * scale, markUpTranlation[1] * scale];
     
-        const film = new Film(new ImageMedia(anyCanvas));
+        const film = Film.fromMedia(new ImageMedia(anyCanvas));
         film.n_scale = n_scale;
         film.n_translation = n_translation;
         film.rotation = markUp.rotation;
@@ -103,7 +103,7 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
     } else {
       // 前期バージョン処理(このときVideoMediaはない)
       function newFilm(anyCanvas: HTMLCanvasElement): Film {
-        const film = new Film(new ImageMedia(anyCanvas));
+        const film = Film.fromMedia(new ImageMedia(anyCanvas));
         film.n_scale = markUp.image.n_scale;
         film.n_translation = markUp.image.n_translation;
         film.rotation = markUp.image.rotation;
@@ -147,8 +147,8 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
 
   // films内のimageをgalleryに格納
   for (const film of frameTree.filmStack.films) {
-    if (film.media instanceof ImageMedia) {
-      frameTree.gallery.push(film.media);
+    if (film.content.kind === 'media' && film.content.media instanceof ImageMedia) {
+      frameTree.gallery.push(film.content.media);
     }
   }
 
@@ -189,7 +189,7 @@ export async function unpackBubbleMedias(paperSize: Vector, markUps: any[], Load
           const scale = s_imageSize / s_pageSize;
           n_translation = [markUpTranslationVector[0] * scale, markUpTranslationVector[1] * scale];
         }
-        const film = new Film(new ImageMedia(mediaResource　as HTMLCanvasElement));
+        const film = Film.fromMedia(new ImageMedia(mediaResource　as HTMLCanvasElement));
         film.n_scale = n_scale;
         film.n_translation = n_translation;
         bubble.filmStack.films.push(film);
@@ -205,8 +205,8 @@ export async function unpackBubbleMedias(paperSize: Vector, markUps: any[], Load
   // films内のimageをgalleryに格納
   for (const bubble of unpackedBubbles) {
     for (const film of bubble.filmStack.films) {
-      if (film.media instanceof ImageMedia) {
-        bubble.gallery.push(film.media);
+      if (film.content.kind === 'media' && film.content.media instanceof ImageMedia) {
+        bubble.gallery.push(film.content.media);
       }
     }
   }
@@ -223,12 +223,8 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
       effects.push({ tag: effect.tag, properties: markUp });
     }
 
-    const fileId = await saveMediaFunc(film.media.persistentSource, film.media.type);
-
-    const filmMarkUp = {
+    const filmMarkUp: any = {
       ulid: film.ulid,
-      mediaType: film.media.type,
-      image: fileId,
       n_scale: film.n_scale,
       n_translation: [...film.n_translation],
       rotation: film.rotation,
@@ -237,7 +233,20 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
       prompt: film.prompt,
       effects,
       barriers: film.barriers,
+    };
+
+    if (film.content.kind === 'media') {
+      const media = film.content.media;
+      const fileId = await saveMediaFunc(media.persistentSource, media.type);
+      filmMarkUp.mediaType = media.type;
+      filmMarkUp.image = fileId;
+    } else {
+      filmMarkUp.proceduralEffect = {
+        type: film.content.effect.type,
+        params: { ...film.content.effect.params },
+      };
     }
+
     packedFilms.push(filmMarkUp);
   }
   return packedFilms;
@@ -246,9 +255,6 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
 export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Promise<Film[]> {
   const films: Film[] = [];
   for (const filmMarkUp of markUp) {
-    const mediaResource = await loadMediaFunc(filmMarkUp.image, filmMarkUp.mediaType ?? 'image');
-    if (!mediaResource) { continue; }
-
     const effects = [];
     if (filmMarkUp.effects) {
       for (const effectMarkUp of filmMarkUp.effects) {
@@ -257,12 +263,26 @@ export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Pr
       }
     }
 
-    const media = 
-      filmMarkUp.mediaType === 'video' ? // 古いデータはundefined
-      new VideoMedia(mediaResource as any) : 
-      new ImageMedia(mediaResource as any);
+    let film: Film | null = null;
 
-    const film = new Film(media);
+    if (filmMarkUp.proceduralEffect) {
+      film = Film.fromProcedural({
+        type: filmMarkUp.proceduralEffect.type,
+        params: filmMarkUp.proceduralEffect.params ?? {},
+      });
+    } else {
+      const mediaResource = await loadMediaFunc(filmMarkUp.image, filmMarkUp.mediaType ?? 'image');
+      if (!mediaResource) { continue; }
+
+      const media = 
+        filmMarkUp.mediaType === 'video' ? // 古いデータはundefined
+        new VideoMedia(mediaResource as any) : 
+        new ImageMedia(mediaResource as any);
+
+      film = Film.fromMedia(media);
+    }
+
+    if (!film) { continue; }
     if (filmMarkUp.ulid) film.ulid = filmMarkUp.ulid;
     film.n_scale = filmMarkUp.n_scale;
     film.n_translation = filmMarkUp.n_translation;
