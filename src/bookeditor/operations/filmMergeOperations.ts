@@ -2,7 +2,7 @@ import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
 import { Film, FilmStack } from "../../lib/layeredCanvas/dataModels/film";
 import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Vector } from "../../lib/layeredCanvas/tools/geometry/geometry";
-import { renderProceduralEffect } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
+import { drawProceduralEffect } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
 
 /**
  * 選択されたレイヤー（未選択の場合は全レイヤー）を結合する
@@ -174,12 +174,10 @@ function renderMergedFilms(films: Film[], boundingRect: { left: number, top: num
       ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
       ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
     } else {
-      if (!film.transientCanvas) {
-        film.transientCanvas = renderProceduralEffect(film.content.effect, paperSize);
-      }
-      const canvasSource = film.transientCanvas;
-      ctx.translate(-canvasSource.width * 0.5, -canvasSource.height * 0.5);
-      ctx.drawImage(canvasSource, 0, 0, canvasSource.width, canvasSource.height);
+      const [contentWidth, contentHeight] = film.getContentSize(paperSize);
+      const side = Math.max(contentWidth, contentHeight);
+      ctx.translate(-side * 0.5, -side * 0.5);
+      drawProceduralEffect(film.content.effect, ctx, side);
     }
     
     ctx.restore();

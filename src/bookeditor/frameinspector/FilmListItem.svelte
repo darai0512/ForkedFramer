@@ -33,11 +33,11 @@
   import texteditIcon from '../../assets/filmlist/textedit.webp';
   import downloadIcon from '../../assets/download.webp';
   import stampIcon from '../../assets/stamp.webp';
-  import { renderProceduralEffect } from '../../lib/layeredCanvas/dataModels/proceduralEffects';
+  import { drawProceduralEffect } from '../../lib/layeredCanvas/dataModels/proceduralEffects';
+  import { tick } from 'svelte';
   
   export let showsBarrier: boolean;
   export let film: Film | null;
-  export let paperSize: [number, number] | null = null;
   export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
   export let calculateInPaintingCost: ((film: Film) => number) | null = null;
 
@@ -63,30 +63,43 @@
   
   const dispatch = createEventDispatcher();
 
-  let proceduralPreview: string | null = null;
   let proceduralVersion = 0;
+  let proceduralCanvas: HTMLCanvasElement | null = null;
+  const PROCEDURAL_PREVIEW_FALLBACK = 128;
+  const PROCEDURAL_PREVIEW_MIN = 64;
+
+  async function updateProceduralPreview() {
+    if (!proceduralFilm) { return; }
+    await tick();
+    if (!proceduralCanvas) { return; }
+    const ctx = proceduralCanvas.getContext('2d');
+    if (!ctx) { return; }
+
+    const devicePixelRatio = typeof window !== 'undefined' ? window.devicePixelRatio ?? 1 : 1;
+    const container = proceduralCanvas.parentElement as HTMLElement | null;
+    const containerRect = container?.getBoundingClientRect();
+    const availableSize = containerRect && (containerRect.width || containerRect.height)
+      ? Math.min(containerRect.width || PROCEDURAL_PREVIEW_FALLBACK, containerRect.height || containerRect.width || PROCEDURAL_PREVIEW_FALLBACK)
+      : PROCEDURAL_PREVIEW_FALLBACK;
+    const cssSize = Math.max(PROCEDURAL_PREVIEW_MIN, Math.round(availableSize));
+    const pixelSize = Math.max(1, Math.round(cssSize * devicePixelRatio));
+
+    if (proceduralCanvas.width !== pixelSize || proceduralCanvas.height !== pixelSize) {
+      proceduralCanvas.width = pixelSize;
+      proceduralCanvas.height = pixelSize;
+    }
+    proceduralCanvas.style.width = `${cssSize}px`;
+    proceduralCanvas.style.height = `${cssSize}px`;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, proceduralCanvas.width, proceduralCanvas.height);
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+
+    drawProceduralEffect(proceduralFilm.content.effect, ctx, cssSize);
+  }
 
   $: if (proceduralFilm && proceduralVersion >= 0) {
-      if (typeof document !== 'undefined') {
-        const widthParam = Number(proceduralFilm.content.effect.params.width);
-        const heightParam = Number(proceduralFilm.content.effect.params.height);
-        const width = Number.isFinite(widthParam) && widthParam > 0
-          ? widthParam
-          : (paperSize?.[0] ?? 1024);
-        const height = Number.isFinite(heightParam) && heightParam > 0
-          ? heightParam
-          : (paperSize?.[1] ?? 1024);
-        try {
-          const canvas = renderProceduralEffect(proceduralFilm.content.effect, [width, height]);
-          proceduralPreview = canvas.toDataURL();
-        } catch (e) {
-          proceduralPreview = null;
-        }
-      } else {
-        proceduralPreview = null;
-      }
-    } else {
-      proceduralPreview = null;
+      updateProceduralPreview();
     }
 
   function onClick(e: MouseEvent) {
@@ -279,11 +292,7 @@
       on:click={onClick}
     >
       <div class="media-container">
-        {#if proceduralPreview}
-          <img src={proceduralPreview} alt={proceduralFilm.content.effect.type} draggable={false} />
-        {:else}
-          <div class="procedural-placeholder">{proceduralFilm.content.effect.type}</div>
-        {/if}
+        <canvas bind:this={proceduralCanvas} class="procedural-preview" aria-hidden="true"></canvas>
       </div>
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete} />
@@ -569,18 +578,13 @@
     align-items: center;
     justify-content: center;
   }
-  .media-container img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-  }
   .image-panel.procedural .media-container {
     background-color: transparent;
   }
-  .procedural-placeholder {
-    text-transform: capitalize;
-    font-size: 18px;
-    color: rgb(var(--color-surface-700));
+  .procedural-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
   .effect-panel {
     width: 100%;

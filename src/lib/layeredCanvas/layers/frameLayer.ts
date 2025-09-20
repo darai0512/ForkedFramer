@@ -214,11 +214,10 @@ export class FrameLayer extends LayerBase {
 
       this.borderIcons.forEach(icon => icon.render(ctx));
     } else if (this.selectedLayout) {
-      const paperSize = this.getPaperSize();
       const [x0, y0, w, h] = trapezoidBoundingRect(this.selectedLayout.corners);
       ctx.save();
       ctx.translate(x0 + w * 0.5, y0 + h * 0.5);
-      drawFilmStackBorders(ctx, this.selectedLayout.element.filmStack, paperSize);
+      drawFilmStackBorders(ctx, this.selectedLayout.element.filmStack, this.getPaperSize());
       ctx.restore();
 
       // シート角丸
@@ -1288,9 +1287,9 @@ export class FrameLayer extends LayerBase {
   }
 
   drawFilmBorders(ctx: CanvasRenderingContext2D, layout: Layout) {
-    const paperSize = this.getPaperSize();
     const element = layout.element;
 
+    const paperSize = this.getPaperSize();
     const [x0, y0, w, h] = trapezoidBoundingRect(layout.corners);
     ctx.save();
     ctx.translate(x0 + w * 0.5, y0 + h * 0.5);

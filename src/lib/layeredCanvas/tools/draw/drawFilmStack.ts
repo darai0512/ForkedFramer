@@ -1,6 +1,6 @@
 import type { FilmStack, Film } from '../../dataModels/film';
 import type { Vector } from '../geometry/geometry';
-import { renderProceduralEffect } from "../../dataModels/proceduralEffects";
+import { drawProceduralEffect } from "../../dataModels/proceduralEffects";
 
 export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStack, paperSize: Vector, center: Vector, clipFrame: ((ctx: CanvasRenderingContext2D, film: Film) => void) | null) {
   const films = filmStack.films;
@@ -32,19 +32,10 @@ export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStac
       ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
       ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
     } else {
-      const needsRegeneration = !film.transientCanvas
-        || film.transientCanvas.width !== Math.max(1, Math.round(paperSize[0] || 0))
-        || film.transientCanvas.height !== Math.max(1, Math.round(paperSize[1] || 0));
-      if (needsRegeneration) {
-        film.transientCanvas = renderProceduralEffect(film.content.effect, paperSize);
-      }
-      const canvas = film.transientCanvas;
-      if (!canvas) {
-        ctx.restore();
-        continue;
-      }
-      ctx.translate(-canvas.width * 0.5, -canvas.height * 0.5);
-      ctx.drawImage(canvas, 0, 0, canvas.width, canvas.height);
+      const [contentWidth, contentHeight] = film.getContentSize(paperSize);
+      const side = Math.max(contentWidth, contentHeight);
+      ctx.translate(-side * 0.5, -side * 0.5);
+      drawProceduralEffect(film.content.effect, ctx, side);
     }
 
     ctx.restore();

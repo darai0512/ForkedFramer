@@ -33,7 +33,6 @@ export class Film  {
   selected: boolean; // 揮発性
   matrix: DOMMatrix | undefined; // 揮発性
   index: number | undefined; // 揮発性
-  transientCanvas: HTMLCanvasElement | undefined; // 揮発性
 
   constructor(content: FilmContent) {
     this.ulid = ulid();
@@ -79,7 +78,6 @@ export class Film  {
 
   set media(media: Media) {
     this.content = { kind: 'media', media };
-    this.transientCanvas = undefined;
   }
 
   get proceduralEffect(): FilmProceduralEffect | undefined {
@@ -91,7 +89,6 @@ export class Film  {
       throw new Error('procedural effect must be defined');
     }
     this.content = { kind: 'procedural', effect };
-    this.transientCanvas = undefined;
   }
 
   isProcedural(): boolean {
@@ -115,33 +112,15 @@ export class Film  {
     if (this.content.kind === 'media') {
       return [this.content.media.naturalWidth, this.content.media.naturalHeight];
     }
-    if (this.transientCanvas) {
-      const expectedWidth = Math.max(1, Math.round(paperSize[0] || 0));
-      const expectedHeight = Math.max(1, Math.round(paperSize[1] || 0));
-      if (this.transientCanvas.width === expectedWidth && this.transientCanvas.height === expectedHeight) {
-        return [this.transientCanvas.width, this.transientCanvas.height];
-      }
-    }
-    const width = this.readNumericParam('width', paperSize[0]);
-    const height = this.readNumericParam('height', paperSize[1]);
-    return [width, height];
+    const side = Film.getProceduralBaseSize(paperSize);
+    return [side, side];
   }
 
-  private readNumericParam(name: string, fallback: number): number {
-    if (this.content.kind !== 'procedural') {
-      return fallback;
-    }
-    const value = this.content.effect.params[name];
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) {
-        return parsed;
-      }
-    }
-    return fallback;
+  static getProceduralBaseSize(hostSize: Vector): number {
+    const width = Math.abs(hostSize[0] ?? 0);
+    const height = Math.abs(hostSize[1] ?? 0);
+    const side = Math.max(width, height);
+    return Math.max(1, side);
   }
 
   getPlainRect(paperSize: Vector) {

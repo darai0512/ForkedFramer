@@ -141,7 +141,6 @@ export class InlinePainterLayer extends LayerBase {
     }
 
     const paperSize = this.frameLayer.getPaperSize();
-
     const [x0, y0, w, h] = trapezoidBoundingRect(trapezoid!);
     const filmTranslation = film.getShiftedTranslation(paperSize);
     const filmScale = film.getShiftedScale(paperSize);

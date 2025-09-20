@@ -78,6 +78,7 @@
       return bit;
     }
   );
+
   const appearanceDelay = writableDerived(
   	bubbleInspectorTarget,
   	(bit) => bit?.bubble.appearanceDelay ?? 0,

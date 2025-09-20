@@ -28,19 +28,14 @@
     if (syncing || film.content.kind !== 'procedural') { return; }
     const effect = createProceduralEffect(type, params);
     film.proceduralEffect = effect;
-    film.transientCanvas = undefined;
     dispatch('change');
   }
 
   function changeType(next: FilmProceduralEffectType) {
     if (type === next) { return; }
-    const preserved = {
-      width: params.width,
-      height: params.height,
-    };
     type = next;
     params = {
-      ...createProceduralEffect(type, preserved).params,
+      ...createProceduralEffect(type).params,
     };
     updateFilm();
   }

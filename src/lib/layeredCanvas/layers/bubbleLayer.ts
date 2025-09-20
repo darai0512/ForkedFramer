@@ -1513,7 +1513,6 @@ export class BubbleLayer extends LayerBase {
       const bubbleSize = bubble.getPhysicalSize(paperSize);
       const [w,h] = this.resizeWithFixedAspectRatio([ir[2], ir[3]], bubbleSize);
       const newScale = w / ir[2];
-      console.log("newScale", newScale);
       const [cx,cy] = bubble.getPhysicalCenter(paperSize);
       bubble.n_p0 = Bubble.normalizedPosition(paperSize, [cx - w/2, cy - h/2]);
       bubble.n_p1 = Bubble.normalizedPosition(paperSize, [cx + w/2, cy + h/2]);

@@ -256,10 +256,11 @@ export class BookWorkspaceOperators implements BookOperators {
     page.frameColor = lastPage.frameColor;
     page.frameWidth = lastPage.frameWidth;
   
+    const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
+    const frameLayout = findLayoutOf(layout, frameTree)!;
     const transformer = new FilmStackTransformer(paperSize, frameTree.filmStack.films);
     transformer.scale(0.01);
-    const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
-    constraintLeaf(paperSize, findLayoutOf(layout, frameTree)!);
+    constraintLeaf(paperSize, frameLayout);
 
     this.book.pages.push(page);
 

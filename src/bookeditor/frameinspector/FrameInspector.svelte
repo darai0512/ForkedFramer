@@ -172,6 +172,7 @@
     
     return calcInPaintCost(size);
   }
+
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight/>

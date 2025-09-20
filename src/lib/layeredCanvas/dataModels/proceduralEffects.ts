@@ -1,5 +1,3 @@
-import type { Vector } from "../tools/geometry/geometry";
-
 export type FilmProceduralEffectType = 'concentration' | 'speedline' | 'burst';
 
 export interface FilmProceduralEffect {
@@ -8,7 +6,7 @@ export interface FilmProceduralEffect {
 }
 
 export interface ProceduralEffectRenderer {
-  render(effect: FilmProceduralEffect, paperSize: Vector, target: HTMLCanvasElement): void;
+  draw(effect: FilmProceduralEffect, ctx: CanvasRenderingContext2D, size: number): void;
 }
 
 function clampNumber(value: number, min: number, max: number, fallback: number): number {
@@ -32,24 +30,10 @@ function readNumericParam(effect: FilmProceduralEffect, key: string, fallback: n
   return fallback;
 }
 
-function prepareCanvas(target: HTMLCanvasElement, paperSize: Vector): CanvasRenderingContext2D {
-  const width = Math.max(1, Math.round(paperSize[0] || 0));
-  const height = Math.max(1, Math.round(paperSize[1] || 0));
-  target.width = width;
-  target.height = height;
-  const ctx = target.getContext('2d');
-  if (!ctx) {
-    throw new Error('CanvasRenderingContext2D not available');
-  }
-  ctx.clearRect(0, 0, width, height);
-  return ctx;
-}
-
 const concentrationRenderer: ProceduralEffectRenderer = {
-  render(effect, paperSize, target) {
-    const ctx = prepareCanvas(target, paperSize);
-    const width = target.width;
-    const height = target.height;
+  draw(effect, ctx, size) {
+    const width = size;
+    const height = size;
     const cx = width / 2;
     const cy = height / 2;
 
@@ -62,8 +46,6 @@ const concentrationRenderer: ProceduralEffectRenderer = {
     const radius = Math.sqrt(cx * cx + cy * cy) * outerRatio;
     const innerRadius = Math.min(cx, cy) * innerRatio;
 
-    ctx.fillStyle = 'transparent';
-    ctx.fillRect(0, 0, width, height);
     ctx.strokeStyle = effect.params['color'] as string ?? 'rgba(0,0,0,0.9)';
     ctx.lineCap = 'round';
 
@@ -98,18 +80,15 @@ const concentrationRenderer: ProceduralEffectRenderer = {
 };
 
 const speedlineRenderer: ProceduralEffectRenderer = {
-  render(effect, paperSize, target) {
-    const ctx = prepareCanvas(target, paperSize);
-    const width = target.width;
-    const height = target.height;
+  draw(effect, ctx, size) {
+    const width = size;
+    const height = size;
 
     const bandCount = clampNumber(readNumericParam(effect, 'bandCount', 24), 1, 160, 24);
     const bandWidthRatio = clampNumber(readNumericParam(effect, 'bandWidthRatio', 0.12), 0.02, 0.5, 0.12);
     const direction = clampNumber(readNumericParam(effect, 'direction', 0), -360, 360, 0) * (Math.PI / 180);
     const speedColor = effect.params['color'] as string ?? 'rgba(0,0,0,0.75)';
 
-    ctx.fillStyle = 'transparent';
-    ctx.fillRect(0, 0, width, height);
     ctx.save();
     ctx.translate(width / 2, height / 2);
     ctx.rotate(direction);
@@ -129,10 +108,9 @@ const speedlineRenderer: ProceduralEffectRenderer = {
 };
 
 const burstRenderer: ProceduralEffectRenderer = {
-  render(effect, paperSize, target) {
-    const ctx = prepareCanvas(target, paperSize);
-    const width = target.width;
-    const height = target.height;
+  draw(effect, ctx, size) {
+    const width = size;
+    const height = size;
     const cx = width / 2;
     const cy = height / 2;
 
@@ -140,7 +118,6 @@ const burstRenderer: ProceduralEffectRenderer = {
     const startRadiusRatio = clampNumber(readNumericParam(effect, 'startRatio', 0.2), 0, 1, 0.2);
     const color = effect.params['color'] as string ?? 'rgba(0,0,0,0.65)';
 
-    ctx.fillStyle = 'transparent';
     ctx.strokeStyle = color;
     ctx.lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 2), 0.5, 12, 2);
 
@@ -156,15 +133,14 @@ const burstRenderer: ProceduralEffectRenderer = {
 };
 
 const fallbackRenderer: ProceduralEffectRenderer = {
-  render(effect, paperSize, target) {
-    const ctx = prepareCanvas(target, paperSize);
+  draw(effect, ctx, size) {
     ctx.fillStyle = 'rgba(0,0,0,0.08)';
-    ctx.fillRect(0, 0, target.width, target.height);
+    ctx.fillRect(0, 0, size, size);
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
-    ctx.font = `${Math.max(12, Math.round(target.width * 0.05))}px sans-serif`;
+    ctx.font = `${Math.max(12, Math.round(size * 0.05))}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(effect.type, target.width / 2, target.height / 2);
+    ctx.fillText(effect.type, size / 2, size / 2);
   }
 };
 
@@ -174,10 +150,24 @@ export const proceduralEffectRegistry: Record<FilmProceduralEffectType, Procedur
   burst: burstRenderer,
 };
 
-export function renderProceduralEffect(effect: FilmProceduralEffect, paperSize: Vector): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
+export function drawProceduralEffect(effect: FilmProceduralEffect, ctx: CanvasRenderingContext2D, size: number): void {
   const renderer = proceduralEffectRegistry[effect.type] ?? fallbackRenderer;
-  renderer.render(effect, paperSize, canvas);
+  ctx.save();
+  renderer.draw(effect, ctx, size);
+  ctx.restore();
+}
+
+export function renderProceduralEffect(effect: FilmProceduralEffect, size: number): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  const targetSize = Math.max(1, Math.round(size || 0));
+  canvas.width = targetSize;
+  canvas.height = targetSize;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('CanvasRenderingContext2D not available');
+  }
+  ctx.clearRect(0, 0, targetSize, targetSize);
+  drawProceduralEffect(effect, ctx, targetSize);
   return canvas;
 }
 
@@ -188,8 +178,6 @@ export type ProceduralEffectParamSpec =
 
 export const proceduralEffectParamSpecs: Record<FilmProceduralEffectType, Record<string, ProceduralEffectParamSpec>> = {
   concentration: {
-    width: { kind: 'number', label: 'Width', min: 64, max: 4096, step: 16 },
-    height: { kind: 'number', label: 'Height', min: 64, max: 4096, step: 16 },
     lineCount: { kind: 'number', label: 'Line Count', min: 4, max: 320, step: 1 },
     lineWidth: { kind: 'number', label: 'Line Width', min: 0.1, max: 10, step: 0.1 },
     innerRatio: { kind: 'number', label: 'Inner Ratio', min: 0, max: 0.8, step: 0.01 },
@@ -199,16 +187,12 @@ export const proceduralEffectParamSpecs: Record<FilmProceduralEffectType, Record
     seed: { kind: 'text', label: 'Seed', placeholder: 'optional' },
   },
   speedline: {
-    width: { kind: 'number', label: 'Width', min: 64, max: 4096, step: 16 },
-    height: { kind: 'number', label: 'Height', min: 64, max: 4096, step: 16 },
     bandCount: { kind: 'number', label: 'Band Count', min: 1, max: 160, step: 1 },
     bandWidthRatio: { kind: 'number', label: 'Band Width Ratio', min: 0.02, max: 0.5, step: 0.01 },
     direction: { kind: 'number', label: 'Direction (deg)', min: -360, max: 360, step: 1 },
     color: { kind: 'color', label: 'Color' },
   },
   burst: {
-    width: { kind: 'number', label: 'Width', min: 64, max: 4096, step: 16 },
-    height: { kind: 'number', label: 'Height', min: 64, max: 4096, step: 16 },
     ringCount: { kind: 'number', label: 'Ring Count', min: 1, max: 16, step: 1 },
     startRatio: { kind: 'number', label: 'Start Ratio', min: 0, max: 1, step: 0.01 },
     lineWidth: { kind: 'number', label: 'Line Width', min: 0.5, max: 12, step: 0.1 },
@@ -218,8 +202,6 @@ export const proceduralEffectParamSpecs: Record<FilmProceduralEffectType, Record
 
 const defaultParams: Record<FilmProceduralEffectType, Record<string, number | string | boolean>> = {
   concentration: {
-    width: 1024,
-    height: 1024,
     lineCount: 48,
     lineWidth: 1.5,
     innerRatio: 0.05,
@@ -229,16 +211,12 @@ const defaultParams: Record<FilmProceduralEffectType, Record<string, number | st
     seed: '',
   },
   speedline: {
-    width: 1024,
-    height: 1024,
     bandCount: 24,
     bandWidthRatio: 0.12,
     direction: 0,
     color: '#000000',
   },
   burst: {
-    width: 1024,
-    height: 1024,
     ringCount: 4,
     startRatio: 0.2,
     lineWidth: 2,

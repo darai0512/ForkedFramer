@@ -21,13 +21,9 @@
 
   function changeType(next: FilmProceduralEffectType) {
     if (next === type) return;
-    const preservedDimensions = {
-      width: params.width,
-      height: params.height,
-    };
     type = next;
     params = {
-      ...createProceduralEffect(next, preservedDimensions).params,
+      ...createProceduralEffect(next).params,
     };
   }
 
