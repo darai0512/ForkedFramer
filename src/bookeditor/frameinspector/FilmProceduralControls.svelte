@@ -1,9 +1,15 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import type { Film } from "../../lib/layeredCanvas/dataModels/film";
   import type { FilmProceduralEffectType } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
   import { createProceduralEffect, proceduralEffectParamSpecs } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
+  import FilmProceduralNumberParam from './FilmProceduralNumberParam.svelte';
+  import FilmProceduralColorParam from './FilmProceduralColorParam.svelte';
+  import FilmProceduralTextParam from './FilmProceduralTextParam.svelte';
 
   export let film: Film;
+
+  const dispatch = createEventDispatcher<{ change: void }>();
 
   let type: FilmProceduralEffectType = 'concentration';
   let params: Record<string, number | string | boolean> = {};
@@ -23,6 +29,7 @@
     const effect = createProceduralEffect(type, params);
     film.proceduralEffect = effect;
     film.transientCanvas = undefined;
+    dispatch('change');
   }
 
   function changeType(next: FilmProceduralEffectType) {
@@ -43,26 +50,6 @@
     changeType(target.value as FilmProceduralEffectType);
   }
 
-  function onNumberInput(event: Event, key: string, spec: { min: number; max: number }) {
-    const value = Number((event.currentTarget as HTMLInputElement).value);
-    if (!Number.isFinite(value)) { return; }
-    const clamped = Math.min(spec.max, Math.max(spec.min, value));
-    params = { ...params, [key]: clamped };
-    updateFilm();
-  }
-
-  function onColorInput(event: Event, key: string) {
-    const value = (event.currentTarget as HTMLInputElement).value;
-    params = { ...params, [key]: value };
-    updateFilm();
-  }
-
-  function onTextInput(event: Event, key: string) {
-    const value = (event.currentTarget as HTMLInputElement).value;
-    params = { ...params, [key]: value };
-    updateFilm();
-  }
-
   function numberValueOf(key: string, fallback: number): number {
     const value = params[key];
     if (typeof value === 'number') {
@@ -81,13 +68,41 @@
     const value = params[key];
     return typeof value === 'string' ? value : fallback;
   }
+
+  function onNumberParamChange(key: string, value: number, step: number) {
+    const previous = Number(params[key]);
+    const tolerance = step >= 1 ? 0 : Math.max(step / 100, 1e-6);
+    if (Number.isFinite(previous) && Math.abs(previous - value) <= tolerance) {
+      return;
+    }
+    params = { ...params, [key]: value };
+    updateFilm();
+  }
+
+  function onColorParamChange(key: string, value: string) {
+    const previous = typeof params[key] === 'string' ? (params[key] as string) : '';
+    if (previous.toLowerCase() === value.toLowerCase()) {
+      return;
+    }
+    params = { ...params, [key]: value };
+    updateFilm();
+  }
+
+  function onTextParamChange(key: string, value: string) {
+    const previous = typeof params[key] === 'string' ? (params[key] as string) : '';
+    if (previous === value) {
+      return;
+    }
+    params = { ...params, [key]: value };
+    updateFilm();
+  }
 </script>
 
 {#if film.content.kind === 'procedural'}
 <div class="procedural-controls">
-  <div class="row">
-    <label for={typeSelectId}>Type</label>
-    <select id={typeSelectId} bind:value={type} on:change={onTypeChange}>
+  <div class="selector-row">
+    <label class="selector-label" for={typeSelectId}>Type</label>
+    <select class="selector-control" id={typeSelectId} bind:value={type} on:change={onTypeChange}>
       <option value="concentration">Concentration</option>
       <option value="speedline">Speed Lines</option>
       <option value="burst">Burst</option>
@@ -95,35 +110,29 @@
   </div>
 
   {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
-    <div class="row">
-      <label for={`${idPrefix}-${key}`}>{spec.label}</label>
-      {#if spec.kind === 'number'}
-        <input
-          id={`${idPrefix}-${key}`}
-          type="number"
-          min={spec.min}
-          max={spec.max}
-          step={spec.step}
-          value={numberValueOf(key, spec.min)}
-          on:input={(event) => onNumberInput(event, key, spec)}
-        />
-      {:else if spec.kind === 'color'}
-        <input
-          id={`${idPrefix}-${key}`}
-          type="color"
-          value={stringValueOf(key, '#000000')}
-          on:input={(event) => onColorInput(event, key)}
-        />
-      {:else if spec.kind === 'text'}
-        <input
-          id={`${idPrefix}-${key}`}
-          type="text"
-          value={stringValueOf(key, '')}
-          placeholder={spec.placeholder}
-          on:input={(event) => onTextInput(event, key)}
-        />
-      {/if}
-    </div>
+    {#if spec.kind === 'number'}
+      <FilmProceduralNumberParam
+        label={spec.label}
+        value={numberValueOf(key, spec.min)}
+        min={spec.min}
+        max={spec.max}
+        step={spec.step}
+        on:change={(event) => onNumberParamChange(key, event.detail, spec.step)}
+      />
+    {:else if spec.kind === 'color'}
+      <FilmProceduralColorParam
+        label={spec.label}
+        value={stringValueOf(key, '#000000')}
+        on:change={(event) => onColorParamChange(key, event.detail)}
+      />
+    {:else if spec.kind === 'text'}
+      <FilmProceduralTextParam
+        label={spec.label}
+        value={stringValueOf(key, '')}
+        placeholder={spec.placeholder}
+        on:change={(event) => onTextParamChange(key, event.detail)}
+      />
+    {/if}
   {/each}
 </div>
 {/if}
@@ -134,13 +143,23 @@
     flex-direction: column;
     gap: 12px;
   }
-  .row {
+  .selector-row {
     display: flex;
-    flex-direction: column;
-    gap: 4px;
+    align-items: center;
+    gap: 8px;
   }
-  select,
-  input {
-    width: 100%;
+  .selector-label {
+    font-size: 14px;
+    min-width: 92px;
+    white-space: nowrap;
+  }
+  .selector-control {
+    flex: 1;
+    min-height: 28px;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgb(var(--color-surface-300));
+    background: white;
   }
 </style>

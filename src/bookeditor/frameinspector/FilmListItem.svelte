@@ -64,8 +64,9 @@
   const dispatch = createEventDispatcher();
 
   let proceduralPreview: string | null = null;
+  let proceduralVersion = 0;
 
-  $: if (proceduralFilm) {
+  $: if (proceduralFilm && proceduralVersion >= 0) {
       if (typeof document !== 'undefined') {
         const widthParam = Number(proceduralFilm.content.effect.params.width);
         const heightParam = Number(proceduralFilm.content.effect.params.height);
@@ -159,6 +160,13 @@
     ev.stopPropagation();
     ev.preventDefault();
     effectVisible = !effectVisible;
+  }
+
+  function onProceduralEffectChange() {
+    if (!film) { return; }
+    proceduralVersion += 1;
+    $redrawToken = true;
+    dispatch('commit', false);
   }
 
   function onNewEffect() {
@@ -277,7 +285,6 @@
           <div class="procedural-placeholder">{proceduralFilm.content.effect.type}</div>
         {/if}
       </div>
-      <div class="procedural-tag">{proceduralFilm.content.effect.type}</div>
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete} />
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -296,11 +303,21 @@
         </div>
       {/if}
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt="Procedural settings" use:toolTip={'Procedural settings'} on:click={onToggleeffectVisible} />
+      <img
+        draggable={false}
+        class="effect-icon"
+        class:active={effectVisible}
+        src={effectIcon}
+        alt={$_('frame.actions.effects')}
+        use:toolTip={$_('frame.actions.effects')}
+        on:click={onToggleeffectVisible}
+      />
     </div>
     {#if effectVisible}
       <div class="effect-panel">
-        <FilmProceduralControls film={proceduralFilm} />
+        <div class="effect-item variant-ghost-primary procedural-effect-item">
+          <FilmProceduralControls film={proceduralFilm} on:change={onProceduralEffectChange} />
+        </div>
       </div>
     {/if}
   {:else}
@@ -565,18 +582,6 @@
     font-size: 18px;
     color: rgb(var(--color-surface-700));
   }
-  .procedural-tag {
-    position: absolute;
-    bottom: 6px;
-    left: 8px;
-    padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    font-size: 12px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-  }
   .effect-panel {
     width: 100%;
     display: flex;
@@ -590,6 +595,13 @@
   }
   .effect-item {
     width: 100%;
+  }
+  .procedural-effect-item {
+    padding: 0.5rem;
+  }
+  .procedural-effect-item :global(.procedural-controls) {
+    width: 100%;
+    gap: 8px;
   }
   .new-film {
     font-size: 60px;
