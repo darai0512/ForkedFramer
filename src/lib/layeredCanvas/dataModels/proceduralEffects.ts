@@ -180,3 +180,82 @@ export function renderProceduralEffect(effect: FilmProceduralEffect, paperSize: 
   renderer.render(effect, paperSize, canvas);
   return canvas;
 }
+
+export type ProceduralEffectParamSpec =
+  | { kind: 'number'; label: string; min: number; max: number; step: number }
+  | { kind: 'color'; label: string }
+  | { kind: 'text'; label: string; placeholder?: string };
+
+export const proceduralEffectParamSpecs: Record<FilmProceduralEffectType, Record<string, ProceduralEffectParamSpec>> = {
+  concentration: {
+    width: { kind: 'number', label: 'Width', min: 64, max: 4096, step: 16 },
+    height: { kind: 'number', label: 'Height', min: 64, max: 4096, step: 16 },
+    lineCount: { kind: 'number', label: 'Line Count', min: 4, max: 320, step: 1 },
+    lineWidth: { kind: 'number', label: 'Line Width', min: 0.1, max: 10, step: 0.1 },
+    innerRatio: { kind: 'number', label: 'Inner Ratio', min: 0, max: 0.8, step: 0.01 },
+    outerRatio: { kind: 'number', label: 'Outer Ratio', min: 0.5, max: 2, step: 0.01 },
+    angleJitter: { kind: 'number', label: 'Angle Jitter', min: 0, max: 2, step: 0.05 },
+    color: { kind: 'color', label: 'Color' },
+    seed: { kind: 'text', label: 'Seed', placeholder: 'optional' },
+  },
+  speedline: {
+    width: { kind: 'number', label: 'Width', min: 64, max: 4096, step: 16 },
+    height: { kind: 'number', label: 'Height', min: 64, max: 4096, step: 16 },
+    bandCount: { kind: 'number', label: 'Band Count', min: 1, max: 160, step: 1 },
+    bandWidthRatio: { kind: 'number', label: 'Band Width Ratio', min: 0.02, max: 0.5, step: 0.01 },
+    direction: { kind: 'number', label: 'Direction (deg)', min: -360, max: 360, step: 1 },
+    color: { kind: 'color', label: 'Color' },
+  },
+  burst: {
+    width: { kind: 'number', label: 'Width', min: 64, max: 4096, step: 16 },
+    height: { kind: 'number', label: 'Height', min: 64, max: 4096, step: 16 },
+    ringCount: { kind: 'number', label: 'Ring Count', min: 1, max: 16, step: 1 },
+    startRatio: { kind: 'number', label: 'Start Ratio', min: 0, max: 1, step: 0.01 },
+    lineWidth: { kind: 'number', label: 'Line Width', min: 0.5, max: 12, step: 0.1 },
+    color: { kind: 'color', label: 'Color' },
+  },
+};
+
+const defaultParams: Record<FilmProceduralEffectType, Record<string, number | string | boolean>> = {
+  concentration: {
+    width: 1024,
+    height: 1024,
+    lineCount: 48,
+    lineWidth: 1.5,
+    innerRatio: 0.05,
+    outerRatio: 1.1,
+    angleJitter: 0.4,
+    color: '#000000',
+    seed: '',
+  },
+  speedline: {
+    width: 1024,
+    height: 1024,
+    bandCount: 24,
+    bandWidthRatio: 0.12,
+    direction: 0,
+    color: '#000000',
+  },
+  burst: {
+    width: 1024,
+    height: 1024,
+    ringCount: 4,
+    startRatio: 0.2,
+    lineWidth: 2,
+    color: '#000000',
+  },
+};
+
+export function createProceduralEffect(
+  type: FilmProceduralEffectType,
+  overrides: Record<string, number | string | boolean> = {}
+): FilmProceduralEffect {
+  const base = defaultParams[type];
+  return {
+    type,
+    params: {
+      ...base,
+      ...overrides,
+    },
+  };
+}

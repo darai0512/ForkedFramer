@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { FilmProceduralEffect, FilmProceduralEffectType } from '../lib/layeredCanvas/dataModels/proceduralEffects';
+  import type { FilmProceduralEffectType, FilmProceduralEffect } from '../lib/layeredCanvas/dataModels/proceduralEffects';
+  import { createProceduralEffect, proceduralEffectParamSpecs } from '../lib/layeredCanvas/dataModels/proceduralEffects';
 
   const dispatch = createEventDispatcher<{ create: { effect: FilmProceduralEffect; label: string | null } }>();
 
@@ -11,86 +12,27 @@
   ];
 
   let type: FilmProceduralEffectType = 'concentration';
-  let width = 1024;
-  let height = 1024;
   let label = '';
+  let params: Record<string, number | string | boolean> = createProceduralEffect(type).params;
 
-  let concentrationParams = {
-    lineCount: 48,
-    lineWidth: 1.5,
-    innerRatio: 0.05,
-    outerRatio: 1.1,
-    angleJitter: 0.4,
-    color: '#000000',
-    seed: '',
-  };
-
-  let speedlineParams = {
-    bandCount: 24,
-    bandWidthRatio: 0.12,
-    direction: 0,
-    color: '#000000',
-  };
-
-  let burstParams = {
-    ringCount: 4,
-    startRatio: 0.2,
-    lineWidth: 2,
-    color: '#000000',
-  };
-
-  function sanitize(value: number, fallback: number): number {
-    return Number.isFinite(value) ? value : fallback;
+  function changeType(next: FilmProceduralEffectType) {
+    if (next === type) return;
+    const preservedDimensions = {
+      width: params.width,
+      height: params.height,
+    };
+    type = next;
+    params = {
+      ...createProceduralEffect(next, preservedDimensions).params,
+    };
   }
 
-  function buildEffect(): FilmProceduralEffect {
-    const baseParams: Record<string, number | string | boolean> = {
-      width: sanitize(width, 1024),
-      height: sanitize(height, 1024),
-    };
-
-    switch (type) {
-      case 'concentration':
-        return {
-          type,
-          params: {
-            ...baseParams,
-            lineCount: sanitize(concentrationParams.lineCount, 48),
-            lineWidth: sanitize(concentrationParams.lineWidth, 1.5),
-            innerRatio: sanitize(concentrationParams.innerRatio, 0.05),
-            outerRatio: sanitize(concentrationParams.outerRatio, 1.1),
-            angleJitter: sanitize(concentrationParams.angleJitter, 0.4),
-            color: concentrationParams.color,
-            seed: concentrationParams.seed,
-          },
-        };
-      case 'speedline':
-        return {
-          type,
-          params: {
-            ...baseParams,
-            bandCount: sanitize(speedlineParams.bandCount, 24),
-            bandWidthRatio: sanitize(speedlineParams.bandWidthRatio, 0.12),
-            direction: sanitize(speedlineParams.direction, 0),
-            color: speedlineParams.color,
-          },
-        };
-      case 'burst':
-        return {
-          type,
-          params: {
-            ...baseParams,
-            ringCount: sanitize(burstParams.ringCount, 4),
-            startRatio: sanitize(burstParams.startRatio, 0.2),
-            lineWidth: sanitize(burstParams.lineWidth, 2),
-            color: burstParams.color,
-          },
-        };
-    }
+  function updateParam(key: string, value: number | string | boolean) {
+    params = { ...params, [key]: value };
   }
 
   function submit() {
-    const effect = buildEffect();
+    const effect = createProceduralEffect(type, params);
     dispatch('create', { effect, label: label.trim() ? label.trim() : null });
   }
 </script>
@@ -105,94 +47,43 @@
 
   <div class="field">
     <label>Type</label>
-    <select bind:value={type}>
+    <select bind:value={type} on:change={(event) => changeType((event.currentTarget as HTMLSelectElement).value as FilmProceduralEffectType)}>
       {#each proceduralOptions as option}
         <option value={option.value}>{option.label}</option>
       {/each}
     </select>
   </div>
 
-  <div class="dimension-grid">
-    <label>
-      Width
-      <input type="number" min="32" step="16" bind:value={width} />
-    </label>
-    <label>
-      Height
-      <input type="number" min="32" step="16" bind:value={height} />
-    </label>
+  <div class="grid">
+    {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
+      <label>
+        {spec.label}
+        {#if spec.kind === 'number'}
+          <input
+            type="number"
+            min={spec.min}
+            max={spec.max}
+            step={spec.step}
+            bind:value={params[key]}
+            on:change={(event) => updateParam(key, Number((event.currentTarget as HTMLInputElement).value))}
+          />
+        {:else if spec.kind === 'color'}
+          <input
+            type="color"
+            bind:value={params[key]}
+            on:change={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
+          />
+        {:else if spec.kind === 'text'}
+          <input
+            type="text"
+            bind:value={params[key]}
+            placeholder={spec.placeholder}
+            on:input={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
+          />
+        {/if}
+      </label>
+    {/each}
   </div>
-
-  {#if type === 'concentration'}
-    <div class="grid">
-      <label>
-        Line Count
-        <input type="number" min="4" step="1" bind:value={concentrationParams.lineCount} />
-      </label>
-      <label>
-        Line Width
-        <input type="number" min="0.1" step="0.1" bind:value={concentrationParams.lineWidth} />
-      </label>
-      <label>
-        Inner Ratio
-        <input type="number" min="0" max="0.8" step="0.01" bind:value={concentrationParams.innerRatio} />
-      </label>
-      <label>
-        Outer Ratio
-        <input type="number" min="0.5" max="2" step="0.01" bind:value={concentrationParams.outerRatio} />
-      </label>
-      <label>
-        Angle Jitter
-        <input type="number" min="0" max="2" step="0.1" bind:value={concentrationParams.angleJitter} />
-      </label>
-      <label>
-        Color
-        <input type="color" bind:value={concentrationParams.color} />
-      </label>
-      <label>
-        Seed (optional)
-        <input type="text" bind:value={concentrationParams.seed} />
-      </label>
-    </div>
-  {:else if type === 'speedline'}
-    <div class="grid">
-      <label>
-        Band Count
-        <input type="number" min="1" step="1" bind:value={speedlineParams.bandCount} />
-      </label>
-      <label>
-        Band Width Ratio
-        <input type="number" min="0.02" max="0.5" step="0.01" bind:value={speedlineParams.bandWidthRatio} />
-      </label>
-      <label>
-        Direction (deg)
-        <input type="number" min="-360" max="360" step="1" bind:value={speedlineParams.direction} />
-      </label>
-      <label>
-        Color
-        <input type="color" bind:value={speedlineParams.color} />
-      </label>
-    </div>
-  {:else if type === 'burst'}
-    <div class="grid">
-      <label>
-        Ring Count
-        <input type="number" min="1" step="1" bind:value={burstParams.ringCount} />
-      </label>
-      <label>
-        Start Ratio
-        <input type="number" min="0" max="1" step="0.01" bind:value={burstParams.startRatio} />
-      </label>
-      <label>
-        Line Width
-        <input type="number" min="0.5" step="0.1" bind:value={burstParams.lineWidth} />
-      </label>
-      <label>
-        Color
-        <input type="color" bind:value={burstParams.color} />
-      </label>
-    </div>
-  {/if}
 
   <button class="btn variant-filled-primary mt-4" on:click={submit}>
     Create Procedural Layer
@@ -211,18 +102,14 @@
     flex-direction: column;
     gap: 4px;
   }
-  .dimension-grid {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  }
   .grid {
     display: grid;
     gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
-  input[type="text"],
   input[type="number"],
+  input[type="text"],
+  input[type="color"],
   select {
     width: 100%;
   }

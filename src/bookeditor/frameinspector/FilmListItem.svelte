@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createEventDispatcher, onMount } from 'svelte';
+  import { createEventDispatcher } from 'svelte';
   import type { Film } from "../../lib/layeredCanvas/dataModels/film";
   import { Effect, OutlineEffect } from "../../lib/layeredCanvas/dataModels/effect";
   import { redrawToken } from '../workspaceStore';
@@ -12,6 +12,7 @@
   import { toolTip } from '../../utils/passiveToolTipStore';
   import Popup from '../../utils/Popup.svelte';
   import MediaFrame from '../../gallery/MediaFrame.svelte';
+  import FilmProceduralControls from './FilmProceduralControls.svelte';
   import BarrierIcon from './BarrierIcon.svelte';
   import { saveAs } from 'file-saver';
   import { canvasToBlob } from '../../lib/layeredCanvas/tools/imageUtil';
@@ -32,9 +33,11 @@
   import texteditIcon from '../../assets/filmlist/textedit.webp';
   import downloadIcon from '../../assets/download.webp';
   import stampIcon from '../../assets/stamp.webp';
+  import { renderProceduralEffect } from '../../lib/layeredCanvas/dataModels/proceduralEffects';
   
   export let showsBarrier: boolean;
   export let film: Film | null;
+  export let paperSize: [number, number] | null = null;
   export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
   export let calculateInPaintingCost: ((film: Film) => number) | null = null;
 
@@ -52,8 +55,23 @@
   
   const dispatch = createEventDispatcher();
 
+  $: isProcedural = Boolean(film && film.content.kind === 'procedural');
+  let proceduralPreview: string | null = null;
+
+  $: if (film && film.content.kind === 'procedural') {
+      const width = Number(film.content.effect.params.width) || 1024;
+      const height = Number(film.content.effect.params.height) || 1024;
+      try {
+        const canvas = renderProceduralEffect(film.content.effect, [width, height]);
+        proceduralPreview = canvas.toDataURL();
+      } catch (e) {
+        proceduralPreview = null;
+      }
+    } else {
+      proceduralPreview = null;
+    }
+
   function onClick(e: MouseEvent) {
-    console.log("film scale", film?.n_scale, "film size", filmMedia?.naturalWidth, filmMedia?.naturalHeight);
     dispatch('select', { film, ctrlKey: e.ctrlKey, metaKey: e.metaKey });
   }
 
@@ -181,20 +199,13 @@
       e.preventDefault?.();
   }
 
-  onMount(() => {
-    if (calculateOutPaintingCost && filmMedia) {
-      const source = filmMedia.drawSource;
-      if (source) {
-        outPaintingCost = calculateOutPaintingCost!(film!);
-      }
-    }
-    if (calculateInPaintingCost && filmMedia) {
-      const source = filmMedia.drawSource;
-      if (source) {
-        inPaintingCost = calculateInPaintingCost!(film!);
-      }
-    }
-  });
+  $: outPaintingCost = film && film.content.kind === 'media' && calculateOutPaintingCost
+    ? calculateOutPaintingCost(film)
+    : 0;
+
+  $: inPaintingCost = film && film.content.kind === 'media' && calculateInPaintingCost
+    ? calculateInPaintingCost(film)
+    : 0;
 
   // ダウンロードボタンの処理
   async function onDownload(ev: MouseEvent) {
@@ -228,31 +239,30 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div
-  class="film"
-  draggable={false}
->
+<div class="film" draggable={false}>
   {#if !film}
     <div class="w-full h-full variant-soft-tertiary" on:click={onClick}>
-      <div class="new-film" use:toolTip={$_('frame.actions.newImage')} >
+      <div class="new-film" use:toolTip={$_('frame.actions.newImage')}>
         ＋
       </div>
     </div>
-  {:else if filmMedia} <!-- ほぼ確定だけど!が使えずエラーになるため -->
-    <div 
-      class="image-panel" 
+  {:else if isProcedural}
+    <div
+      class="image-panel procedural"
       class:variant-filled-primary={film.selected}
       class:variant-soft-tertiary={!film.selected}
       on:click={onClick}
     >
       <div class="media-container">
-          <MediaFrame media={filmMedia} showControls={false} dragAsImage={false}/>
+        {#if proceduralPreview}
+          <img src={proceduralPreview} alt={film.content.effect.type} draggable={false} />
+        {:else}
+          <div class="procedural-placeholder">{film.content.effect.type}</div>
+        {/if}
       </div>
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete}/>
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img draggable={false} class="visible-icon" class:off={!film.visible} src={visibleIcon} alt={$_('frame.actions.visibilityToggle')} use:toolTip={$_('frame.actions.visibilityToggle')} on:click={onToggleVisible}/>
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <div class="procedural-tag">{film.content.effect.type}</div>
+      <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete} />
+      <img draggable={false} class="visible-icon" class:off={!film.visible} src={visibleIcon} alt={$_('frame.actions.visibilityToggle')} use:toolTip={$_('frame.actions.visibilityToggle')} on:click={onToggleVisible} />
       {#if showsBarrier}
         <div
           class="barrier-icon"
@@ -266,28 +276,56 @@
           />
         </div>
       {/if}
-      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt={$_('frame.actions.effects')} use:toolTip={$_('frame.actions.effects')} on:click={onToggleeffectVisible}/>
+      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt="Procedural settings" use:toolTip="Procedural settings" on:click={onToggleeffectVisible} />
+    </div>
+    {#if effectVisible}
+      <div class="effect-panel">
+        <FilmProceduralControls {film} {paperSize} />
+      </div>
+    {/if}
+  {:else}
+    <div
+      class="image-panel"
+      class:variant-filled-primary={film.selected}
+      class:variant-soft-tertiary={!film.selected}
+      on:click={onClick}
+    >
+      <div class="media-container">
+        {#if filmMedia}
+          <MediaFrame media={filmMedia} showControls={false} dragAsImage={false} />
+        {/if}
+      </div>
+      <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete} />
+      <img draggable={false} class="visible-icon" class:off={!film.visible} src={visibleIcon} alt={$_('frame.actions.visibilityToggle')} use:toolTip={$_('frame.actions.visibilityToggle')} on:click={onToggleVisible} />
+      {#if showsBarrier}
+        <div
+          class="barrier-icon"
+          bind:this={barrierPopupTarget}
+          style="position:absolute; left:40px; top:4px; width:32px; height:32px; z-index:2; cursor:pointer;"
+        >
+          <BarrierIcon
+            barriers={film?.barriers ?? { left: false, right: false, top: false, bottom: false }}
+            toolTipText={$_('frame.barrier.opening')}
+            on:click={toggleBarrierPopup}
+          />
+        </div>
+      {/if}
+      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt={$_('frame.actions.effects')} use:toolTip={$_('frame.actions.effects')} on:click={onToggleeffectVisible} />
 
-      <button 
-        class="transformix-icon"
-        bind:this={popupButton}
-        on:click={togglePopup}
-      >
-        <img draggable={false} src={popupIcon} alt="変換メニュー"/>
+      <button class="transformix-icon" bind:this={popupButton} on:click={togglePopup}>
+        <img draggable={false} src={popupIcon} alt="変換メニュー" />
       </button>
     </div>
     {#if effectVisible}
       <div class="effect-panel">
-        <div class="flex flex-col gap-2 w-full" use:sortableList={{animation: 100, onUpdate: onUpdateEffectList}}>
+        <div class="flex flex-col gap-2 w-full" use:sortableList={{ animation: 100, onUpdate: onUpdateEffectList }}>
           {#each film.effects as effect, index (effect.ulid)}
             <div class="effect-item variant-ghost-primary p-2">
-              <FilmEffect effect={effect} on:delete={() => onDeleteEffect(index)} on:update={onUpdateEffect}/>
+              <FilmEffect effect={effect} on:delete={() => onDeleteEffect(index)} on:update={onUpdateEffect} />
             </div>
           {/each}
         </div>
-        <!-- centering -->
-        <div class="effect-item variant-ghost-primary mt-1 flex flex-col items-center text-4xl" on:click={onNewEffect} use:toolTip={$_('frame.actions.addEffect')} >
+        <div class="effect-item variant-ghost-primary mt-1 flex flex-col items-center text-4xl" on:click={onNewEffect} use:toolTip={$_('frame.actions.addEffect')}>
           +
         </div>
       </div>
@@ -295,52 +333,51 @@
   {/if}
 </div>
 
-<Popup
-  show={popupVisible}
-  target={popupButton}
-  on:close={() => popupVisible = false}>
-  <div class="card p-4 shadow-xl z-[1001]" style="z-index: 100;">
-    <div class="barrier-transformix-row">
-      <div class="transformix-grid">
-        {#if calculateOutPaintingCost != null}
-          <button class="transformix-item" use:toolTip={outPaintingCost == 0 ? `${$_('frame.actions.outpaint')}(余地がないので不可)` : `${$_('frame.actions.outpaint')}[${outPaintingCost}]`} on:click={onOutPainting}>
-            <img draggable={false} src={outPaintingIcon} alt={$_('frame.actions.outpaint')}/>
+{#if filmMedia}
+  <Popup
+    show={popupVisible}
+    target={popupButton}
+    on:close={() => popupVisible = false}>
+    <div class="card p-4 shadow-xl z-[1001]" style="z-index: 100;">
+      <div class="barrier-transformix-row">
+        <div class="transformix-grid">
+          {#if calculateOutPaintingCost != null}
+            <button class="transformix-item" use:toolTip={outPaintingCost == 0 ? `${$_('frame.actions.outpaint')}(余地がないので不可)` : `${$_('frame.actions.outpaint')}[${outPaintingCost}]`} on:click={onOutPainting}>
+              <img draggable={false} src={outPaintingIcon} alt={$_('frame.actions.outpaint')}/>
+            </button>
+          {/if}
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.eraser')}[6]`} on:click={onEraser}>
+            <img draggable={false} src={eraserIcon} alt={$_('frame.actions.eraser')}/>
           </button>
-        {/if}
-        <button class="transformix-item" use:toolTip={`${$_('frame.actions.eraser')}[6]`} on:click={onEraser}>
-          <img draggable={false} src={eraserIcon} alt={$_('frame.actions.eraser')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={`${$_('frame.actions.backgroundRemoval')}[3]`} on:click={onPunch}>
-          <img draggable={false} src={punchIcon} alt={$_('frame.actions.backgroundRemoval')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={`${$_('frame.actions.upscale')}[1]`} on:click={onUpscale}>
-          <img draggable={false} src={upscaleIcon} alt={$_('frame.actions.upscale')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={`${$_('frame.actions.inpaint')}[${inPaintingCost}]`} on:click={onInpaint}>
-          <img draggable={false} src={inpaintIcon} alt={$_('frame.actions.inpaint')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={`${$_('frame.actions.textEdit')}[6]`} on:click={onTextEdit}>
-          <img draggable={false} src={texteditIcon} alt={$_('frame.actions.textEdit')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={$_('frame.actions.duplicate')} on:click={onDuplicate}>
-          <img draggable={false} src={dupliateIcon} alt={$_('frame.actions.duplicate')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={`${$_('frame.actions.movieCreation')}...`} on:click={onVideo}>
-          <img draggable={false} src={videoIcon} alt={$_('frame.actions.movieCreation')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={$_('frame.actions.sendToMaterialCollection')} on:click={onSendToMaterialCollection}>
-          <img draggable={false} src={stampIcon} alt={$_('frame.actions.sendToMaterialCollection')}/>
-        </button>
-        <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
-          <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
-        </button>
-        <!-- <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
-          <img draggable={false} src={downloadIcon} alt={$_('frame.actions.textlift')}/>
-        </button> -->
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.backgroundRemoval')}[3]`} on:click={onPunch}>
+            <img draggable={false} src={punchIcon} alt={$_('frame.actions.backgroundRemoval')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.upscale')}[1]`} on:click={onUpscale}>
+            <img draggable={false} src={upscaleIcon} alt={$_('frame.actions.upscale')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.inpaint')}[${inPaintingCost}]`} on:click={onInpaint}>
+            <img draggable={false} src={inpaintIcon} alt={$_('frame.actions.inpaint')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.textEdit')}[6]`} on:click={onTextEdit}>
+            <img draggable={false} src={texteditIcon} alt={$_('frame.actions.textEdit')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={$_('frame.actions.duplicate')} on:click={onDuplicate}>
+            <img draggable={false} src={dupliateIcon} alt={$_('frame.actions.duplicate')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.movieCreation')}...`} on:click={onVideo}>
+            <img draggable={false} src={videoIcon} alt={$_('frame.actions.movieCreation')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={$_('frame.actions.sendToMaterialCollection')} on:click={onSendToMaterialCollection}>
+            <img draggable={false} src={stampIcon} alt={$_('frame.actions.sendToMaterialCollection')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
+            <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-</Popup>
+  </Popup>
+{/if}
 
 <!-- barrier用Popup -->
 {#if barrierPopupVisible && barrierPopupTarget}
@@ -488,6 +525,34 @@
   .media-container {
     width: 100%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .media-container img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+  .image-panel.procedural .media-container {
+    background-color: rgb(var(--color-surface-200));
+  }
+  .procedural-placeholder {
+    text-transform: capitalize;
+    font-size: 18px;
+    color: rgb(var(--color-surface-700));
+  }
+  .procedural-tag {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    padding: 2px 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    font-size: 12px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
   }
   .effect-panel {
     width: 100%;

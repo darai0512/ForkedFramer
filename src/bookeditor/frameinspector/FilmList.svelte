@@ -95,7 +95,7 @@
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="film-list-container">
-  <FilmListItem showsBarrier={false} film={null} on:select={onGenerate}/>
+  <FilmListItem showsBarrier={false} film={null} {paperSize} on:select={onGenerate}/>
   
   <div 
     class="flex flex-col gap-2 mt-2 min-h-[20px]" 
@@ -115,6 +115,7 @@
         on:commit
         calculateOutPaintingCost={calculateOutPaintingCost}
         calculateInPaintingCost={calculateInPaintingCost}
+        {paperSize}
       />
     {/each}
     {#if isDragging && ghostIndex === filmStack.films.length}
