@@ -4,7 +4,6 @@
   import { RangeSlider } from '@skeletonlabs/skeleton';
   import NumberEdit from '../../utils/NumberEdit.svelte';
 	import ColorPickerLabel from '../../utils/colorpicker/ColorPickerLabel.svelte';
-  import { onMount } from "svelte";
   import { _ } from 'svelte-i18n';
 
   import deleteIcon from '../../assets/filmlist/delete.webp';
@@ -39,21 +38,9 @@
     dispatch("update", effect);
   }
 
-  // 以下スライダーのドラッグがsortable listで誤動作しないようにするためのhack
-  // https://stackoverflow.com/questions/64853147/draggable-div-getting-dragged-when-input-range-slider-is-used
-  onMount(() => {
-    if (parameterLists[effectTag]) {
-      for (const e of parameterLists[effectTag]) {
-        if (e.type !== "number") continue;
-        console.log(`${effect.ulid}:${e.name}`);
-        const elem = document.getElementById(`${effect.ulid}:${e.name}`)!;
-        elem.setAttribute("draggable", "true");
-        elem.addEventListener("dragstart", (ev) => {
-          ev.preventDefault();
-        });
-      }
-    }
-  });
+  function stopSortInteraction(event: Event) {
+    event.stopPropagation();
+  }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -69,13 +56,18 @@
       {#if e.type === "number"}
         <div class="row">
           <div class="label">{e.label}</div>
-          <RangeSlider 
-            id={`${effect.ulid}:${e.name}`}
-            name={e.name} 
-            bind:value={effectAny[e.name]} 
-            min={e.min} 
-            max={e.max} 
-            step={e.step}/>
+          <div
+            class="slider-wrapper"
+            on:pointerdown={stopSortInteraction}
+          >
+            <RangeSlider 
+              id={`${effect.ulid}:${e.name}`}
+              name={e.name} 
+              bind:value={effectAny[e.name]} 
+              min={e.min} 
+              max={e.max} 
+              step={e.step}/>
+          </div>
           <div class="number-box">
             <NumberEdit bind:value={effectAny[e.name]} min={e.min} max={e.max} allowDecimal={true}/>
           </div>
@@ -116,6 +108,11 @@
     flex-direction: row;
     align-items: center;
     gap: 10px;
+  }
+  .slider-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
   }
   .number-box {
     width: 30px;

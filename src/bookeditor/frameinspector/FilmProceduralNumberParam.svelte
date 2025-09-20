@@ -2,7 +2,6 @@
   import { createEventDispatcher } from 'svelte';
   import { RangeSlider } from '@skeletonlabs/skeleton';
   import NumberEdit from '../../utils/NumberEdit.svelte';
-  import { onMount, onDestroy } from 'svelte';
 
   export let label: string;
   export let value: number;
@@ -29,7 +28,6 @@
   let current = clamp(value);
   let lastEmitted = current;
   let lastReceived = current;
-  let cleanup: (() => void) | null = null;
 
   $: {
     const external = clamp(value);
@@ -45,28 +43,17 @@
     dispatch('change', current);
   }
 
-  onMount(() => {
-    const elem = document.getElementById(sliderId);
-    if (!elem) { return; }
-    const handler = (event: DragEvent) => {
-      event.preventDefault();
-    };
-    elem.setAttribute('draggable', 'true');
-    elem.addEventListener('dragstart', handler);
-    cleanup = () => {
-      elem.removeEventListener('dragstart', handler);
-    };
-  });
-
-  onDestroy(() => {
-    cleanup?.();
-    cleanup = null;
-  });
+  function stopSortInteraction(event: Event) {
+    event.stopPropagation();
+  }
 </script>
 
 <div class="param-row">
   <div class="param-label">{label}</div>
-  <div class="param-slider">
+  <div
+    class="param-slider"
+    on:pointerdown={stopSortInteraction}
+  >
     <RangeSlider
       id={sliderId}
       name={sliderId}
