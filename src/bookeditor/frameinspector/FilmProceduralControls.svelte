@@ -3,6 +3,7 @@
   import type { Film } from "../../lib/layeredCanvas/dataModels/film";
   import type { FilmProceduralEffectType } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
   import { createProceduralEffect, proceduralEffectParamSpecs } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
+  import type { FilmProceduralParamValue } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
   import FilmProceduralNumberParam from './FilmProceduralNumberParam.svelte';
   import FilmProceduralColorParam from './FilmProceduralColorParam.svelte';
   import FilmProceduralTextParam from './FilmProceduralTextParam.svelte';
@@ -13,7 +14,7 @@
   const dispatch = createEventDispatcher<{ change: void }>();
 
   let type: FilmProceduralEffectType = 'motion-lines';
-  let params: Record<string, number | string | boolean> = {};
+  let params: Record<string, FilmProceduralParamValue> = {};
   let syncing = false;
   const idPrefix = `film-procedural-${Math.random().toString(36).slice(2, 8)}`;
   const typeSelectId = `${idPrefix}-type`;
@@ -48,6 +49,9 @@
 
   function numberValueOf(key: string, fallback: number): number {
     const value = params[key];
+    if (Array.isArray(value)) {
+      return fallback;
+    }
     if (typeof value === 'number') {
       return value;
     }
@@ -62,6 +66,9 @@
 
   function stringValueOf(key: string, fallback: string): string {
     const value = params[key];
+    if (Array.isArray(value)) {
+      return fallback;
+    }
     return typeof value === 'string' ? value : fallback;
   }
 

@@ -17,6 +17,9 @@ import type { FocusKeeper } from "../tools/focusKeeper";
 import { Grid } from "../tools/grid";
 import paper from 'paper';
 import { PaperOffset } from "paperjs-offset";
+import { readVectorParam } from "../dataModels/proceduralEffects";
+import type { FilmProceduralEffectType } from "../dataModels/proceduralEffects";
+import { tailCoordToWorldCoord, worldCoordToTailCoord } from "../tools/geometry/bubbleGeometry";
 // import * as Sentry from "@sentry/svelte";
 
 const SHEET_Y_MARGIN = 48;
@@ -25,6 +28,28 @@ const iconUnit: Vector = [32,32];
 const BORDER_MARGIN = 10;
 const PADDING_HANDLE_INNER_WIDTH = 20;
 const PADDING_HANDLE_OUTER_WIDTH = 20;
+
+type ProceduralHandleContext = {
+  film: Film;
+  layout: Layout;
+  frameCenter: Vector;
+  matrix: DOMMatrix;
+  inverseMatrix: DOMMatrix;
+  baseSize: number;
+};
+
+type ProceduralHandleState = {
+  context: ProceduralHandleContext;
+  type: FilmProceduralEffectType;
+  icons: ClickableIcon[];
+  worldPositions: {
+    focalPoint?: Vector;
+    focalRange?: Vector;
+    tailTip?: Vector;
+    tailMid?: Vector;
+    filmCenter: Vector;
+  };
+};
 
 export class FrameLayer extends LayerBase {
   cursorPosition: Vector;
@@ -58,6 +83,10 @@ export class FrameLayer extends LayerBase {
   frameIcons: ClickableSlate[];
   borderIcons: ClickableSlate[];
   litIcons: ClickableSlate[];
+
+  proceduralOptionIcons: Record<string, ClickableIcon>;
+  proceduralOptionEditActive: Record<string, boolean>;
+  proceduralHandleState: ProceduralHandleState | null;
 
   litLayout: Layout | null = null;
   litBorder: Border | null = null;
@@ -143,6 +172,22 @@ export class FrameLayer extends LayerBase {
     this.borderIcons = [this.slantVerticalIcon, this.expandVerticalIcon, this.slantHorizontalIcon, this.expandHorizontalIcon, this.insertHorizontalIcon, this.insertVerticalIcon];
     this.litIcons = [this.swapIcon];
 
+    const handleVisibleFor = (type: FilmProceduralEffectType) => () => {
+      if (!this.interactable || this.pointerHandler) { return false; }
+      const film = this.getProceduralFilmTarget();
+      if (!film) { return false; }
+      const effect = film.proceduralEffect;
+      return !!effect && effect.type === type;
+    };
+    this.proceduralOptionIcons = {
+      tail: new ClickableIcon(["bubbleLayer/tail-tip.webp"], iconUnit, [0.5, 0.5], "ドラッグでしっぽ", handleVisibleFor('speed-lines'), mp),
+      curve: new ClickableIcon(["bubbleLayer/tail-mid.webp"], iconUnit, [0.5, 0.5], "ドラッグでしっぽのカーブ", handleVisibleFor('speed-lines'), mp),
+      circle: new ClickableIcon(["bubbleLayer/circle.webp"], iconUnit, [0.5, 0.5], "ドラッグで円定義", handleVisibleFor('motion-lines'), mp),
+      radius: new ClickableIcon(["bubbleLayer/radius.webp"], iconUnit, [0.5, 0.5], "ドラッグで円半径", handleVisibleFor('motion-lines'), mp),
+    };
+    this.proceduralOptionEditActive = { focal: false, tail: false };
+    this.proceduralHandleState = null;
+
     for (let icon of this.frameIcons) {
       if (icon instanceof ClickableIcon) {
         icon.shadowColor = "#448";
@@ -150,6 +195,10 @@ export class FrameLayer extends LayerBase {
     }
     this.zplusIcon.marginBottom = 16;
     this.zminusIcon.marginTop = 16;
+
+    for (let key of Object.keys(this.proceduralOptionIcons)) {
+      this.proceduralOptionIcons[key].shadowColor = "#fff";
+    }
 
     this.makeCanvasPattern();
 
@@ -232,6 +281,7 @@ export class FrameLayer extends LayerBase {
         drawSelectionFrame(ctx, "rgba(0, 128, 255, 1)", this.selectedLayout.corners);
       }
 
+      this.renderProceduralHandles(ctx);
       this.frameIcons.forEach(icon => icon.render(ctx));
     }
   }
@@ -293,6 +343,163 @@ export class FrameLayer extends LayerBase {
 
   drawSheet(ctx: CanvasRenderingContext2D, corners: Trapezoid) {
     drawSheet(ctx, corners, this.calculateSheetRect(corners), "rgba(64, 64, 128, 0.7)");
+  }
+
+  private getProceduralFilmTarget(): Film | null {
+    if (!this.selectedLayout) { return null; }
+    const films = this.selectedLayout.element.filmStack.films;
+    if (!films || films.length === 0) { return null; }
+
+    const proceduralFilms = films.filter(film => film.isProcedural() && film.visible);
+    if (proceduralFilms.length === 0) { return null; }
+
+    const selectedProcedural = proceduralFilms.filter(film => film.selected);
+    const anySelected = films.some(film => film.selected);
+
+    if (selectedProcedural.length === 1) {
+      return selectedProcedural[0];
+    }
+
+    if (!anySelected) {
+      return proceduralFilms[0];
+    }
+
+    return null;
+  }
+
+  private getProceduralFilmContext(): ProceduralHandleContext | null {
+    if (!this.selectedLayout) { return null; }
+    const film = this.getProceduralFilmTarget();
+    if (!film) { return null; }
+
+    const paperSize = this.getPaperSize();
+    const matrix = film.makeMatrix(paperSize);
+    matrix.scaleSelf(film.reverse[0], film.reverse[1]);
+    const inverseMatrix = matrix.inverse();
+
+    const frameCenter = trapezoidCenter(this.selectedLayout.corners);
+    const [contentWidth, contentHeight] = film.getContentSize(paperSize);
+    const baseSize = Math.max(contentWidth, contentHeight);
+
+    return {
+      film,
+      layout: this.selectedLayout,
+      frameCenter,
+      matrix,
+      inverseMatrix,
+      baseSize,
+    };
+  }
+
+  private filmLocalToWorld(context: ProceduralHandleContext, local: Vector): Vector {
+    const point = context.matrix.transformPoint(new DOMPoint(local[0], local[1]));
+    return [point.x + context.frameCenter[0], point.y + context.frameCenter[1]];
+  }
+
+  private filmWorldToLocal(context: ProceduralHandleContext, world: Vector): Vector {
+    const relative: Vector = [world[0] - context.frameCenter[0], world[1] - context.frameCenter[1]];
+    const point = context.inverseMatrix.transformPoint(new DOMPoint(relative[0], relative[1]));
+    return [point.x, point.y];
+  }
+
+  private prepareProceduralHandleIcons(): ProceduralHandleState | null {
+    const context = this.getProceduralFilmContext();
+    if (!context) {
+      this.proceduralHandleState = null;
+      return null;
+    }
+
+    const effect = context.film.proceduralEffect;
+    if (!effect) {
+      this.proceduralHandleState = null;
+      return null;
+    }
+
+    const icons: ClickableIcon[] = [];
+    const worldPositions: ProceduralHandleState['worldPositions'] = {
+      filmCenter: this.filmLocalToWorld(context, [0, 0]),
+    };
+
+    if (effect.type === 'motion-lines') {
+      const focalPointLocal = readVectorParam(effect, 'focalPoint', [0, 0]);
+      const defaultRange: Vector = [0, context.baseSize * 0.25];
+      const focalRangeLocal = readVectorParam(effect, 'focalRange', defaultRange);
+      const focalPointWorld = this.filmLocalToWorld(context, focalPointLocal);
+      const rangeWorld = this.filmLocalToWorld(context, [focalPointLocal[0] + focalRangeLocal[0], focalPointLocal[1] + focalRangeLocal[1]]);
+
+      this.proceduralOptionIcons.circle.position = focalPointWorld;
+      this.proceduralOptionIcons.radius.position = rangeWorld;
+
+      icons.push(this.proceduralOptionIcons.circle, this.proceduralOptionIcons.radius);
+      worldPositions.focalPoint = focalPointWorld;
+      worldPositions.focalRange = rangeWorld;
+    } else if (effect.type === 'speed-lines') {
+      const tailTipLocal = readVectorParam(effect, 'tailTip', [context.baseSize * 0.25, 0]);
+      const tailMidParam = readVectorParam(effect, 'tailMid', [0.5, 0]);
+      const tailTipWorld = this.filmLocalToWorld(context, tailTipLocal);
+      const tailMidLocal = tailCoordToWorldCoord([0, 0], tailTipLocal, tailMidParam);
+      const tailMidWorld = this.filmLocalToWorld(context, tailMidLocal);
+
+      this.proceduralOptionIcons.tail.position = tailTipWorld;
+      this.proceduralOptionIcons.curve.position = tailMidWorld;
+
+      icons.push(this.proceduralOptionIcons.tail, this.proceduralOptionIcons.curve);
+      worldPositions.tailTip = tailTipWorld;
+      worldPositions.tailMid = tailMidWorld;
+    }
+
+    if (icons.length === 0) {
+      this.proceduralHandleState = null;
+      return null;
+    }
+
+    const state: ProceduralHandleState = {
+      context,
+      type: effect.type,
+      icons,
+      worldPositions,
+    };
+    this.proceduralHandleState = state;
+    return state;
+  }
+
+  private renderProceduralHandles(ctx: CanvasRenderingContext2D): void {
+    const state = this.prepareProceduralHandleIcons();
+    if (!state) { return; }
+
+    const { icons, worldPositions } = state;
+
+    if (this.proceduralOptionEditActive.focal && worldPositions.focalPoint && worldPositions.focalRange) {
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(0, 0, 255, 0.3)";
+      ctx.beginPath();
+      ctx.moveTo(worldPositions.focalPoint[0], worldPositions.focalPoint[1]);
+      ctx.lineTo(worldPositions.focalRange[0], worldPositions.focalRange[1]);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (this.proceduralOptionEditActive.tail && worldPositions.tailTip && worldPositions.filmCenter) {
+      ctx.save();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(0, 0, 255, 0.3)";
+      ctx.beginPath();
+      ctx.moveTo(worldPositions.filmCenter[0], worldPositions.filmCenter[1]);
+      ctx.lineTo(worldPositions.tailTip[0], worldPositions.tailTip[1]);
+      ctx.stroke();
+      if (worldPositions.tailMid) {
+        ctx.beginPath();
+        ctx.moveTo(worldPositions.tailTip[0], worldPositions.tailTip[1]);
+        ctx.lineTo(worldPositions.tailMid[0], worldPositions.tailMid[1]);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    for (const icon of icons) {
+      icon.render(ctx);
+    }
   }
 
   dropped(position: Vector, media: HTMLCanvasElement | HTMLVideoElement | string): boolean {
@@ -378,7 +585,18 @@ export class FrameLayer extends LayerBase {
       const r = this.calculateSheetRect(this.selectedLayout.corners);
       if (hintIfContains(this.frameIcons)) {
         return this;
-      } else if (rectContains(r, position)) {
+      }
+
+      const proceduralState = this.prepareProceduralHandleIcons();
+      if (proceduralState) {
+        for (const icon of proceduralState.icons) {
+          if (icon.hintIfContains(position, this.hint)) {
+            return this;
+          }
+        }
+      }
+
+      if (rectContains(r, position)) {
         if (pointToQuadrilateralDistance(position, this.selectedLayout.corners, false) < PADDING_HANDLE_OUTER_WIDTH) {
           const padding = findPaddingOn(this.selectedLayout, position, PADDING_HANDLE_INNER_WIDTH, PADDING_HANDLE_OUTER_WIDTH);
           this.litPadding = padding;
@@ -471,6 +689,11 @@ export class FrameLayer extends LayerBase {
       const q = this.acceptsOnSelectedFrameIcons(point);
       if (q) {
         return q;
+      }
+
+      const proceduralAction = this.acceptsProceduralHandles(point);
+      if (proceduralAction) {
+        return proceduralAction;
       }
 
       if (this.selectedLayout.element.visibility === 0) {
@@ -589,6 +812,29 @@ export class FrameLayer extends LayerBase {
     if (this.rotateIcon.contains(point)) {
       return { action: "rotate", layout: layout };
     }
+    return null;
+  }
+
+  private acceptsProceduralHandles(point: Vector): any {
+    const state = this.prepareProceduralHandleIcons();
+    if (!state) { return null; }
+
+    if (state.type === 'motion-lines') {
+      if (this.proceduralOptionIcons.circle.contains(point)) {
+        return { action: 'procedural-focalPoint', state };
+      }
+      if (this.proceduralOptionIcons.radius.contains(point)) {
+        return { action: 'procedural-focalRange', state };
+      }
+    } else if (state.type === 'speed-lines') {
+      if (this.proceduralOptionIcons.tail.contains(point)) {
+        return { action: 'procedural-tailTip', state };
+      }
+      if (this.proceduralOptionIcons.curve.contains(point)) {
+        return { action: 'procedural-tailMid', state };
+      }
+    }
+
     return null;
   }
 
@@ -795,6 +1041,19 @@ export class FrameLayer extends LayerBase {
         yield* this.translateImage(p, payload.layout);
         break;
 
+      case 'procedural-focalPoint':
+        yield* this.adjustProceduralFocalPoint(p, payload.state as ProceduralHandleState);
+        break;
+      case 'procedural-focalRange':
+        yield* this.adjustProceduralFocalRange(p, payload.state as ProceduralHandleState);
+        break;
+      case 'procedural-tailTip':
+        yield* this.adjustProceduralTailTip(p, payload.state as ProceduralHandleState);
+        break;
+      case 'procedural-tailMid':
+        yield* this.adjustProceduralTailMid(p, payload.state as ProceduralHandleState);
+        break;
+
       case "ignore":
         break;
       case "pierce":
@@ -940,6 +1199,157 @@ export class FrameLayer extends LayerBase {
       if (e === 'cancel') {
         this.onRevert();
       }
+    }
+  }
+
+  *adjustProceduralFocalPoint(p: Vector, state: ProceduralHandleState) {
+    const effect = state.context.film.proceduralEffect;
+    if (!effect || effect.type !== 'motion-lines') { return; }
+
+    const startValue = readVectorParam(effect, 'focalPoint', [0, 0]);
+    const startPointerLocal = this.filmWorldToLocal(state.context, p);
+    let changed = false;
+
+    this.proceduralOptionEditActive.focal = true;
+    try {
+      while ((p = yield)) {
+        const currentLocal = this.filmWorldToLocal(state.context, p);
+        const delta: Vector = [currentLocal[0] - startPointerLocal[0], currentLocal[1] - startPointerLocal[1]];
+        effect.params.focalPoint = [startValue[0] + delta[0], startValue[1] + delta[1]];
+        changed = true;
+        this.redraw();
+      }
+    } catch (e) {
+      if (e === 'cancel') {
+        effect.params.focalPoint = [...startValue] as Vector;
+        changed = false;
+        this.redraw();
+      } else {
+        throw e;
+      }
+    } finally {
+      this.proceduralOptionEditActive.focal = false;
+      if (changed) {
+        this.onCommit();
+      }
+      this.redraw();
+    }
+  }
+
+  *adjustProceduralFocalRange(p: Vector, state: ProceduralHandleState) {
+    const effect = state.context.film.proceduralEffect;
+    if (!effect || effect.type !== 'motion-lines') { return; }
+
+    const startFocal = readVectorParam(effect, 'focalPoint', [0, 0]);
+    const defaultRange: Vector = [0, state.context.baseSize * 0.25];
+    const startRange = readVectorParam(effect, 'focalRange', defaultRange);
+    const startPointerLocal = this.filmWorldToLocal(state.context, p);
+    const maxRadius = Math.hypot(state.context.baseSize * 0.5, state.context.baseSize * 0.5);
+    let changed = false;
+
+    this.proceduralOptionEditActive.focal = true;
+    try {
+      while ((p = yield)) {
+        const currentLocal = this.filmWorldToLocal(state.context, p);
+        const delta: Vector = [currentLocal[0] - startPointerLocal[0], currentLocal[1] - startPointerLocal[1]];
+        let nextRange: Vector = [startRange[0] + delta[0], startRange[1] + delta[1]];
+        const magnitude = Math.hypot(nextRange[0], nextRange[1]);
+        if (Number.isFinite(magnitude) && magnitude > maxRadius) {
+          const scale = maxRadius / magnitude;
+          nextRange = [nextRange[0] * scale, nextRange[1] * scale];
+        }
+        effect.params.focalRange = nextRange;
+        changed = true;
+        this.redraw();
+      }
+    } catch (e) {
+      if (e === 'cancel') {
+        effect.params.focalRange = [...startRange] as Vector;
+        changed = false;
+        this.redraw();
+      } else {
+        throw e;
+      }
+    } finally {
+      this.proceduralOptionEditActive.focal = false;
+      if (changed) {
+        this.onCommit();
+      }
+      this.redraw();
+    }
+  }
+
+  *adjustProceduralTailTip(p: Vector, state: ProceduralHandleState) {
+    const effect = state.context.film.proceduralEffect;
+    if (!effect || effect.type !== 'speed-lines') { return; }
+
+    const startTip = readVectorParam(effect, 'tailTip', [state.context.baseSize * 0.25, 0]);
+    const startPointerLocal = this.filmWorldToLocal(state.context, p);
+    const maxLength = state.context.baseSize;
+    let changed = false;
+
+    this.proceduralOptionEditActive.tail = true;
+    try {
+      while ((p = yield)) {
+        const currentLocal = this.filmWorldToLocal(state.context, p);
+        let nextTip: Vector = [startTip[0] + currentLocal[0] - startPointerLocal[0], startTip[1] + currentLocal[1] - startPointerLocal[1]];
+        const length = Math.hypot(nextTip[0], nextTip[1]);
+        if (Number.isFinite(length) && length > maxLength) {
+          const scale = maxLength / length;
+          nextTip = [nextTip[0] * scale, nextTip[1] * scale];
+        }
+        effect.params.tailTip = nextTip;
+        changed = true;
+        this.redraw();
+      }
+    } catch (e) {
+      if (e === 'cancel') {
+        effect.params.tailTip = [...startTip] as Vector;
+        changed = false;
+        this.redraw();
+      } else {
+        throw e;
+      }
+    } finally {
+      this.proceduralOptionEditActive.tail = false;
+      if (changed) {
+        this.onCommit();
+      }
+      this.redraw();
+    }
+  }
+
+  *adjustProceduralTailMid(p: Vector, state: ProceduralHandleState) {
+    const effect = state.context.film.proceduralEffect;
+    if (!effect || effect.type !== 'speed-lines') { return; }
+
+    const tailTip = readVectorParam(effect, 'tailTip', [state.context.baseSize * 0.25, 0]);
+    const startMid = readVectorParam(effect, 'tailMid', [0.5, 0]);
+    let changed = false;
+
+    this.proceduralOptionEditActive.tail = true;
+    try {
+      while ((p = yield)) {
+        const currentLocal = this.filmWorldToLocal(state.context, p);
+        const nextMid = worldCoordToTailCoord([0, 0], tailTip, currentLocal);
+        effect.params.tailMid = [nextMid[0], nextMid[1]];
+        changed = true;
+        this.redraw();
+      }
+    } catch (e) {
+      if (e === 'cancel') {
+        effect.params.tailMid = [...startMid] as Vector;
+        changed = false;
+        this.redraw();
+      } else {
+        throw e;
+      }
+    } finally {
+      this.proceduralOptionEditActive.tail = false;
+      if (changed) {
+        this.onCommit();
+      }
+      this.redraw();
     }
   }
 

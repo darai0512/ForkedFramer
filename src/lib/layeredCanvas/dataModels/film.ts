@@ -4,6 +4,7 @@ import type { Effect } from './effect';
 import { ulid } from 'ulid';
 import { ImageMedia } from "./media";
 import type { FilmProceduralEffect } from "./proceduralEffects";
+import { cloneProceduralParams } from "./proceduralEffects";
 
 export type FilmProceduralEffectType = FilmProceduralEffect['type'];
 
@@ -66,7 +67,13 @@ export class Film  {
   }
 
   static fromProcedural(effect: FilmProceduralEffect): Film {
-    return new Film({ kind: 'procedural', effect });
+    return new Film({
+      kind: 'procedural',
+      effect: {
+        type: effect.type,
+        params: cloneProceduralParams(effect.params),
+      },
+    });
   }
 
   get media(): Media {
@@ -103,7 +110,7 @@ export class Film  {
       kind: 'procedural',
       effect: {
         type: this.content.effect.type,
-        params: { ...this.content.effect.params },
+        params: cloneProceduralParams(this.content.effect.params),
       },
     };
   }

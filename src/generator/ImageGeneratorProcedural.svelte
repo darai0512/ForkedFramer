@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { FilmProceduralEffectType, FilmProceduralEffect } from '../lib/layeredCanvas/dataModels/proceduralEffects';
+  import type { FilmProceduralEffectType, FilmProceduralEffect, FilmProceduralParamValue } from '../lib/layeredCanvas/dataModels/proceduralEffects';
   import { createProceduralEffect, proceduralEffectParamSpecs } from '../lib/layeredCanvas/dataModels/proceduralEffects';
 
   const dispatch = createEventDispatcher<{ create: { effect: FilmProceduralEffect; label: string | null } }>();
@@ -16,7 +16,7 @@
 
   let type: FilmProceduralEffectType = 'motion-lines';
   let label = '';
-  let params: Record<string, number | string | boolean> = createProceduralEffect(type).params;
+  let params: Record<string, FilmProceduralParamValue> = createProceduralEffect(type).params;
 
   function changeType(next: FilmProceduralEffectType) {
     if (next === type) return;
@@ -26,7 +26,7 @@
     };
   }
 
-  function updateParam(key: string, value: number | string | boolean) {
+  function updateParam(key: string, value: FilmProceduralParamValue) {
     if (typeof value === 'number' && !Number.isFinite(value)) {
       return;
     }
@@ -39,17 +39,27 @@
   }
 
   function numberValueOf(key: string, fallback: number): number {
-    const value = Number(params[key]);
+    const raw = params[key];
+    if (Array.isArray(raw)) {
+      return fallback;
+    }
+    const value = Number(raw);
     return Number.isFinite(value) ? value : fallback;
   }
 
   function colorValueOf(key: string, fallback: string): string {
     const value = params[key];
+    if (Array.isArray(value)) {
+      return fallback;
+    }
     return typeof value === 'string' && value ? value : fallback;
   }
 
   function stringValueOf(key: string, fallback: string): string {
     const value = params[key];
+    if (Array.isArray(value)) {
+      return fallback;
+    }
     return typeof value === 'string' ? value : fallback;
   }
 
