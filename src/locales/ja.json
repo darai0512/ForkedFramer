@@ -457,5 +457,33 @@
       "inUse": "使用中",
       "brokenLink": "リンク切れ"
     }
+  },
+  "film": {
+    "procedural": {
+      "selectorLabel": "効果タイプ",
+      "type": {
+        "motion-lines": "集中線",
+        "speed-lines": "流線"
+      },
+      "shared": {
+        "color": "色",
+        "randomSeed": "乱数調整",
+        "optional": "任意"
+      },
+      "motion-lines": {
+        "lineCount": "線の本数",
+        "lineWidth": "線の太さ",
+        "angleJitter": "角度ジッター",
+        "startJitter": "起点ジッター",
+        "innerRadiusRatio": "内側半径比"
+      },
+      "speed-lines": {
+        "lineCount": "線の本数",
+        "lineWidth": "線の太さ",
+        "laneJitter": "間隔ジッター",
+        "startJitter": "起点ジッター",
+        "direction": "方向（度）"
+      }
+    }
   }
 }

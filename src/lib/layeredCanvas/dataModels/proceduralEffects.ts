@@ -1,4 +1,8 @@
-export type FilmProceduralEffectType = 'concentration' | 'speedline' | 'burst';
+import rgba from 'color-rgba';
+import seedrandom from 'seedrandom';
+import { color2string } from '../tools/geometry/bubbleGeometry';
+
+export type FilmProceduralEffectType = 'motion-lines' | 'speed-lines';
 
 export interface FilmProceduralEffect {
   type: FilmProceduralEffectType;
@@ -30,105 +34,125 @@ function readNumericParam(effect: FilmProceduralEffect, key: string, fallback: n
   return fallback;
 }
 
-const concentrationRenderer: ProceduralEffectRenderer = {
+const motionLinesRenderer: ProceduralEffectRenderer = {
   draw(effect, ctx, size) {
     const width = size;
     const height = size;
     const cx = width / 2;
     const cy = height / 2;
 
-    const lineCount = clampNumber(readNumericParam(effect, 'lineCount', 36), 4, 320, 36);
-    const baseWidth = clampNumber(readNumericParam(effect, 'lineWidth', 1.5), 0.2, 10, 1.5);
-    const innerRatio = clampNumber(readNumericParam(effect, 'innerRatio', 0.05), 0, 0.8, 0.05);
-    const outerRatio = clampNumber(readNumericParam(effect, 'outerRatio', 1.05), 0.5, 2, 1.05);
-    const jitter = clampNumber(readNumericParam(effect, 'angleJitter', 0.4), 0, 2, 0.4);
+    const lineCount = Math.max(1, Math.round(clampNumber(readNumericParam(effect, 'lineCount', 200), 100, 300, 200)));
+    const lineWidthRatio = clampNumber(readNumericParam(effect, 'lineWidth', 0.05), 0.01, 0.1, 0.05);
+    const angleJitter = clampNumber(readNumericParam(effect, 'angleJitter', 0.05), 0, 0.2, 0.05);
+    const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.5), 0, 1, 0.5);
+    const innerRadiusRatio = clampNumber(readNumericParam(effect, 'innerRadiusRatio', 0.25), 0, 1, 0.25);
+    const randomSeed = Math.round(clampNumber(readNumericParam(effect, 'randomSeed', 0), 0, 100, 0));
 
-    const radius = Math.sqrt(cx * cx + cy * cy) * outerRatio;
-    const innerRadius = Math.min(cx, cy) * innerRatio;
+    const color = typeof effect.params['color'] === 'string' && effect.params['color'] !== ''
+      ? effect.params['color'] as string
+      : '#000000';
 
-    ctx.strokeStyle = effect.params['color'] as string ?? 'rgba(0,0,0,0.9)';
-    ctx.lineCap = 'round';
+    const parsedColor = rgba(color);
+    const colorArray = parsedColor.length === 4 ? [...parsedColor] : [0, 0, 0, 1];
+    const fadeColor = [...colorArray];
+    fadeColor[3] = 0;
+    const startColor = color2string(colorArray);
+    const endColor = color2string(fadeColor);
 
-    // deterministic pseudo-random using sine hash
-    const seed = effect.params['seed'] ?? `${effect.type}:${lineCount}:${baseWidth}:${innerRatio}:${outerRatio}:${jitter}`;
-    const hashBase = typeof seed === 'number' ? seed : Array.from(String(seed)).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    const outerRadius = Math.hypot(cx, cy);
+    const innerRadius = outerRadius * innerRadiusRatio;
+    const lwFactor = lineWidthRatio * 0.1;
 
-    function pseudoRandom(i: number): number {
-      const x = Math.sin(hashBase + i * 12.9898) * 43758.5453;
-      return x - Math.floor(x);
-    }
+    const rng = seedrandom(String(randomSeed));
 
     for (let i = 0; i < lineCount; i++) {
-      const t = i / lineCount;
-      const angle = t * Math.PI * 2 + (pseudoRandom(i) - 0.5) * jitter;
-      const sin = Math.sin(angle);
+      const angle = (i / lineCount) * Math.PI * 2 + (rng() - 0.5) * angleJitter;
       const cos = Math.cos(angle);
-      const lw = baseWidth * (1 + pseudoRandom(i + 1) * 0.6);
+      const sin = Math.sin(angle);
 
-      const ix = cx + cos * innerRadius;
-      const iy = cy + sin * innerRadius;
-      const ox = cx + cos * radius;
-      const oy = cy + sin * radius;
+      const startDistance = innerRadius + (outerRadius - innerRadius) * Math.min(1, rng() * startJitter);
+      const startX = cx + cos * startDistance;
+      const startY = cy + sin * startDistance;
+      const endX = cx + cos * outerRadius;
+      const endY = cy + sin * outerRadius;
+
+      const vx = endX - startX;
+      const vy = endY - startY;
+      const perpX = -vy * lwFactor;
+      const perpY = vx * lwFactor;
+
+      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+      gradient.addColorStop(0, startColor);
+      gradient.addColorStop(1, endColor);
 
       ctx.beginPath();
-      ctx.lineWidth = lw;
-      ctx.moveTo(ix, iy);
-      ctx.lineTo(ox, oy);
-      ctx.stroke();
-    }
-  }
-};
-
-const speedlineRenderer: ProceduralEffectRenderer = {
-  draw(effect, ctx, size) {
-    const width = size;
-    const height = size;
-
-    const bandCount = clampNumber(readNumericParam(effect, 'bandCount', 24), 1, 160, 24);
-    const bandWidthRatio = clampNumber(readNumericParam(effect, 'bandWidthRatio', 0.12), 0.02, 0.5, 0.12);
-    const direction = clampNumber(readNumericParam(effect, 'direction', 0), -360, 360, 0) * (Math.PI / 180);
-    const speedColor = effect.params['color'] as string ?? 'rgba(0,0,0,0.75)';
-
-    ctx.save();
-    ctx.translate(width / 2, height / 2);
-    ctx.rotate(direction);
-
-    const bandWidth = height * bandWidthRatio;
-    const spacing = height / bandCount;
-
-    ctx.fillStyle = speedColor;
-    for (let i = -Math.ceil(bandCount / 2); i < Math.ceil(bandCount / 2); i++) {
-      const offset = i * spacing;
-      ctx.beginPath();
-      ctx.rect(-width, offset - bandWidth / 2, width * 2, bandWidth);
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX + perpX, endY + perpY);
+      ctx.lineTo(endX - perpX, endY - perpY);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
       ctx.fill();
     }
-    ctx.restore();
   }
 };
 
-const burstRenderer: ProceduralEffectRenderer = {
+const speedLinesRenderer: ProceduralEffectRenderer = {
   draw(effect, ctx, size) {
     const width = size;
     const height = size;
     const cx = width / 2;
     const cy = height / 2;
 
-    const ringCount = clampNumber(readNumericParam(effect, 'ringCount', 4), 1, 16, 4);
-    const startRadiusRatio = clampNumber(readNumericParam(effect, 'startRatio', 0.2), 0, 1, 0.2);
-    const color = effect.params['color'] as string ?? 'rgba(0,0,0,0.65)';
+    const lineCount = Math.max(1, Math.round(clampNumber(readNumericParam(effect, 'lineCount', 70), 10, 200, 70)));
+    const lineWidthRatio = clampNumber(readNumericParam(effect, 'lineWidth', 0.2), 0.01, 1, 0.2);
+    const laneJitter = clampNumber(readNumericParam(effect, 'laneJitter', 0.05), 0, 0.2, 0.05);
+    const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.3), 0, 0.5, 0.3);
+    const directionDeg = clampNumber(readNumericParam(effect, 'direction', 0), -180, 180, 0);
+    const randomSeed = Math.round(clampNumber(readNumericParam(effect, 'randomSeed', 0), 0, 100, 0));
 
-    ctx.strokeStyle = color;
-    ctx.lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 2), 0.5, 12, 2);
+    const color = typeof effect.params['color'] === 'string' && effect.params['color'] !== ''
+      ? effect.params['color'] as string
+      : '#000000';
 
-    const maxRadius = Math.min(width, height) * 0.5;
+    const parsedColor = rgba(color);
+    const baseColor = parsedColor.length === 4 ? [...parsedColor] : [0, 0, 0, 1];
+    const transparentColor = [...baseColor];
+    transparentColor[3] = 0;
 
-    for (let i = 0; i < ringCount; i++) {
-      const ratio = startRadiusRatio + (i / ringCount) * (1 - startRadiusRatio);
+    const rng = seedrandom(String(randomSeed));
+
+    const length = width * 1.5;
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate((directionDeg * Math.PI) / 180);
+
+    for (let i = 0; i < lineCount; i++) {
+      const baseY = -halfHeight + (i + 0.5) * (height / lineCount);
+      const jitterY = (rng() - 0.5) * height * laneJitter;
+      const y = baseY + jitterY;
+
+      const startX = -halfWidth - length * 0.2 + (rng() - 0.5) * width * startJitter;
+      const tipX = startX + length;
+      const thickness = Math.max(0.5, height * lineWidthRatio * 0.01 * (rng() + 0.5));
+
+      const gradient = ctx.createLinearGradient(tipX, y, startX, y);
+      gradient.addColorStop(0, color2string(baseColor));
+      gradient.addColorStop(0.4, color2string(baseColor));
+      gradient.addColorStop(1, color2string(transparentColor));
+
       ctx.beginPath();
-      ctx.arc(cx, cy, maxRadius * ratio, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.moveTo(startX, y - thickness);
+      ctx.lineTo(tipX, y);
+      ctx.lineTo(startX, y + thickness);
+      ctx.closePath();
+      ctx.fillStyle = gradient;
+      ctx.fill();
     }
+
+    ctx.restore();
   }
 };
 
@@ -145,9 +169,8 @@ const fallbackRenderer: ProceduralEffectRenderer = {
 };
 
 export const proceduralEffectRegistry: Record<FilmProceduralEffectType, ProceduralEffectRenderer> = {
-  concentration: concentrationRenderer,
-  speedline: speedlineRenderer,
-  burst: burstRenderer,
+  'motion-lines': motionLinesRenderer,
+  'speed-lines': speedLinesRenderer,
 };
 
 export function drawProceduralEffect(effect: FilmProceduralEffect, ctx: CanvasRenderingContext2D, size: number): void {
@@ -171,58 +194,129 @@ export function renderProceduralEffect(effect: FilmProceduralEffect, size: numbe
   return canvas;
 }
 
+export type FilmProceduralOption =
+  | { type: 'number'; min: number; max: number; step: number; init: () => number }
+  | { type: 'color'; init: () => string }
+  | { type: 'text'; init: () => string; placeholder?: string; placeholderKey?: string };
+
+const numberOption = (min: number, max: number, step: number, init: () => number): FilmProceduralOption => ({
+  type: 'number',
+  min,
+  max,
+  step,
+  init,
+});
+
+const colorOption = (init: () => string): FilmProceduralOption => ({
+  type: 'color',
+  init,
+});
+
+const textOption = (
+  init: () => string,
+  placeholderKey?: string,
+  placeholder?: string,
+): FilmProceduralOption => ({
+  type: 'text',
+  init,
+  placeholderKey,
+  placeholder,
+});
+
+export const filmProceduralOptionSets: Record<FilmProceduralEffectType, Record<string, FilmProceduralOption>> = {
+  'motion-lines': {
+    randomSeed: numberOption(0, 100, 1, () => 0),
+    lineCount: numberOption(100, 300, 1, () => 200),
+    lineWidth: numberOption(0.01, 0.1, 0.01, () => 0.05),
+    angleJitter: numberOption(0, 0.2, 0.01, () => 0.05),
+    startJitter: numberOption(0, 1, 0.01, () => 0.5),
+    innerRadiusRatio: numberOption(0, 1, 0.01, () => 0.25),
+    color: colorOption(() => '#000000'),
+  },
+  'speed-lines': {
+    randomSeed: numberOption(0, 100, 1, () => 0),
+    lineCount: numberOption(10, 200, 1, () => 70),
+    lineWidth: numberOption(0.01, 1, 0.01, () => 0.2),
+    laneJitter: numberOption(0, 0.2, 0.01, () => 0.05),
+    startJitter: numberOption(0, 0.5, 0.01, () => 0.3),
+    direction: numberOption(-180, 180, 1, () => 0),
+    color: colorOption(() => '#000000'),
+  },
+};
+
 export type ProceduralEffectParamSpec =
-  | { kind: 'number'; label: string; min: number; max: number; step: number }
-  | { kind: 'color'; label: string }
-  | { kind: 'text'; label: string; placeholder?: string };
+  | { kind: 'number'; label: string; labelKey?: string; min: number; max: number; step: number }
+  | { kind: 'color'; label: string; labelKey?: string }
+  | { kind: 'text'; label: string; labelKey?: string; placeholder?: string; placeholderKey?: string };
 
-export const proceduralEffectParamSpecs: Record<FilmProceduralEffectType, Record<string, ProceduralEffectParamSpec>> = {
-  concentration: {
-    lineCount: { kind: 'number', label: 'Line Count', min: 4, max: 320, step: 1 },
-    lineWidth: { kind: 'number', label: 'Line Width', min: 0.1, max: 10, step: 0.1 },
-    innerRatio: { kind: 'number', label: 'Inner Ratio', min: 0, max: 0.8, step: 0.01 },
-    outerRatio: { kind: 'number', label: 'Outer Ratio', min: 0.5, max: 2, step: 0.01 },
-    angleJitter: { kind: 'number', label: 'Angle Jitter', min: 0, max: 2, step: 0.05 },
-    color: { kind: 'color', label: 'Color' },
-    seed: { kind: 'text', label: 'Seed', placeholder: 'optional' },
-  },
-  speedline: {
-    bandCount: { kind: 'number', label: 'Band Count', min: 1, max: 160, step: 1 },
-    bandWidthRatio: { kind: 'number', label: 'Band Width Ratio', min: 0.02, max: 0.5, step: 0.01 },
-    direction: { kind: 'number', label: 'Direction (deg)', min: -360, max: 360, step: 1 },
-    color: { kind: 'color', label: 'Color' },
-  },
-  burst: {
-    ringCount: { kind: 'number', label: 'Ring Count', min: 1, max: 16, step: 1 },
-    startRatio: { kind: 'number', label: 'Start Ratio', min: 0, max: 1, step: 0.01 },
-    lineWidth: { kind: 'number', label: 'Line Width', min: 0.5, max: 12, step: 0.1 },
-    color: { kind: 'color', label: 'Color' },
-  },
-};
+const sharedLabelKeys = new Map<string, string>([
+  ['color', 'film.procedural.shared.color'],
+  ['randomSeed', 'film.procedural.shared.randomSeed'],
+]);
 
-const defaultParams: Record<FilmProceduralEffectType, Record<string, number | string | boolean>> = {
-  concentration: {
-    lineCount: 48,
-    lineWidth: 1.5,
-    innerRatio: 0.05,
-    outerRatio: 1.1,
-    angleJitter: 0.4,
-    color: '#000000',
-    seed: '',
-  },
-  speedline: {
-    bandCount: 24,
-    bandWidthRatio: 0.12,
-    direction: 0,
-    color: '#000000',
-  },
-  burst: {
-    ringCount: 4,
-    startRatio: 0.2,
-    lineWidth: 2,
-    color: '#000000',
-  },
-};
+function optionToParamSpec(
+  effectType: FilmProceduralEffectType,
+  key: string,
+  option: FilmProceduralOption,
+): ProceduralEffectParamSpec {
+  const labelKey = sharedLabelKeys.get(key) ?? `film.procedural.${effectType}.${key}`;
+
+  switch (option.type) {
+    case 'number':
+      return {
+        kind: 'number',
+        label: key,
+        labelKey,
+        min: option.min,
+        max: option.max,
+        step: option.step,
+      };
+    case 'color':
+      return {
+        kind: 'color',
+        label: key,
+        labelKey,
+      };
+    case 'text':
+      return {
+        kind: 'text',
+        label: key,
+        labelKey,
+        placeholder: option.placeholder,
+        placeholderKey: option.placeholderKey,
+      };
+  }
+}
+
+function optionDefault(option: FilmProceduralOption): number | string | boolean {
+  return option.init();
+}
+
+export const proceduralEffectParamSpecs: Record<FilmProceduralEffectType, Record<string, ProceduralEffectParamSpec>> =
+  Object.fromEntries(
+    Object.entries(filmProceduralOptionSets).map(([type, options]) => {
+      const effectType = type as FilmProceduralEffectType;
+      return [
+        effectType,
+        Object.fromEntries(
+          Object.entries(options).map(([key, option]) => [
+            key,
+            optionToParamSpec(effectType, key, option),
+          ])
+        ),
+      ];
+    })
+  ) as Record<FilmProceduralEffectType, Record<string, ProceduralEffectParamSpec>>;
+
+const defaultParams: Record<FilmProceduralEffectType, Record<string, number | string | boolean>> =
+  Object.fromEntries(
+    Object.entries(filmProceduralOptionSets).map(([type, options]) => [
+      type,
+      Object.fromEntries(
+        Object.entries(options).map(([key, option]) => [key, optionDefault(option)])
+      ),
+    ])
+  ) as Record<FilmProceduralEffectType, Record<string, number | string | boolean>>;
 
 export function createProceduralEffect(
   type: FilmProceduralEffectType,

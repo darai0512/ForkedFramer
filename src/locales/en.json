@@ -460,5 +460,33 @@
       "inUse": "In Use",
       "brokenLink": "Broken Link"
     }
+  },
+  "film": {
+    "procedural": {
+      "selectorLabel": "Effect Type",
+      "type": {
+        "motion-lines": "Motion Lines",
+        "speed-lines": "Speed Lines"
+      },
+      "shared": {
+        "color": "Color",
+        "randomSeed": "Random Seed",
+        "optional": "Optional"
+      },
+      "motion-lines": {
+        "lineCount": "Line Count",
+        "lineWidth": "Line Width",
+        "angleJitter": "Angle Jitter",
+        "startJitter": "Start Point Jitter",
+        "innerRadiusRatio": "Inner Radius Ratio"
+      },
+      "speed-lines": {
+        "lineCount": "Line Count",
+        "lineWidth": "Line Width",
+        "laneJitter": "Lane Jitter",
+        "startJitter": "Start Point Jitter",
+        "direction": "Direction (deg)"
+      }
+    }
   }
 }

@@ -17,7 +17,7 @@ function createCanvas(width = 128, height = 96): HTMLCanvasElement {
 
 describe('Film serialization', () => {
   it('serializes procedural films without touching media pipeline', async () => {
-    const effect = { type: 'concentration', params: { lineCount: 42, seed: 123 } } as const;
+    const effect = { type: 'motion-lines', params: { lineCount: 42, lineWidth: 0.05, randomSeed: 12 } } as const;
     const film = Film.fromProcedural({
       type: effect.type,
       params: { ...effect.params },
@@ -71,8 +71,8 @@ describe('Film serialization', () => {
     imageFilm.n_translation = [0.1, 0.05];
 
     const proceduralFilm = Film.fromProcedural({
-      type: 'burst',
-      params: { ringCount: 5 },
+      type: 'speed-lines',
+      params: { lineCount: 60, lineWidth: 0.2 },
     });
 
     const mediaStore = new Map<string, HTMLCanvasElement>();
@@ -89,7 +89,7 @@ describe('Film serialization', () => {
     expect(packed).toHaveLength(2);
     expect(packed[0].image).toBeDefined();
     expect(packed[0].image as string).toMatch(/^media-0$/);
-    expect(packed[1].proceduralEffect?.type).toBe('burst');
+    expect(packed[1].proceduralEffect?.type).toBe('speed-lines');
 
     const loadMediaImpl: LoadMediaFunc = async (id, _type) => {
       const media = mediaStore.get(id);
@@ -117,6 +117,6 @@ describe('Film serialization', () => {
     if (restoredProceduralFilm.content.kind !== 'procedural') {
       throw new Error('expected procedural film');
     }
-    expect(restoredProceduralFilm.content.effect.type).toBe('burst');
+    expect(restoredProceduralFilm.content.effect.type).toBe('speed-lines');
   });
 });

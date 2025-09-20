@@ -6,16 +6,15 @@
   const dispatch = createEventDispatcher<{ create: { effect: FilmProceduralEffect; label: string | null } }>();
 
   const proceduralOptions: { value: FilmProceduralEffectType; label: string }[] = [
-    { value: 'concentration', label: 'Concentration Lines' },
-    { value: 'speedline', label: 'Speed Lines' },
-    { value: 'burst', label: 'Burst Rings' },
+    { value: 'motion-lines', label: 'Motion Lines' },
+    { value: 'speed-lines', label: 'Speed Lines' },
   ];
 
   const idPrefix = `image-procedural-${Math.random().toString(36).slice(2, 8)}`;
   const labelInputId = `${idPrefix}-label`;
   const typeSelectId = `${idPrefix}-type`;
 
-  let type: FilmProceduralEffectType = 'concentration';
+  let type: FilmProceduralEffectType = 'motion-lines';
   let label = '';
   let params: Record<string, number | string | boolean> = createProceduralEffect(type).params;
 

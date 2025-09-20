@@ -6,12 +6,13 @@
   import FilmProceduralNumberParam from './FilmProceduralNumberParam.svelte';
   import FilmProceduralColorParam from './FilmProceduralColorParam.svelte';
   import FilmProceduralTextParam from './FilmProceduralTextParam.svelte';
+  import { _ } from 'svelte-i18n';
 
   export let film: Film;
 
   const dispatch = createEventDispatcher<{ change: void }>();
 
-  let type: FilmProceduralEffectType = 'concentration';
+  let type: FilmProceduralEffectType = 'motion-lines';
   let params: Record<string, number | string | boolean> = {};
   let syncing = false;
   const idPrefix = `film-procedural-${Math.random().toString(36).slice(2, 8)}`;
@@ -96,18 +97,17 @@
 {#if film.content.kind === 'procedural'}
 <div class="procedural-controls">
   <div class="selector-row">
-    <label class="selector-label" for={typeSelectId}>Type</label>
+    <label class="selector-label" for={typeSelectId}>{$_('film.procedural.selectorLabel')}</label>
     <select class="selector-control" id={typeSelectId} bind:value={type} on:change={onTypeChange}>
-      <option value="concentration">Concentration</option>
-      <option value="speedline">Speed Lines</option>
-      <option value="burst">Burst</option>
+      <option value="motion-lines">{$_('film.procedural.type.motion-lines')}</option>
+      <option value="speed-lines">{$_('film.procedural.type.speed-lines')}</option>
     </select>
   </div>
 
   {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
     {#if spec.kind === 'number'}
       <FilmProceduralNumberParam
-        label={spec.label}
+        label={spec.labelKey ? $_(spec.labelKey) : spec.label}
         value={numberValueOf(key, spec.min)}
         min={spec.min}
         max={spec.max}
@@ -116,15 +116,15 @@
       />
     {:else if spec.kind === 'color'}
       <FilmProceduralColorParam
-        label={spec.label}
+        label={spec.labelKey ? $_(spec.labelKey) : spec.label}
         value={stringValueOf(key, '#000000')}
         on:change={(event) => onColorParamChange(key, event.detail)}
       />
     {:else if spec.kind === 'text'}
       <FilmProceduralTextParam
-        label={spec.label}
+        label={spec.labelKey ? $_(spec.labelKey) : spec.label}
         value={stringValueOf(key, '')}
-        placeholder={spec.placeholder}
+        placeholder={spec.placeholderKey ? $_(spec.placeholderKey) : spec.placeholder}
         on:change={(event) => onTextParamChange(key, event.detail)}
       />
     {/if}
