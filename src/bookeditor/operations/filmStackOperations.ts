@@ -16,6 +16,7 @@ import { inpaintFilm } from "../../utils/inpaintFilm";
 import { textEditFilm } from "../../utils/textEditFilm";
 import { mainBook } from '../workspaceStore'; // デバッグ用
 import { textLiftFilm } from "../../utils/textLiftFilm";
+import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
 
 // 共通インターフェース - フィルムオペレーション対象
 export interface FilmOperationTarget {
@@ -66,7 +67,7 @@ export async function handleScribbleCommand<T extends FilmOperationTarget>(
 export async function handleGenerateCommand<T extends FilmOperationTarget>(
   target: T,
   inputPrompt: string,
-  runImageGenerator: (prompt: string, filmStack: any, gallery: any) => Promise<{media: any, prompt: string} | null>,
+  runImageGenerator: (prompt: string, filmStack: any, gallery: any) => Promise<GeneratedFilmResult | null>,
   calculateScale: (film: Film, target: T) => number,
   targetStore: any,
   element: any
@@ -78,10 +79,21 @@ export async function handleGenerateCommand<T extends FilmOperationTarget>(
   const r = await runImageGenerator(inputPrompt, target.filmStack, element.gallery);
   if (!r) { return; }
 
-  const { media, prompt: outputPrompt } = r;
-  const film = Film.fromMedia(media);
-  film.prompt = outputPrompt;
-  
+  let film: Film;
+  let outputPrompt: string | null = null;
+
+  if (r.kind === 'media') {
+    film = Film.fromMedia(r.media);
+    outputPrompt = r.prompt;
+  } else {
+    film = Film.fromProcedural(r.effect);
+    outputPrompt = r.prompt ?? null;
+  }
+
+  if (outputPrompt != null) {
+    film.prompt = outputPrompt;
+  }
+
   const scale = calculateScale(film, target);
   film.setShiftedScale(target.page.paperSize, scale);
 

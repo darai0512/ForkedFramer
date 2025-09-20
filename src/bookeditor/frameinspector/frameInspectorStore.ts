@@ -14,6 +14,7 @@ import { get as getStore } from 'svelte/store';
 import { _ } from 'svelte-i18n';
 import { commit } from '../operations/commitOperations';
 import type { FilmOperationTarget } from '../operations/filmStackOperations';
+import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
 import {
   setupCommandSubscription,
   handleScribbleCommand,
@@ -43,7 +44,7 @@ export const frameInspectorRebuildToken: Writable<number> = writable(0);
 
 // コマンド実行に必要なツールへの参照
 let painterRunWithFrame: ((page: Page, frame: FrameElement, film: Film) => Promise<void>) | null = null;
-let runImageGenerator: ((prompt: string, filmStack: any, gallery: any) => Promise<{media: any, prompt: string} | null>) | null = null;
+let runImageGenerator: ((prompt: string, filmStack: any, gallery: any) => Promise<GeneratedFilmResult | null>) | null = null;
 
 // サブスクリプション解除用の関数参照用オブジェクト
 const unsubscribeRef = { value: null as Function | null };
@@ -51,7 +52,7 @@ const unsubscribeRef = { value: null as Function | null };
 // ツール参照を設定
 export function setFrameCommandTools(
   _painterRunWithFrame: (page: Page, frame: FrameElement, film: Film) => Promise<void>,
-  _runImageGenerator: (prompt: string, filmStack: any, gallery: any) => Promise<{media: any, prompt: string} | null>
+  _runImageGenerator: (prompt: string, filmStack: any, gallery: any) => Promise<GeneratedFilmResult | null>
 ) {
   painterRunWithFrame = _painterRunWithFrame;
   runImageGenerator = _runImageGenerator;
