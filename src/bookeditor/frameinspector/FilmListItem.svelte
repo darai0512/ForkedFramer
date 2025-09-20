@@ -59,12 +59,16 @@
   let proceduralPreview: string | null = null;
 
   $: if (film && film.content.kind === 'procedural') {
-      const width = Number(film.content.effect.params.width) || 1024;
-      const height = Number(film.content.effect.params.height) || 1024;
-      try {
-        const canvas = renderProceduralEffect(film.content.effect, [width, height]);
-        proceduralPreview = canvas.toDataURL();
-      } catch (e) {
+      if (typeof document !== 'undefined') {
+        const width = Number(film.content.effect.params.width) || 1024;
+        const height = Number(film.content.effect.params.height) || 1024;
+        try {
+          const canvas = renderProceduralEffect(film.content.effect, [width, height]);
+          proceduralPreview = canvas.toDataURL();
+        } catch (e) {
+          proceduralPreview = null;
+        }
+      } else {
         proceduralPreview = null;
       }
     } else {
@@ -276,7 +280,7 @@
           />
         </div>
       {/if}
-      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt="Procedural settings" use:toolTip="Procedural settings" on:click={onToggleeffectVisible} />
+      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt="Procedural settings" use:toolTip={'Procedural settings'} on:click={onToggleeffectVisible} />
     </div>
     {#if effectVisible}
       <div class="effect-panel">

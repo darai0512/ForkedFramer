@@ -28,6 +28,9 @@
   }
 
   function updateParam(key: string, value: number | string | boolean) {
+    if (typeof value === 'number' && !Number.isFinite(value)) {
+      return;
+    }
     params = { ...params, [key]: value };
   }
 
@@ -64,19 +67,19 @@
             min={spec.min}
             max={spec.max}
             step={spec.step}
-            bind:value={params[key]}
-            on:change={(event) => updateParam(key, Number((event.currentTarget as HTMLInputElement).value))}
+            value={Number(params[key] ?? spec.min)}
+            on:input={(event) => updateParam(key, Number((event.currentTarget as HTMLInputElement).value))}
           />
         {:else if spec.kind === 'color'}
           <input
             type="color"
-            bind:value={params[key]}
-            on:change={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
+            value={(params[key] as string) ?? '#000000'}
+            on:input={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
           />
         {:else if spec.kind === 'text'}
           <input
             type="text"
-            bind:value={params[key]}
+            value={(params[key] as string) ?? ''}
             placeholder={spec.placeholder}
             on:input={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
           />
