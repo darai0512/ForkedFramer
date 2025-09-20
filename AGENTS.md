@@ -15,7 +15,7 @@
 - `npm run check`: Run `svelte-check` type diagnostics.
 - `npm run vitest` (or `npx vitest --run`): Run unit tests.
 - テスト実行時は `npx tsc --noEmit && npm run vitest -- --run` のように型チェックも併せて行うこと。
-- Svelte テンプレートの構文エラーは `npm run dev` または `npm run build` を併用して早期に検知すること。
+- Svelte テンプレートの構文エラーは `npm run build` を併用して早期に検知すること（開発サーバは起動しない）。
 - Deploy: `npm run deploy` (publishes via Cloudflare Pages only on `sns_main`).
 
 ## Coding Style & Naming Conventions
