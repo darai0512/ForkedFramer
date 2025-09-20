@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import type { Film } from "../../lib/layeredCanvas/dataModels/film";
+  import type { Film, FilmContent } from "../../lib/layeredCanvas/dataModels/film";
   import { Effect, OutlineEffect } from "../../lib/layeredCanvas/dataModels/effect";
   import { redrawToken } from '../workspaceStore';
   import FilmEffect from "./FilmEffect.svelte";
@@ -48,22 +48,35 @@
   let popupButton: HTMLButtonElement;
 
   $: filmMedia = film && film.content.kind === 'media' ? film.content.media : null;
-  
+
+  type ProceduralFilm = Film & { content: Extract<FilmContent, { kind: 'procedural' }> };
+
+  let proceduralFilm: ProceduralFilm | null = null;
+
+  $: proceduralFilm = film && film.content.kind === 'procedural'
+    ? (film as ProceduralFilm)
+    : null;
+
   // barrier用Popupの状態管理
   let barrierPopupVisible = false;
   let barrierPopupTarget: HTMLDivElement | null = null;
   
   const dispatch = createEventDispatcher();
 
-  $: isProcedural = Boolean(film && film.content.kind === 'procedural');
   let proceduralPreview: string | null = null;
 
-  $: if (film && film.content.kind === 'procedural') {
+  $: if (proceduralFilm) {
       if (typeof document !== 'undefined') {
-        const width = Number(film.content.effect.params.width) || 1024;
-        const height = Number(film.content.effect.params.height) || 1024;
+        const widthParam = Number(proceduralFilm.content.effect.params.width);
+        const heightParam = Number(proceduralFilm.content.effect.params.height);
+        const width = Number.isFinite(widthParam) && widthParam > 0
+          ? widthParam
+          : (paperSize?.[0] ?? 1024);
+        const height = Number.isFinite(heightParam) && heightParam > 0
+          ? heightParam
+          : (paperSize?.[1] ?? 1024);
         try {
-          const canvas = renderProceduralEffect(film.content.effect, [width, height]);
+          const canvas = renderProceduralEffect(proceduralFilm.content.effect, [width, height]);
           proceduralPreview = canvas.toDataURL();
         } catch (e) {
           proceduralPreview = null;
@@ -250,7 +263,7 @@
         ＋
       </div>
     </div>
-  {:else if isProcedural}
+  {:else if proceduralFilm}
     <div
       class="image-panel procedural"
       class:variant-filled-primary={film.selected}
@@ -259,13 +272,15 @@
     >
       <div class="media-container">
         {#if proceduralPreview}
-          <img src={proceduralPreview} alt={film.content.effect.type} draggable={false} />
+          <img src={proceduralPreview} alt={proceduralFilm.content.effect.type} draggable={false} />
         {:else}
-          <div class="procedural-placeholder">{film.content.effect.type}</div>
+          <div class="procedural-placeholder">{proceduralFilm.content.effect.type}</div>
         {/if}
       </div>
-      <div class="procedural-tag">{film.content.effect.type}</div>
+      <div class="procedural-tag">{proceduralFilm.content.effect.type}</div>
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete} />
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="visible-icon" class:off={!film.visible} src={visibleIcon} alt={$_('frame.actions.visibilityToggle')} use:toolTip={$_('frame.actions.visibilityToggle')} on:click={onToggleVisible} />
       {#if showsBarrier}
         <div
@@ -280,11 +295,12 @@
           />
         </div>
       {/if}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt="Procedural settings" use:toolTip={'Procedural settings'} on:click={onToggleeffectVisible} />
     </div>
     {#if effectVisible}
       <div class="effect-panel">
-        <FilmProceduralControls {film} {paperSize} />
+        <FilmProceduralControls film={proceduralFilm} />
       </div>
     {/if}
   {:else}
@@ -299,7 +315,9 @@
           <MediaFrame media={filmMedia} showControls={false} dragAsImage={false} />
         {/if}
       </div>
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="trash-icon" src={trashIcon} alt={$_('frame.actions.delete')} use:toolTip={$_('frame.actions.delete')} on:click={onDelete} />
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="visible-icon" class:off={!film.visible} src={visibleIcon} alt={$_('frame.actions.visibilityToggle')} use:toolTip={$_('frame.actions.visibilityToggle')} on:click={onToggleVisible} />
       {#if showsBarrier}
         <div
@@ -314,6 +332,7 @@
           />
         </div>
       {/if}
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt={$_('frame.actions.effects')} use:toolTip={$_('frame.actions.effects')} on:click={onToggleeffectVisible} />
 
       <button class="transformix-icon" bind:this={popupButton} on:click={togglePopup}>
@@ -539,7 +558,7 @@
     object-fit: contain;
   }
   .image-panel.procedural .media-container {
-    background-color: rgb(var(--color-surface-200));
+    background-color: transparent;
   }
   .procedural-placeholder {
     text-transform: capitalize;

@@ -11,6 +11,10 @@
     { value: 'burst', label: 'Burst Rings' },
   ];
 
+  const idPrefix = `image-procedural-${Math.random().toString(36).slice(2, 8)}`;
+  const labelInputId = `${idPrefix}-label`;
+  const typeSelectId = `${idPrefix}-type`;
+
   let type: FilmProceduralEffectType = 'concentration';
   let label = '';
   let params: Record<string, number | string | boolean> = createProceduralEffect(type).params;
@@ -34,6 +38,46 @@
     params = { ...params, [key]: value };
   }
 
+  function handleTypeChange(event: Event) {
+    const target = event.currentTarget as HTMLSelectElement;
+    changeType(target.value as FilmProceduralEffectType);
+  }
+
+  function numberValueOf(key: string, fallback: number): number {
+    const value = Number(params[key]);
+    return Number.isFinite(value) ? value : fallback;
+  }
+
+  function colorValueOf(key: string, fallback: string): string {
+    const value = params[key];
+    return typeof value === 'string' && value ? value : fallback;
+  }
+
+  function stringValueOf(key: string, fallback: string): string {
+    const value = params[key];
+    return typeof value === 'string' ? value : fallback;
+  }
+
+  function onNumberInput(event: Event, key: string, spec: { min: number; max: number }) {
+    const target = event.currentTarget as HTMLInputElement;
+    const raw = Number(target.value);
+    if (!Number.isFinite(raw)) {
+      return;
+    }
+    const clamped = Math.min(spec.max, Math.max(spec.min, raw));
+    updateParam(key, clamped);
+  }
+
+  function onColorInput(event: Event, key: string) {
+    const target = event.currentTarget as HTMLInputElement;
+    updateParam(key, target.value);
+  }
+
+  function onTextInput(event: Event, key: string) {
+    const target = event.currentTarget as HTMLInputElement;
+    updateParam(key, target.value);
+  }
+
   function submit() {
     const effect = createProceduralEffect(type, params);
     dispatch('create', { effect, label: label.trim() ? label.trim() : null });
@@ -44,13 +88,13 @@
   <h3>Procedural Effect</h3>
 
   <div class="field">
-    <label>Label (optional)</label>
-    <input type="text" bind:value={label} placeholder="Effect label" />
+    <label for={labelInputId}>Label (optional)</label>
+    <input id={labelInputId} type="text" bind:value={label} placeholder="Effect label" />
   </div>
 
   <div class="field">
-    <label>Type</label>
-    <select bind:value={type} on:change={(event) => changeType((event.currentTarget as HTMLSelectElement).value as FilmProceduralEffectType)}>
+    <label for={typeSelectId}>Type</label>
+    <select id={typeSelectId} bind:value={type} on:change={handleTypeChange}>
       {#each proceduralOptions as option}
         <option value={option.value}>{option.label}</option>
       {/each}
@@ -67,21 +111,21 @@
             min={spec.min}
             max={spec.max}
             step={spec.step}
-            value={Number(params[key] ?? spec.min)}
-            on:input={(event) => updateParam(key, Number((event.currentTarget as HTMLInputElement).value))}
+            value={numberValueOf(key, spec.min)}
+            on:input={(event) => onNumberInput(event, key, { min: spec.min, max: spec.max })}
           />
         {:else if spec.kind === 'color'}
           <input
             type="color"
-            value={(params[key] as string) ?? '#000000'}
-            on:input={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
+            value={colorValueOf(key, '#000000')}
+            on:input={(event) => onColorInput(event, key)}
           />
         {:else if spec.kind === 'text'}
           <input
             type="text"
-            value={(params[key] as string) ?? ''}
+            value={stringValueOf(key, '')}
             placeholder={spec.placeholder}
-            on:input={(event) => updateParam(key, (event.currentTarget as HTMLInputElement).value)}
+            on:input={(event) => onTextInput(event, key)}
           />
         {/if}
       </label>

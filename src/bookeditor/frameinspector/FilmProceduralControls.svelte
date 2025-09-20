@@ -4,11 +4,12 @@
   import { createProceduralEffect, proceduralEffectParamSpecs } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
 
   export let film: Film;
-  export let paperSize: [number, number] | null = null;
 
   let type: FilmProceduralEffectType = 'concentration';
   let params: Record<string, number | string | boolean> = {};
   let syncing = false;
+  const idPrefix = `film-procedural-${Math.random().toString(36).slice(2, 8)}`;
+  const typeSelectId = `${idPrefix}-type`;
 
   $: if (film.content.kind === 'procedural') {
       syncing = true;
@@ -37,7 +38,12 @@
     updateFilm();
   }
 
-  function onNumberInput(key: string, event: Event, spec: { min: number; max: number }) {
+  function onTypeChange(event: Event) {
+    const target = event.currentTarget as HTMLSelectElement;
+    changeType(target.value as FilmProceduralEffectType);
+  }
+
+  function onNumberInput(event: Event, key: string, spec: { min: number; max: number }) {
     const value = Number((event.currentTarget as HTMLInputElement).value);
     if (!Number.isFinite(value)) { return; }
     const clamped = Math.min(spec.max, Math.max(spec.min, value));
@@ -45,24 +51,43 @@
     updateFilm();
   }
 
-  function onColorInput(key: string, event: Event) {
+  function onColorInput(event: Event, key: string) {
     const value = (event.currentTarget as HTMLInputElement).value;
     params = { ...params, [key]: value };
     updateFilm();
   }
 
-  function onTextInput(key: string, event: Event) {
+  function onTextInput(event: Event, key: string) {
     const value = (event.currentTarget as HTMLInputElement).value;
     params = { ...params, [key]: value };
     updateFilm();
+  }
+
+  function numberValueOf(key: string, fallback: number): number {
+    const value = params[key];
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  function stringValueOf(key: string, fallback: string): string {
+    const value = params[key];
+    return typeof value === 'string' ? value : fallback;
   }
 </script>
 
 {#if film.content.kind === 'procedural'}
 <div class="procedural-controls">
   <div class="row">
-    <label>Type</label>
-    <select bind:value={type} on:change={(e) => changeType((e.currentTarget as HTMLSelectElement).value as FilmProceduralEffectType)}>
+    <label for={typeSelectId}>Type</label>
+    <select id={typeSelectId} bind:value={type} on:change={onTypeChange}>
       <option value="concentration">Concentration</option>
       <option value="speedline">Speed Lines</option>
       <option value="burst">Burst</option>
@@ -71,28 +96,31 @@
 
   {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
     <div class="row">
-      <label>{spec.label}</label>
+      <label for={`${idPrefix}-${key}`}>{spec.label}</label>
       {#if spec.kind === 'number'}
         <input
+          id={`${idPrefix}-${key}`}
           type="number"
           min={spec.min}
           max={spec.max}
           step={spec.step}
-          value={params[key] as number}
-          on:input={(event) => onNumberInput(key, event, { min: spec.min, max: spec.max })}
+          value={numberValueOf(key, spec.min)}
+          on:input={(event) => onNumberInput(event, key, spec)}
         />
       {:else if spec.kind === 'color'}
         <input
+          id={`${idPrefix}-${key}`}
           type="color"
-          value={params[key] as string}
-          on:input={(event) => onColorInput(key, event)}
+          value={stringValueOf(key, '#000000')}
+          on:input={(event) => onColorInput(event, key)}
         />
       {:else if spec.kind === 'text'}
         <input
+          id={`${idPrefix}-${key}`}
           type="text"
-          value={params[key] as string}
+          value={stringValueOf(key, '')}
           placeholder={spec.placeholder}
-          on:input={(event) => onTextInput(key, event)}
+          on:input={(event) => onTextInput(event, key)}
         />
       {/if}
     </div>

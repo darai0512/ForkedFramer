@@ -9,6 +9,7 @@
   import ImageGeneratorProcedural from "./ImageGeneratorProcedural.svelte";
   import { type Media } from "../lib/layeredCanvas/dataModels/media";
   import type { GeneratedFilmResult } from "./imageGeneratorStore";
+  import type { FilmProceduralEffect } from "../lib/layeredCanvas/dataModels/proceduralEffects";
   import { _ } from 'svelte-i18n';
   import sprytIcon from '../assets/spryt.webp';
 
@@ -57,6 +58,11 @@
       t.onDone(null);
     }
   }
+
+  function handleProceduralCreate(event: CustomEvent<{ effect: FilmProceduralEffect; label: string | null }>) {
+    const { effect, label } = event.detail;
+    notify({ kind: 'procedural', effect, prompt: label });
+  }
 </script>
 
 <div class="drawer-outer">
@@ -81,10 +87,7 @@
           {:else if tabSet === 3}
           <ImageGeneratorPlain bind:chosen={chosen}/>
           {:else if tabSet === 4}
-          <ImageGeneratorProcedural on:create={(event) => {
-            const { effect, label } = event.detail;
-            notify({ kind: 'procedural', effect, prompt: label });
-          }}/>
+          <ImageGeneratorProcedural on:create={handleProceduralCreate}/>
         {/if}
       </svelte:fragment>
     </TabGroup>  
