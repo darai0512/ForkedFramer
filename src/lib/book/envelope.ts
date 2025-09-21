@@ -41,7 +41,7 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
   if ("images" in envelopedBook && envelopedBook.images) {
     progress(0);
     for (const imageId in envelopedBook.images) {
-      const blob = new Blob([envelopedBook.images[imageId]], { type: 'image/png' });
+      const blob = new Blob([new Uint8Array(envelopedBook.images[imageId])], { type: 'image/png' });
       const url = URL.createObjectURL(blob);
       const image = new Image();
       image.src = url;
@@ -58,9 +58,9 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
     for (const mediaId in envelopedBook.medias) {
       const media = envelopedBook.medias[mediaId];
       const blob = new Blob(
-        [media.data], 
-        { 
-          type: media.type === 'image' ? `image/${media.format ?? 'png'}` : 'video/mp4' 
+        [new Uint8Array(media.data)],
+        {
+          type: media.type === 'image' ? `image/${media.format ?? 'png'}` : 'video/mp4'
         });
       const url = URL.createObjectURL(blob);
       if (media.type === 'image') {
@@ -157,7 +157,7 @@ export async function writeEnvelope(book: Book, progress: (n: number) => void): 
   }
 
   const encoded = encode(envelopedBook);
-  return new Blob([encoded], { type: 'application/cbor' });
+  return new Blob([new Uint8Array(encoded)], { type: 'application/cbor' });
 }
 
 
