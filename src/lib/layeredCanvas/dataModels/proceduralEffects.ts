@@ -86,11 +86,11 @@ export const filmProceduralOptionSets: Record<FilmProceduralEffectType, Record<s
     horizontalSpacing: numberOption(1, 10, 0.1, () => 5),
     verticalSpacing: numberOption(1, 10, 0.1, () => 5),
     dotRadius: numberOption(0.1, 10, 0.1, () => 1),
-    evenRowOffset: numberOption(0, 0.5, 0.01, () => 0),
+    evenRowOffset: numberOption(0, 0.5, 0.01, () => 0.5),
     positionJitter: numberOption(0, 1, 0.01, () => 0),
     sizeJitter: numberOption(0, 1, 0.01, () => 0),
     randomSeed: numberOption(0, 100, 1, () => 0),
-    color: colorOption(() => '#000000'),
+    color: colorOption(() => '#00000080'),
   },
 };
 

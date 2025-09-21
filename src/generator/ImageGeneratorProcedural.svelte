@@ -17,9 +17,7 @@
   function changeType(next: FilmProceduralEffectType) {
     if (next === type) return;
     type = next;
-    params = {
-      ...createProceduralEffect(next).params,
-    };
+    params = { ...createProceduralEffect(next).params }; // Force reactivity
   }
 
   function handleTypeChange(event: Event) {
@@ -27,11 +25,8 @@
     changeType(target.value as FilmProceduralEffectType);
   }
 
-  function numberValueOf(key: string, fallback: number): number {
+  function numberValueOf(key: string): number {
     const value = params[key];
-    if (Array.isArray(value)) {
-      return fallback;
-    }
     if (typeof value === 'number') {
       return value;
     }
@@ -41,7 +36,8 @@
         return parsed;
       }
     }
-    return fallback;
+    // This should never happen if params is properly initialized
+    return 0;
   }
 
   function stringValueOf(key: string, fallback: string): string {
@@ -76,7 +72,7 @@
   <div class="procedural-controls">
     <div class="selector-row">
       <label class="selector-label" for={typeSelectId}>{$_('film.procedural.selectorLabel')}</label>
-      <select class="selector-control" id={typeSelectId} bind:value={type} on:change={handleTypeChange}>
+      <select class="selector-control" id={typeSelectId} value={type} on:change={handleTypeChange}>
         <option value="motion-lines">{$_('film.procedural.type.motion-lines')}</option>
         <option value="speed-lines">{$_('film.procedural.type.speed-lines')}</option>
         <option value="dots">{$_('film.procedural.type.dots')}</option>
@@ -88,7 +84,7 @@
         {#if spec.kind === 'number'}
           <FilmProceduralNumberParam
             label={spec.labelKey ? $_(spec.labelKey) : spec.label}
-            value={numberValueOf(key, spec.min)}
+            value={numberValueOf(key)}
             min={spec.min}
             max={spec.max}
             step={spec.step}
