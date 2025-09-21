@@ -173,7 +173,7 @@ export class FrameLayer extends LayerBase {
     this.litIcons = [this.swapIcon];
 
     const handleVisibleFor = (type: FilmProceduralEffectType) => () => {
-      if (!this.interactable || this.pointerHandler) { return false; }
+      if (!this.interactable) { return false; }
       const film = this.getProceduralFilmTarget();
       if (!film) { return false; }
       const effect = film.proceduralEffect;
