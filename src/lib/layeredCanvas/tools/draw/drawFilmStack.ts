@@ -1,6 +1,6 @@
 import type { FilmStack, Film } from '../../dataModels/film';
 import type { Vector } from '../geometry/geometry';
-import { drawProceduralEffect } from "../../dataModels/proceduralEffects";
+import { drawProceduralEffect } from "./proceduralEffectRenderer";
 
 export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStack, paperSize: Vector, center: Vector, clipFrame: ((ctx: CanvasRenderingContext2D, film: Film) => void) | null) {
   const films = filmStack.films;

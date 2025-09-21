@@ -33,7 +33,7 @@
   import texteditIcon from '../../assets/filmlist/textedit.webp';
   import downloadIcon from '../../assets/download.webp';
   import stampIcon from '../../assets/stamp.webp';
-  import { drawProceduralEffect } from '../../lib/layeredCanvas/dataModels/proceduralEffects';
+  import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
   import { tick } from 'svelte';
   
   export let showsBarrier: boolean;

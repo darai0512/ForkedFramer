@@ -2,7 +2,7 @@ import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
 import { Film, FilmStack } from "../../lib/layeredCanvas/dataModels/film";
 import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Vector } from "../../lib/layeredCanvas/tools/geometry/geometry";
-import { drawProceduralEffect } from "../../lib/layeredCanvas/dataModels/proceduralEffects";
+import { drawProceduralEffect } from "../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer";
 
 /**
  * 選択されたレイヤー（未選択の場合は全レイヤー）を結合する
