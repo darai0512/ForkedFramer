@@ -77,7 +77,7 @@
       <Tab bind:group={tabSet} name="tab3" value={0}><span class="tab"><img src={sprytIcon} alt="flux" width=24 height=24/>{$_('generator.cloud')}</span></Tab>
       <Tab bind:group={tabSet} name="tab2" value={2}>Stable Diffusion</Tab>
       <Tab bind:group={tabSet} name="tab4" value={3}>{$_('generator.blank')}</Tab>
-      <Tab bind:group={tabSet} name="tab5" value={4}>Procedural</Tab>
+      <Tab bind:group={tabSet} name="tab5" value={4}>{$_('generator.procedural.title')}</Tab>
       <!-- Tab Panels --->
       <svelte:fragment slot="panel">
         {#if tabSet === 0}
