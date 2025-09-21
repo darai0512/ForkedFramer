@@ -158,45 +158,64 @@ const speedLinesRenderer: ProceduralEffectRenderer = {
 
     const rng = seedrandom(String(randomSeed));
 
-    const length = width * 1.5;
-    const halfWidth = width / 2;
-    const halfHeight = height / 2;
-
     ctx.save();
     ctx.translate(cx, cy);
+
+    // tailTipとtailMidの処理をbubbleGraphicと同じにする
     const tailTip = readVectorParam(effect, 'tailTip', [width * 0.25, 0]);
     const tailMidParam = readVectorParam(effect, 'tailMid', [0.5, 0]);
-    const tipMagnitude = Math.hypot(tailTip[0], tailTip[1]);
-    const baseDirection = tipMagnitude > 1e-3 ? Math.atan2(tailTip[1], tailTip[0]) : 0;
-    const directionRad = baseDirection + (directionDeg * Math.PI) / 180;
-    ctx.rotate(directionRad);
+    const tailMid = tailCoordToWorldCoord([0, 0], tailTip, tailMidParam);
 
-    const directionUnit = tipMagnitude > 1e-3
-      ? [tailTip[0] / tipMagnitude, tailTip[1] / tipMagnitude]
-      : [Math.cos(baseDirection || 0), Math.sin(baseDirection || 0)];
-    const perpendicularUnit: Vector = [-directionUnit[1], directionUnit[0]];
-    const tailMidLocal = tailCoordToWorldCoord([0, 0], tailTip, tailMidParam);
-    const laneOffsetRaw = tailMidLocal[0] * perpendicularUnit[0] + tailMidLocal[1] * perpendicularUnit[1];
-    const laneOffset = Math.max(-halfHeight, Math.min(halfHeight, laneOffsetRaw));
+    const length = Math.hypot(width, height);
+    if (!Number.isFinite(length) || length <= 1e-6) {
+      ctx.restore();
+      return;
+    }
+
+    const angle = Math.atan2(tailTip[1], tailTip[0]);
+    ctx.rotate(angle + (directionDeg * Math.PI) / 180);
+
+    // bubbleGraphicと同じグラデーション位置計算
+    function rotate2D([x, y]: Vector, angle: number): Vector {
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+      return [x * cos - y * sin, x * sin + y * cos];
+    }
+
+    function projectionScalingFactor2D([fx, fy]: Vector, [nx, ny]: Vector): number {
+      const magnitude = Math.sqrt(nx * nx + ny * ny);
+      if (magnitude < 1e-6) return 0;
+      return (fx * nx + fy * ny) / (magnitude * magnitude);
+    }
+
+    function clamp(value: number, min = 0, max = 1): number {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function calculateNormalizedPosition([fx, fy]: Vector): number {
+      const v0: Vector = [length * 0.5, 0];
+      const [nx, ny] = rotate2D(v0, angle);
+      const psf = 0.5 - projectionScalingFactor2D([fx, fy], [nx, ny]) * 0.5;
+      return clamp(psf);
+    }
+
+    const psf0 = clamp(0.5 - Math.hypot(tailTip[0], tailTip[1]) / length);
+    const psf1 = calculateNormalizedPosition(tailMid);
 
     for (let i = 0; i < lineCount; i++) {
-      const baseY = -halfHeight + (i + 0.5) * (height / lineCount);
-      const jitterY = (rng() - 0.5) * height * laneJitter;
-      const y = baseY + jitterY + laneOffset;
+      const y = (i + 0.5) / lineCount * length - length / 2 + rng() * length * laneJitter;
+      const lx = -length * 0.5 + (rng() - 0.5) * width * startJitter;
+      const lw = height * lineWidthRatio * 0.01 * (rng() + 0.5);
 
-      const startX = -halfWidth - length * 0.2 + (rng() - 0.5) * width * startJitter;
-      const tipX = startX + length;
-      const thickness = Math.max(0.5, height * lineWidthRatio * 0.01 * (rng() + 0.5));
-
-      const gradient = ctx.createLinearGradient(tipX, y, startX, y);
-      gradient.addColorStop(0, color2string(baseColor));
-      gradient.addColorStop(0.4, color2string(baseColor));
-      gradient.addColorStop(1, color2string(transparentColor));
+      const gradient = ctx.createLinearGradient(lx + length, y, lx, y);
+      gradient.addColorStop(psf0, color2string(transparentColor));
+      gradient.addColorStop(psf1, color2string(baseColor));
+      gradient.addColorStop(1, color2string(baseColor));
 
       ctx.beginPath();
-      ctx.moveTo(startX, y - thickness);
-      ctx.lineTo(tipX, y);
-      ctx.lineTo(startX, y + thickness);
+      ctx.moveTo(lx, y - lw);
+      ctx.lineTo(lx + length, y);
+      ctx.lineTo(lx, y + lw);
       ctx.closePath();
       ctx.fillStyle = gradient;
       ctx.fill();
