@@ -95,7 +95,16 @@
     ctx.clearRect(0, 0, proceduralCanvas.width, proceduralCanvas.height);
     ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 
-    drawProceduralEffect(proceduralFilm.content.effect, ctx, cssSize);
+    // プレビュー用にfocalPointとfocalRangeを中央にリセット
+    const previewEffect = { ...proceduralFilm.content.effect };
+    if (previewEffect.type === 'motion-lines') {
+      previewEffect.params = {
+        ...previewEffect.params,
+        focalPoint: [0, 0],
+        focalRange: [0, cssSize * 0.25]
+      };
+    }
+    drawProceduralEffect(previewEffect, ctx, cssSize);
   }
 
   $: if (proceduralFilm && proceduralVersion >= 0) {
