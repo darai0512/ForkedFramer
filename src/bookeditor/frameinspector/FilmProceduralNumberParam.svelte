@@ -50,22 +50,24 @@
 
 <div class="param-row">
   <div class="param-label">{label}</div>
-  <div
-    class="param-slider"
-    on:pointerdown={stopSortInteraction}
-  >
-    <RangeSlider
-      id={sliderId}
-      name={sliderId}
-      bind:value={current}
-      min={min}
-      max={max}
-      step={step}
-    />
-  </div>
-  <div class="param-number">
-    <div class="number-box">
-      <NumberEdit bind:value={current} min={min} max={max} allowDecimal={allowDecimal} />
+  <div class="param-controls variant-soft-surface">
+    <div
+      class="param-slider"
+      on:pointerdown={stopSortInteraction}
+    >
+      <RangeSlider
+        id={sliderId}
+        name={sliderId}
+        bind:value={current}
+        min={min}
+        max={max}
+        step={step}
+      />
+    </div>
+    <div class="param-number">
+      <div class="number-box">
+        <NumberEdit bind:value={current} min={min} max={max} allowDecimal={allowDecimal} />
+      </div>
     </div>
   </div>
 </div>
@@ -74,12 +76,20 @@
   .param-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
   .param-label {
     font-size: 14px;
     min-width: 92px;
     white-space: nowrap;
+  }
+  .param-controls {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 8px;
+    border-radius: 4px;
   }
   .param-slider {
     flex: 1;
@@ -87,7 +97,7 @@
     align-items: center;
   }
   .param-number {
-    width: 48px;
+    width: 42px;
   }
   .number-box {
     width: 100%;

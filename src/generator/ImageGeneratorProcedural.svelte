@@ -2,20 +2,16 @@
   import { createEventDispatcher } from 'svelte';
   import type { FilmProceduralEffectType, FilmProceduralEffect, FilmProceduralParamValue } from '../lib/layeredCanvas/dataModels/proceduralEffects';
   import { createProceduralEffect, proceduralEffectParamSpecs } from '../lib/layeredCanvas/dataModels/proceduralEffects';
+  import { _ } from 'svelte-i18n';
+  import FilmProceduralNumberParam from '../bookeditor/frameinspector/FilmProceduralNumberParam.svelte';
+  import FilmProceduralColorParam from '../bookeditor/frameinspector/FilmProceduralColorParam.svelte';
+  import FilmProceduralTextParam from '../bookeditor/frameinspector/FilmProceduralTextParam.svelte';
 
   const dispatch = createEventDispatcher<{ create: { effect: FilmProceduralEffect; label: string | null } }>();
 
-  const proceduralOptions: { value: FilmProceduralEffectType; label: string }[] = [
-    { value: 'motion-lines', label: 'Motion Lines' },
-    { value: 'speed-lines', label: 'Speed Lines' },
-  ];
-
-  const idPrefix = `image-procedural-${Math.random().toString(36).slice(2, 8)}`;
-  const labelInputId = `${idPrefix}-label`;
-  const typeSelectId = `${idPrefix}-type`;
+  const typeSelectId = `image-procedural-${Math.random().toString(36).slice(2, 8)}-type`;
 
   let type: FilmProceduralEffectType = 'motion-lines';
-  let label = '';
   let params: Record<string, FilmProceduralParamValue> = createProceduralEffect(type).params;
 
   function changeType(next: FilmProceduralEffectType) {
@@ -26,33 +22,26 @@
     };
   }
 
-  function updateParam(key: string, value: FilmProceduralParamValue) {
-    if (typeof value === 'number' && !Number.isFinite(value)) {
-      return;
-    }
-    params = { ...params, [key]: value };
-  }
-
   function handleTypeChange(event: Event) {
     const target = event.currentTarget as HTMLSelectElement;
     changeType(target.value as FilmProceduralEffectType);
   }
 
   function numberValueOf(key: string, fallback: number): number {
-    const raw = params[key];
-    if (Array.isArray(raw)) {
-      return fallback;
-    }
-    const value = Number(raw);
-    return Number.isFinite(value) ? value : fallback;
-  }
-
-  function colorValueOf(key: string, fallback: string): string {
     const value = params[key];
     if (Array.isArray(value)) {
       return fallback;
     }
-    return typeof value === 'string' && value ? value : fallback;
+    if (typeof value === 'number') {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
   }
 
   function stringValueOf(key: string, fallback: string): string {
@@ -63,106 +52,140 @@
     return typeof value === 'string' ? value : fallback;
   }
 
-  function onNumberInput(event: Event, key: string, spec: { min: number; max: number }) {
-    const target = event.currentTarget as HTMLInputElement;
-    const raw = Number(target.value);
-    if (!Number.isFinite(raw)) {
-      return;
-    }
-    const clamped = Math.min(spec.max, Math.max(spec.min, raw));
-    updateParam(key, clamped);
+  function onNumberParamChange(key: string, value: number) {
+    params = { ...params, [key]: value };
   }
 
-  function onColorInput(event: Event, key: string) {
-    const target = event.currentTarget as HTMLInputElement;
-    updateParam(key, target.value);
+  function onColorParamChange(key: string, value: string) {
+    params = { ...params, [key]: value };
   }
 
-  function onTextInput(event: Event, key: string) {
-    const target = event.currentTarget as HTMLInputElement;
-    updateParam(key, target.value);
+  function onTextParamChange(key: string, value: string) {
+    params = { ...params, [key]: value };
   }
 
   function submit() {
     const effect = createProceduralEffect(type, params);
-    dispatch('create', { effect, label: label.trim() ? label.trim() : null });
+    dispatch('create', { effect, label: null });
   }
 </script>
 
-<div class="procedural-panel">
-  <h3>Procedural Effect</h3>
+<div class="procedural-content">
+  <h2>{$_('generator.procedural.title')}</h2>
 
-  <div class="field">
-    <label for={labelInputId}>Label (optional)</label>
-    <input id={labelInputId} type="text" bind:value={label} placeholder="Effect label" />
-  </div>
+  <div class="procedural-controls">
+    <div class="selector-row">
+      <label class="selector-label" for={typeSelectId}>{$_('film.procedural.selectorLabel')}</label>
+      <select class="selector-control" id={typeSelectId} bind:value={type} on:change={handleTypeChange}>
+        <option value="motion-lines">{$_('film.procedural.type.motion-lines')}</option>
+        <option value="speed-lines">{$_('film.procedural.type.speed-lines')}</option>
+      </select>
+    </div>
 
-  <div class="field">
-    <label for={typeSelectId}>Type</label>
-    <select id={typeSelectId} bind:value={type} on:change={handleTypeChange}>
-      {#each proceduralOptions as option}
-        <option value={option.value}>{option.label}</option>
-      {/each}
-    </select>
-  </div>
-
-  <div class="grid">
-    {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
-      <label>
-        {spec.label}
+    <div class="params-panel variant-soft-surface">
+      {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
         {#if spec.kind === 'number'}
-          <input
-            type="number"
+          <FilmProceduralNumberParam
+            label={spec.labelKey ? $_(spec.labelKey) : spec.label}
+            value={numberValueOf(key, spec.min)}
             min={spec.min}
             max={spec.max}
             step={spec.step}
-            value={numberValueOf(key, spec.min)}
-            on:input={(event) => onNumberInput(event, key, { min: spec.min, max: spec.max })}
+            on:change={(event) => onNumberParamChange(key, event.detail)}
           />
         {:else if spec.kind === 'color'}
-          <input
-            type="color"
-            value={colorValueOf(key, '#000000')}
-            on:input={(event) => onColorInput(event, key)}
+          <FilmProceduralColorParam
+            label={spec.labelKey ? $_(spec.labelKey) : spec.label}
+            value={stringValueOf(key, '#000000')}
+            on:change={(event) => onColorParamChange(key, event.detail)}
           />
         {:else if spec.kind === 'text'}
-          <input
-            type="text"
+          <FilmProceduralTextParam
+            label={spec.labelKey ? $_(spec.labelKey) : spec.label}
             value={stringValueOf(key, '')}
-            placeholder={spec.placeholder}
-            on:input={(event) => onTextInput(event, key)}
+            placeholder={spec.placeholderKey ? $_(spec.placeholderKey) : spec.placeholder}
+            on:change={(event) => onTextParamChange(key, event.detail)}
           />
         {/if}
-      </label>
-    {/each}
+      {/each}
+    </div>
   </div>
 
-  <button class="btn variant-filled-primary mt-4" on:click={submit}>
-    Create Procedural Layer
+  <button class="generate-button" on:click={submit}>
+    {$_('generator.procedural.createButton')}
   </button>
 </div>
 
 <style>
-  .procedural-panel {
+  .procedural-content {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    align-items: flex-start;
+    margin: 16px;
+  }
+
+  h2 {
+    font-family: '源暎エムゴ';
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    margin-bottom: 12px;
+  }
+
+  .procedural-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 400px;
+    margin-bottom: 16px;
+  }
+
+  .params-panel {
     padding: 12px;
-  }
-  .field {
+    border-radius: 6px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
   }
-  .grid {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+
+  .selector-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
-  input[type="number"],
-  input[type="text"],
-  input[type="color"],
-  select {
-    width: 100%;
+
+  .selector-label {
+    font-size: 14px;
+    min-width: 92px;
+    white-space: nowrap;
+  }
+
+  .selector-control {
+    flex: 1;
+    min-height: 28px;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgb(var(--color-surface-300));
+    background: white;
+  }
+
+  .generate-button {
+    background-color: rgb(var(--color-primary-500));
+    color: white;
+    padding: 8px 24px;
+    border-radius: 4px;
+    margin-top: 8px;
+    align-self: flex-start;
+    transition: background-color 0.2s;
+  }
+
+  .generate-button:hover {
+    background-color: rgb(var(--color-primary-700));
+  }
+
+  .generate-button:active {
+    background-color: rgb(var(--color-primary-900));
   }
 </style>
