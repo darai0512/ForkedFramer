@@ -8,6 +8,7 @@
   import { buildMedia } from '../../lib/layeredCanvas/dataModels/media';
   import { mergeSelectedFilms } from '../operations/filmMergeOperations';
   import { _ } from 'svelte-i18n';
+    import { redrawToken } from '../workspaceStore';
 
   export let showsBarrier: boolean;
   export let filmStack: FilmStack;
@@ -51,6 +52,7 @@
       film.selected = !film.selected;
     }
     filmStack = filmStack;
+    $redrawToken = true;
   }
 
   function onDeleteFilm(e: CustomEvent<Film>) {
