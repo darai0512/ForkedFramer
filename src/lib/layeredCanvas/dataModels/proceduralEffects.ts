@@ -144,7 +144,6 @@ const speedLinesRenderer: ProceduralEffectRenderer = {
       const lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 0.2), 0.01, 1, 0.2);
       const laneJitter = clampNumber(readNumericParam(effect, 'laneJitter', 0.05), 0, 0.2, 0.05);
       const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.3), 0, 0.5, 0.3);
-      const direction = readNumericParam(effect, 'direction', 0);
       const colorStr = String(effect.params.color || '#000000');
 
       const length = Math.hypot(w, h);
@@ -152,7 +151,7 @@ const speedLinesRenderer: ProceduralEffectRenderer = {
         return;
       }
 
-      const angle = Math.atan2(tailTip[1], tailTip[0]) + (direction * Math.PI / 180);
+      const angle = Math.atan2(tailTip[1], tailTip[0]);
       ctx.rotate(angle);
 
       function calculateNormalizedPosition([fx, fy]: Vector): number {
@@ -270,7 +269,6 @@ export const filmProceduralOptionSets: Record<FilmProceduralEffectType, Record<s
     lineWidth: numberOption(0.01, 0.1, 0.01, () => 0.05),
     angleJitter: numberOption(0, 0.2, 0.01, () => 0.05),
     startJitter: numberOption(0, 1, 0.01, () => 0.5),
-    innerRadiusRatio: numberOption(0, 1, 0.01, () => 0.25),
     color: colorOption(() => '#000000'),
   },
   'speed-lines': {
@@ -281,7 +279,6 @@ export const filmProceduralOptionSets: Record<FilmProceduralEffectType, Record<s
     lineWidth: numberOption(0.01, 1, 0.01, () => 0.2),
     laneJitter: numberOption(0, 0.2, 0.01, () => 0.05),
     startJitter: numberOption(0, 0.5, 0.01, () => 0.3),
-    direction: numberOption(-180, 180, 1, () => 0),
     color: colorOption(() => '#000000'),
   },
 };
