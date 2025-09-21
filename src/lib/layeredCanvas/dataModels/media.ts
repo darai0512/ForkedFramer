@@ -308,26 +308,43 @@ export class VideoMedia extends MediaBase {
     return {
       play: () => this.video?.play(),
       pause: () => this.video?.pause(),
-      seek: async (time: number) => { 
+      seek: async (time: number) => {
         const video = this.video;
-        if (!video) {
-          throw new Error('Video element is not set');
+        if (!video) throw new Error('Video element is not set');
+
+        // メタデータ未読なら待つ（durationがNaNの間はシークしない）
+        if (!Number.isFinite(video.duration)) {
+          await new Promise<void>((res, rej) => {
+            const ok = () => { cleanup(); res(); };
+            const ng = () => { cleanup(); rej(new Error('metadata load failed')); };
+            const cleanup = () => {
+              video.removeEventListener('loadedmetadata', ok);
+              video.removeEventListener('error', ng);
+            };
+            video.addEventListener('loadedmetadata', ok, { once: true });
+            video.addEventListener('error', ng, { once: true });
+          });
         }
-        return new Promise((resolve, reject) => {
-          const onSeeked = () => {
-            video.removeEventListener('seeked', onSeeked);
-            resolve();
-          };
 
-          const onError = () => {
-            video.removeEventListener('seeked', onSeeked);
-            reject(new Error('Seek failed'));
-          };
+        // 0〜durationにクランプ（範囲外代入の揺れ対策）
+        const target = Math.min(Math.max(time, 0), video.duration);
 
+        // ほぼ同位置なら即終了（ブラウザによってseekedが出ない対策）
+        if (Math.abs(video.currentTime - target) < 0.001) return;
+
+        // シーク実行（タイムアウトとクリーンアップ付き）
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => { off(); reject(new Error('seek timeout')); }, 8000);
+          const onSeeked = () => { off(); resolve(); };
+          const onError  = () => { off(); reject(new Error('media error')); };
+          const off = () => {
+            clearTimeout(timeout);
+            video.removeEventListener('seeked', onSeeked);
+            video.removeEventListener('error', onError);
+          };
           video.addEventListener('seeked', onSeeked, { once: true });
-          video.addEventListener('error', onError, { once: true });
-
-          video.currentTime = time;
+          video.addEventListener('error',  onError,  { once: true });
+          video.currentTime = target;
         });
       }
     };
