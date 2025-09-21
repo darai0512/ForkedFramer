@@ -2,6 +2,7 @@ import rgba from 'color-rgba';
 import seedrandom from 'seedrandom';
 import { color2string, tailCoordToWorldCoord } from '../tools/geometry/bubbleGeometry';
 import type { Vector } from '../tools/geometry/geometry';
+import { magnitude2D, projectionScalingFactor2D, rotate2D, clamp, perpendicular2D } from '../tools/geometry/geometry';
 
 export type FilmProceduralEffectType = 'motion-lines' | 'speed-lines';
 
@@ -63,165 +64,135 @@ export function readVectorParam(effect: FilmProceduralEffect, key: string, fallb
 
 const motionLinesRenderer: ProceduralEffectRenderer = {
   draw(effect, ctx, size) {
-    const width = size;
-    const height = size;
-    const cx = width / 2;
-    const cy = height / 2;
+    const w = size;
+    const h = size;
 
-    const lineCount = Math.max(1, Math.round(clampNumber(readNumericParam(effect, 'lineCount', 200), 100, 300, 200)));
-    const lineWidthRatio = clampNumber(readNumericParam(effect, 'lineWidth', 0.05), 0.01, 0.1, 0.05);
-    const angleJitter = clampNumber(readNumericParam(effect, 'angleJitter', 0.05), 0, 0.2, 0.05);
-    const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.5), 0, 1, 0.5);
-    const randomSeed = Math.round(clampNumber(readNumericParam(effect, 'randomSeed', 0), 0, 100, 0));
+    ctx.save();
+    try {
+      // 原点を中央に移動（bubbleGraphicsのsizeToRectに対応）
+      ctx.translate(size / 2, size / 2);
 
-    const color = typeof effect.params['color'] === 'string' && effect.params['color'] !== ''
-      ? effect.params['color'] as string
-      : '#000000';
+      const rng = seedrandom(String(readNumericParam(effect, 'randomSeed', 0)));
 
-    const parsedColor = rgba(color);
-    const colorArray = parsedColor.length === 4 ? [...parsedColor] : [0, 0, 0, 1];
-    const fadeColor = [...colorArray];
-    fadeColor[3] = 0;
-    const startColor = color2string(colorArray);
-    const endColor = color2string(fadeColor);
+      const focalPoint = readVectorParam(effect, 'focalPoint', [0, 0]);
+      const focalRange = readVectorParam(effect, 'focalRange', [0, 40]);
+      const lineCount = clampNumber(readNumericParam(effect, 'lineCount', 200), 100, 300, 200);
+      const lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 0.05), 0.01, 0.1, 0.05);
+      const angleJitter = clampNumber(readNumericParam(effect, 'angleJitter', 0.05), 0, 0.2, 0.05);
+      const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.5), 0, 1, 0.5);
+      const colorStr = String(effect.params.color || '#000000');
 
-    const outerRadius = Math.hypot(cx, cy);
-    const focalPoint = readVectorParam(effect, 'focalPoint', [0, 0]);
-    const defaultRange: Vector = [0, outerRadius * 0.25];
-    const focalRange = readVectorParam(effect, 'focalRange', defaultRange);
-    const rangeMagnitude = Math.hypot(focalRange[0], focalRange[1]);
-    const innerRadiusRatio = clampNumber(readNumericParam(effect, 'innerRadiusRatio', 0.25), 0, 1, 0.25);
-    const innerRadius = Number.isFinite(rangeMagnitude) && 0 < rangeMagnitude
-      ? Math.min(rangeMagnitude, outerRadius)
-      : outerRadius * innerRadiusRatio;
+      ctx.lineWidth = 1;
 
-    const lwFactor = lineWidthRatio * 0.1;
+      // 元のアルゴリズムに従う
+      const icd = focalPoint;
+      const rangeVector = focalRange;
+      const range = Math.hypot(rangeVector[0], rangeVector[1]);
+      const [ox, oy, od] = [0, 0, Math.hypot(w/2, h/2)]; // 外円
+      const [ix, iy, id] = [icd[0], icd[1], range]; // 内円
 
-    const rng = seedrandom(String(randomSeed));
-
-    for (let i = 0; i < lineCount; i++) {
-      const angle = (i / lineCount) * Math.PI * 2 + (rng() - 0.5) * angleJitter;
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-
-      // 外側の点は常に中心(cx, cy)から outerRadius の距離
-      const endX = cx + cos * outerRadius;
-      const endY = cy + sin * outerRadius;
-
-      // 内側の点は focalPoint でシフトされた位置から startDistance の距離
-      const startDistance = innerRadius + (outerRadius - innerRadius) * Math.min(1, rng() * startJitter);
-      const startX = cx + focalPoint[0] + cos * startDistance;
-      const startY = cy + focalPoint[1] + sin * startDistance;
-
-      const vx = endX - startX;
-      const vy = endY - startY;
-      const perpX = -vy * lwFactor;
-      const perpY = vx * lwFactor;
-
-      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
-      gradient.addColorStop(0, startColor);
-      gradient.addColorStop(1, endColor);
-
-      ctx.beginPath();
-      ctx.moveTo(startX, startY);
-      ctx.lineTo(endX + perpX, endY + perpY);
-      ctx.lineTo(endX - perpX, endY - perpY);
-      ctx.closePath();
+      // グラデーション
+      const gradient = ctx.createRadialGradient(ix, iy, id, ox, oy, od);
+      const color0 = rgba(colorStr);
+      const color1 = rgba(colorStr);
+      color0[3] = 0;
+      gradient.addColorStop(0.0, color2string(color0));
+      gradient.addColorStop(0.2, color2string(color1));
+      gradient.addColorStop(1.0, color2string(color1));
       ctx.fillStyle = gradient;
-      ctx.fill();
+
+      // 線を描く
+      for (let i = 0; i < lineCount; i++) {
+        const angle = (i * 2 * Math.PI) / lineCount + (rng() - 0.5) * angleJitter;
+        const [dx, dy] = [Math.cos(angle), Math.sin(angle)];
+        const sdr = id * (1 + rng() * startJitter);
+        const p0 = [ix, iy];
+        const p1 = [ox + dx * od, oy + dy * od];
+        const v: Vector = [p1[0] - p0[0], p1[1] - p0[1]];
+        const length = Math.hypot(...v);
+        const p2 = [p0[0] + v[0] * sdr / length, p0[1] + v[1] * sdr / length];
+        const lw = lineWidth * 0.1;
+        const [q0, q1] = [perpendicular2D(v, lw), perpendicular2D(v, -lw)];
+        ctx.beginPath();
+        ctx.moveTo(p2[0], p2[1]);
+        ctx.lineTo(p1[0] + q0[0], p1[1] + q0[1]);
+        ctx.lineTo(p1[0] + q1[0], p1[1] + q1[1]);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } finally {
+      ctx.restore();
     }
   }
 };
 
 const speedLinesRenderer: ProceduralEffectRenderer = {
   draw(effect, ctx, size) {
-    const width = size;
-    const height = size;
-    const cx = width / 2;
-    const cy = height / 2;
-
-    const lineCount = Math.max(1, Math.round(clampNumber(readNumericParam(effect, 'lineCount', 70), 10, 200, 70)));
-    const lineWidthRatio = clampNumber(readNumericParam(effect, 'lineWidth', 0.2), 0.01, 1, 0.2);
-    const laneJitter = clampNumber(readNumericParam(effect, 'laneJitter', 0.05), 0, 0.2, 0.05);
-    const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.3), 0, 0.5, 0.3);
-    const directionDeg = clampNumber(readNumericParam(effect, 'direction', 0), -180, 180, 0);
-    const randomSeed = Math.round(clampNumber(readNumericParam(effect, 'randomSeed', 0), 0, 100, 0));
-
-    const color = typeof effect.params['color'] === 'string' && effect.params['color'] !== ''
-      ? effect.params['color'] as string
-      : '#000000';
-
-    const parsedColor = rgba(color);
-    const baseColor = parsedColor.length === 4 ? [...parsedColor] : [0, 0, 0, 1];
-    const transparentColor = [...baseColor];
-    transparentColor[3] = 0;
-
-    const rng = seedrandom(String(randomSeed));
+    const w = size;
+    const h = size;
 
     ctx.save();
-    ctx.translate(cx, cy);
+    try {
+      // 原点を中央に移動（bubbleGraphicsのsizeToRectに対応）
+      ctx.translate(size / 2, size / 2);
 
-    // tailTipとtailMidの処理をbubbleGraphicと同じにする
-    const tailTip = readVectorParam(effect, 'tailTip', [width * 0.25, 0]);
-    const tailMidParam = readVectorParam(effect, 'tailMid', [0.5, 0]);
-    const tailMid = tailCoordToWorldCoord([0, 0], tailTip, tailMidParam);
+      const rng = seedrandom(String(readNumericParam(effect, 'randomSeed', 0)));
 
-    const length = Math.hypot(width, height);
-    if (!Number.isFinite(length) || length <= 1e-6) {
+      const tailTip = readVectorParam(effect, 'tailTip', [40, 0]);
+      const tailMid = tailCoordToWorldCoord([0, 0], tailTip, readVectorParam(effect, 'tailMid', [0.5, 0]));
+      const lineCount = clampNumber(readNumericParam(effect, 'lineCount', 70), 10, 200, 70);
+      const lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 0.2), 0.01, 1, 0.2);
+      const laneJitter = clampNumber(readNumericParam(effect, 'laneJitter', 0.05), 0, 0.2, 0.05);
+      const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.3), 0, 0.5, 0.3);
+      const direction = readNumericParam(effect, 'direction', 0);
+      const colorStr = String(effect.params.color || '#000000');
+
+      const length = Math.hypot(w, h);
+      if (!Number.isFinite(length) || length <= 1e-6) {
+        return;
+      }
+
+      const angle = Math.atan2(tailTip[1], tailTip[0]) + (direction * Math.PI / 180);
+      ctx.rotate(angle);
+
+      function calculateNormalizedPosition([fx, fy]: Vector): number {
+        const v0: Vector = [length * 0.5, 0];
+        const [nx, ny] = rotate2D(v0, angle);
+        const psf = 0.5 - projectionScalingFactor2D([fx, fy], [nx, ny]) * 0.5;
+        return clamp(psf);
+      }
+
+      ctx.lineWidth = 1;
+
+      const psf0 = clamp(0.5 - magnitude2D(tailTip) / length);
+      const psf1 = calculateNormalizedPosition(tailMid);
+
+      // 線を描く
+      for (let i = 0; i < lineCount; i++) {
+        const y = (i + 0.5) / lineCount * length - length/2 + rng() * length * laneJitter;
+        const lx = -length * 0.5 + (rng() - 0.5) * w * startJitter;
+        const lw = h * lineWidth * 0.01 * (rng() + 0.5);
+
+        // グラデーション
+        const gradient = ctx.createLinearGradient(lx + length, y, lx, y);
+        const color0 = rgba(colorStr);
+        const color1 = rgba(colorStr);
+        color0[3] = 0;
+        gradient.addColorStop(psf0, color2string(color0));
+        gradient.addColorStop(psf1, color2string(color1));
+        gradient.addColorStop(1.0, color2string(color0));
+        ctx.fillStyle = gradient;
+
+        ctx.beginPath();
+        ctx.moveTo(lx, y - lw);
+        ctx.lineTo(lx + length, y);
+        ctx.lineTo(lx, y + lw);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } finally {
       ctx.restore();
-      return;
     }
-
-    const angle = Math.atan2(tailTip[1], tailTip[0]);
-    ctx.rotate(angle + (directionDeg * Math.PI) / 180);
-
-    // bubbleGraphicと同じグラデーション位置計算
-    function rotate2D([x, y]: Vector, angle: number): Vector {
-      const cos = Math.cos(angle);
-      const sin = Math.sin(angle);
-      return [x * cos - y * sin, x * sin + y * cos];
-    }
-
-    function projectionScalingFactor2D([fx, fy]: Vector, [nx, ny]: Vector): number {
-      const magnitude = Math.sqrt(nx * nx + ny * ny);
-      if (magnitude < 1e-6) return 0;
-      return (fx * nx + fy * ny) / (magnitude * magnitude);
-    }
-
-    function clamp(value: number, min = 0, max = 1): number {
-      return Math.min(max, Math.max(min, value));
-    }
-
-    function calculateNormalizedPosition([fx, fy]: Vector): number {
-      const v0: Vector = [length * 0.5, 0];
-      const [nx, ny] = rotate2D(v0, angle);
-      const psf = 0.5 - projectionScalingFactor2D([fx, fy], [nx, ny]) * 0.5;
-      return clamp(psf);
-    }
-
-    const psf0 = clamp(0.5 - Math.hypot(tailTip[0], tailTip[1]) / length);
-    const psf1 = calculateNormalizedPosition(tailMid);
-
-    for (let i = 0; i < lineCount; i++) {
-      const y = (i + 0.5) / lineCount * length - length / 2 + rng() * length * laneJitter;
-      const lx = -length * 0.5 + (rng() - 0.5) * width * startJitter;
-      const lw = height * lineWidthRatio * 0.01 * (rng() + 0.5);
-
-      const gradient = ctx.createLinearGradient(lx + length, y, lx, y);
-      gradient.addColorStop(psf0, color2string(transparentColor));
-      gradient.addColorStop(psf1, color2string(baseColor));
-      gradient.addColorStop(1, color2string(baseColor));
-
-      ctx.beginPath();
-      ctx.moveTo(lx, y - lw);
-      ctx.lineTo(lx + length, y);
-      ctx.lineTo(lx, y + lw);
-      ctx.closePath();
-      ctx.fillStyle = gradient;
-      ctx.fill();
-    }
-
-    ctx.restore();
   }
 };
 
@@ -282,16 +253,6 @@ const colorOption = (init: () => string): FilmProceduralOption => ({
   init,
 });
 
-const textOption = (
-  init: () => string,
-  placeholderKey?: string,
-  placeholder?: string,
-): FilmProceduralOption => ({
-  type: 'text',
-  init,
-  placeholderKey,
-  placeholder,
-});
 
 const handleOption = (icon: string, hint: string, init: () => Vector): FilmProceduralOption => ({
   type: 'handle',
