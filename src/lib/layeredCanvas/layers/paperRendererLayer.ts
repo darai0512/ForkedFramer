@@ -50,7 +50,7 @@ export class PaperRendererLayer extends LayerBase {
     // ローディング中のメディアがある場合は再描画してスピナーを滑らかに更新
     if (!this.frameTree) { return; }
     const hasLoadingMediaInFrames = (e: FrameElement): boolean => {
-      if (e.filmStack?.films?.some(f => !f.media.isLoaded)) return true;
+      if (e.filmStack?.films?.some(f => f.content.kind === 'media' && !f.media.isLoaded)) return true;
       if (e.children) {
         for (const c of e.children) { if (hasLoadingMediaInFrames(c)) return true; }
       }
@@ -59,7 +59,7 @@ export class PaperRendererLayer extends LayerBase {
     const hasLoadingMediaInBubbles = (): boolean => {
       if (!this.rawBubbles) return false;
       for (const b of this.rawBubbles) {
-        if (b.filmStack?.films?.some(f => !f.media.isLoaded)) return true;
+        if (b.filmStack?.films?.some(f => f.content.kind === 'media' && !f.media.isLoaded)) return true;
       }
       return false;
     };
