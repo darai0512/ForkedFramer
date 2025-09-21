@@ -95,8 +95,6 @@ const motionLinesRenderer: ProceduralEffectRenderer = {
       ? Math.min(rangeMagnitude, outerRadius)
       : outerRadius * innerRadiusRatio;
 
-    const originX = cx + focalPoint[0];
-    const originY = cy + focalPoint[1];
     const lwFactor = lineWidthRatio * 0.1;
 
     const rng = seedrandom(String(randomSeed));
@@ -106,11 +104,14 @@ const motionLinesRenderer: ProceduralEffectRenderer = {
       const cos = Math.cos(angle);
       const sin = Math.sin(angle);
 
+      // 外側の点は常に中心(cx, cy)から outerRadius の距離
+      const endX = cx + cos * outerRadius;
+      const endY = cy + sin * outerRadius;
+
+      // 内側の点は focalPoint でシフトされた位置から startDistance の距離
       const startDistance = innerRadius + (outerRadius - innerRadius) * Math.min(1, rng() * startJitter);
-      const startX = originX + cos * startDistance;
-      const startY = originY + sin * startDistance;
-      const endX = originX + cos * outerRadius;
-      const endY = originY + sin * outerRadius;
+      const startX = cx + focalPoint[0] + cos * startDistance;
+      const startY = cy + focalPoint[1] + sin * startDistance;
 
       const vx = endX - startX;
       const vy = endY - startY;
