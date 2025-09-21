@@ -17,7 +17,6 @@
   let params: Record<string, FilmProceduralParamValue> = {};
   let syncing = false;
   const idPrefix = `film-procedural-${Math.random().toString(36).slice(2, 8)}`;
-  const typeSelectId = `${idPrefix}-type`;
 
   $: if (film.content.kind === 'procedural') {
       syncing = true;
@@ -33,19 +32,6 @@
     dispatch('change');
   }
 
-  function changeType(next: FilmProceduralEffectType) {
-    if (type === next) { return; }
-    type = next;
-    params = {
-      ...createProceduralEffect(type).params,
-    };
-    updateFilm();
-  }
-
-  function onTypeChange(event: Event) {
-    const target = event.currentTarget as HTMLSelectElement;
-    changeType(target.value as FilmProceduralEffectType);
-  }
 
   function numberValueOf(key: string, fallback: number): number {
     const value = params[key];
@@ -104,11 +90,18 @@
 {#if film.content.kind === 'procedural'}
 <div class="procedural-controls">
   <div class="selector-row">
-    <label class="selector-label" for={typeSelectId}>{$_('film.procedural.selectorLabel')}</label>
-    <select class="selector-control" id={typeSelectId} bind:value={type} on:change={onTypeChange}>
-      <option value="motion-lines">{$_('film.procedural.type.motion-lines')}</option>
-      <option value="speed-lines">{$_('film.procedural.type.speed-lines')}</option>
-    </select>
+    <label class="selector-label">{$_('film.procedural.selectorLabel')}</label>
+    <div class="type-display">
+      {#if type === 'motion-lines'}
+        {$_('film.procedural.type.motion-lines')}
+      {:else if type === 'speed-lines'}
+        {$_('film.procedural.type.speed-lines')}
+      {:else if type === 'dots'}
+        {$_('film.procedural.type.dots')}
+      {:else}
+        {type}
+      {/if}
+    </div>
   </div>
 
   {#each Object.entries(proceduralEffectParamSpecs[type]) as [key, spec]}
@@ -163,5 +156,17 @@
     border-radius: 4px;
     border: 1px solid rgb(var(--color-surface-300));
     background: white;
+  }
+  .type-display {
+    flex: 1;
+    min-height: 28px;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid rgb(var(--color-surface-300));
+    background: rgb(var(--color-surface-100));
+    color: rgb(var(--color-surface-700));
+    display: flex;
+    align-items: center;
   }
 </style>
