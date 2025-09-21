@@ -79,6 +79,7 @@
       <select class="selector-control" id={typeSelectId} bind:value={type} on:change={handleTypeChange}>
         <option value="motion-lines">{$_('film.procedural.type.motion-lines')}</option>
         <option value="speed-lines">{$_('film.procedural.type.speed-lines')}</option>
+        <option value="dots">{$_('film.procedural.type.dots')}</option>
       </select>
     </div>
 

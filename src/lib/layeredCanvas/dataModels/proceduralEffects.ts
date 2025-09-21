@@ -1,6 +1,6 @@
 import type { Vector } from '../tools/geometry/geometry';
 
-export type FilmProceduralEffectType = 'motion-lines' | 'speed-lines';
+export type FilmProceduralEffectType = 'motion-lines' | 'speed-lines' | 'dots';
 
 export type FilmProceduralParamValue = number | string | boolean | Vector;
 
@@ -80,6 +80,16 @@ export const filmProceduralOptionSets: Record<FilmProceduralEffectType, Record<s
     lineWidth: numberOption(0.01, 1, 0.01, () => 0.2),
     laneJitter: numberOption(0, 0.2, 0.01, () => 0.05),
     startJitter: numberOption(0, 0.5, 0.01, () => 0.3),
+    color: colorOption(() => '#000000'),
+  },
+  'dots': {
+    horizontalSpacing: numberOption(1, 10, 0.1, () => 5),
+    verticalSpacing: numberOption(1, 10, 0.1, () => 5),
+    dotRadius: numberOption(0.1, 10, 0.1, () => 1),
+    evenRowOffset: numberOption(0, 0.5, 0.01, () => 0),
+    positionJitter: numberOption(0, 1, 0.01, () => 0),
+    sizeJitter: numberOption(0, 1, 0.01, () => 0),
+    randomSeed: numberOption(0, 100, 1, () => 0),
     color: colorOption(() => '#000000'),
   },
 };

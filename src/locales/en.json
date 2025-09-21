@@ -470,7 +470,8 @@
       "selectorLabel": "Effect Type",
       "type": {
         "motion-lines": "Motion Lines",
-        "speed-lines": "Speed Lines"
+        "speed-lines": "Speed Lines",
+        "dots": "Polka Dots"
       },
       "shared": {
         "color": "Color",
@@ -490,6 +491,14 @@
         "laneJitter": "Lane Jitter",
         "startJitter": "Start Point Jitter",
         "direction": "Direction (deg)"
+      },
+      "dots": {
+        "horizontalSpacing": "Horizontal Spacing",
+        "verticalSpacing": "Vertical Spacing",
+        "dotRadius": "Dot Radius",
+        "evenRowOffset": "Even Row Offset",
+        "positionJitter": "Position Jitter",
+        "sizeJitter": "Size Jitter"
       }
     }
   }

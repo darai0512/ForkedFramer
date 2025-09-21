@@ -9,13 +9,6 @@ export interface ProceduralEffectRenderer {
   draw(effect: FilmProceduralEffect, ctx: CanvasRenderingContext2D, size: number): void;
 }
 
-function clampNumber(value: number, min: number, max: number, fallback: number): number {
-  if (!Number.isFinite(value)) {
-    return fallback;
-  }
-  return Math.min(max, Math.max(min, value));
-}
-
 function readNumericParam(effect: FilmProceduralEffect, key: string, fallback: number): number {
   const raw = effect.params[key];
   if (typeof raw === 'number') {
@@ -55,10 +48,10 @@ const motionLinesRenderer: ProceduralEffectRenderer = {
 
       const focalPoint = readVectorParam(effect, 'focalPoint', [0, 0]);
       const focalRange = readVectorParam(effect, 'focalRange', [0, 40]);
-      const lineCount = clampNumber(readNumericParam(effect, 'lineCount', 200), 100, 300, 200);
-      const lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 0.05), 0.01, 0.1, 0.05);
-      const angleJitter = clampNumber(readNumericParam(effect, 'angleJitter', 0.05), 0, 0.2, 0.05);
-      const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.5), 0, 1, 0.5);
+      const lineCount = readNumericParam(effect, 'lineCount', 200);
+      const lineWidth = readNumericParam(effect, 'lineWidth', 0.05);
+      const angleJitter = readNumericParam(effect, 'angleJitter', 0.05);
+      const startJitter = readNumericParam(effect, 'startJitter', 0.5);
       const colorStr = String(effect.params.color || '#000000');
 
       ctx.lineWidth = 1;
@@ -115,10 +108,10 @@ const speedLinesRenderer: ProceduralEffectRenderer = {
 
       const tailTip = readVectorParam(effect, 'tailTip', [40, 0]);
       const tailMid = tailCoordToWorldCoord([0, 0], tailTip, readVectorParam(effect, 'tailMid', [0.5, 0]));
-      const lineCount = clampNumber(readNumericParam(effect, 'lineCount', 70), 10, 200, 70);
-      const lineWidth = clampNumber(readNumericParam(effect, 'lineWidth', 0.2), 0.01, 1, 0.2);
-      const laneJitter = clampNumber(readNumericParam(effect, 'laneJitter', 0.05), 0, 0.2, 0.05);
-      const startJitter = clampNumber(readNumericParam(effect, 'startJitter', 0.3), 0, 0.5, 0.3);
+      const lineCount = readNumericParam(effect, 'lineCount', 70);
+      const lineWidth = readNumericParam(effect, 'lineWidth', 0.2);
+      const laneJitter = readNumericParam(effect, 'laneJitter', 0.05);
+      const startJitter = readNumericParam(effect, 'startJitter', 0.3);
       const colorStr = String(effect.params.color || '#000000');
 
       const length = Math.hypot(w, h);
@@ -168,6 +161,62 @@ const speedLinesRenderer: ProceduralEffectRenderer = {
   }
 };
 
+const dotsRenderer: ProceduralEffectRenderer = {
+  draw(effect, ctx, size) {
+    const w = size;
+    const h = size;
+
+    ctx.save();
+    try {
+      const horizontalSpacing = readNumericParam(effect, 'horizontalSpacing', 5);
+      const verticalSpacing = readNumericParam(effect, 'verticalSpacing', 5);
+      const dotRadius = readNumericParam(effect, 'dotRadius', 1);
+      const evenRowOffset = readNumericParam(effect, 'evenRowOffset', 0);
+      const positionJitter = readNumericParam(effect, 'positionJitter', 0);
+      const sizeJitter = readNumericParam(effect, 'sizeJitter', 0);
+      const randomSeed = readNumericParam(effect, 'randomSeed', 0);
+      const colorStr = String(effect.params.color || '#000000');
+
+      const rng = seedrandom(String(randomSeed));
+
+      const hSpacing = (horizontalSpacing / 100) * size;
+      const vSpacing = (verticalSpacing / 100) * size;
+      const baseRadius = (dotRadius / 100) * size;
+
+      ctx.fillStyle = colorStr;
+
+      const cols = Math.ceil(w / hSpacing) + 2;
+      const rows = Math.ceil(h / vSpacing) + 2;
+
+      for (let row = -1; row < rows; row++) {
+        const baseY = row * vSpacing;
+        const xOffset = (row % 2 === 0) ? 0 : evenRowOffset * hSpacing;
+
+        for (let col = -1; col < cols; col++) {
+          const baseX = col * hSpacing + xOffset;
+
+          // Position jitter
+          const jitterRange = hSpacing * positionJitter * 0.5;
+          const x = baseX + (rng() - 0.5) * jitterRange * 2;
+          const y = baseY + (rng() - 0.5) * jitterRange * 2;
+
+          // Size jitter
+          const sizeMultiplier = rng() * 2; // 0 to 2
+          const radius = baseRadius * (1 - sizeJitter + sizeJitter * sizeMultiplier);
+
+          if (x - radius <= w && y - radius <= h && x + radius >= 0 && y + radius >= 0) {
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+      }
+    } finally {
+      ctx.restore();
+    }
+  }
+};
+
 const fallbackRenderer: ProceduralEffectRenderer = {
   draw(effect, ctx, size) {
     ctx.fillStyle = 'rgba(0,0,0,0.08)';
@@ -183,6 +232,7 @@ const fallbackRenderer: ProceduralEffectRenderer = {
 export const proceduralEffectRegistry: Record<FilmProceduralEffectType, ProceduralEffectRenderer> = {
   'motion-lines': motionLinesRenderer,
   'speed-lines': speedLinesRenderer,
+  'dots': dotsRenderer,
 };
 
 export function drawProceduralEffect(effect: FilmProceduralEffect, ctx: CanvasRenderingContext2D, size: number): void {

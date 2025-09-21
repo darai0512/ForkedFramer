@@ -467,7 +467,8 @@
       "selectorLabel": "効果タイプ",
       "type": {
         "motion-lines": "集中線",
-        "speed-lines": "流線"
+        "speed-lines": "流線",
+        "dots": "水玉模様"
       },
       "shared": {
         "color": "色",
@@ -487,6 +488,14 @@
         "laneJitter": "間隔ジッター",
         "startJitter": "起点ジッター",
         "direction": "方向（度）"
+      },
+      "dots": {
+        "horizontalSpacing": "水平間隔",
+        "verticalSpacing": "垂直間隔",
+        "dotRadius": "ドット半径",
+        "evenRowOffset": "偶数列のずれ",
+        "positionJitter": "位置ジッター",
+        "sizeJitter": "サイズジッター"
       }
     }
   }
