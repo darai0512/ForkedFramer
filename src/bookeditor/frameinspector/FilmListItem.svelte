@@ -22,7 +22,6 @@
   import visibleIcon from '../../assets/filmlist/eye.webp';
   import trashIcon from '../../assets/filmlist/trash.webp';
   import punchIcon from '../../assets/filmlist/punch.webp';
-  import effectIcon from '../../assets/filmlist/effect.webp';
   import outPaintingIcon from '../../assets/filmlist/outpainting.webp';
   import popupIcon from '../../assets/filmlist/popup.webp';
   import videoIcon from '../../assets/video.webp';
@@ -321,15 +320,22 @@
         </div>
       {/if}
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img
-        draggable={false}
+      <button
         class="effect-icon"
         class:active={effectVisible}
-        src={effectIcon}
-        alt={$_('frame.actions.effects')}
-        use:toolTip={$_('frame.actions.effects')}
+        aria-label={$_('frame.procedural.settings')}
+        use:toolTip={$_('frame.procedural.settings')}
         on:click={onToggleeffectVisible}
-      />
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 5 8 L 10 13 L 15 8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"/>
+        </svg>
+      </button>
     </div>
     {#if effectVisible}
       <div class="effect-panel">
@@ -368,7 +374,22 @@
         </div>
       {/if}
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img draggable={false} class="effect-icon" class:active={effectVisible} src={effectIcon} alt={$_('frame.actions.effects')} use:toolTip={$_('frame.actions.effects')} on:click={onToggleeffectVisible} />
+      <button
+        class="effect-icon"
+        class:active={effectVisible}
+        aria-label={$_('frame.actions.effects')}
+        use:toolTip={$_('frame.actions.effects')}
+        on:click={onToggleeffectVisible}
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 5 8 L 10 13 L 15 8"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"/>
+        </svg>
+      </button>
 
       <button class="transformix-icon" bind:this={popupButton} on:click={togglePopup}>
         <img draggable={false} src={popupIcon} alt="変換メニュー" />
@@ -648,10 +669,37 @@
     bottom: 4px;
     width: 32px;
     height: 32px;
-    filter: opacity(25%);
+    border-radius: 4px;
+    padding: 0;
+    background-color: transparent;
+    border: 1.5px solid #999;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+  }
+  .effect-icon:hover {
+    background-color: rgba(240, 240, 255, 0.5);
+    border-color: #666;
+    color: #333;
   }
   .effect-icon.active {
-    filter: opacity(100%);
+    background-color: rgba(100, 100, 255, 0.15);
+    border-color: #4444ff;
+    color: #4444ff;
+  }
+  .effect-icon.active:hover {
+    background-color: rgba(100, 100, 255, 0.25);
+    border-color: #3333ff;
+    color: #3333ff;
+  }
+  .effect-icon svg {
+    transition: transform 0.2s ease;
+  }
+  .effect-icon.active svg {
+    transform: rotate(180deg);
   }
   .transformix-icon {
     position: absolute;

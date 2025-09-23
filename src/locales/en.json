@@ -258,6 +258,9 @@
       "download": "Download",
       "textlift": "Text Lifting"
     },
+    "procedural": {
+      "settings": "Procedural Settings"
+    },
     "effects": {
       "outline": "Outline",
       "color": "Color",

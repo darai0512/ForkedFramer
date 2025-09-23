@@ -258,6 +258,9 @@
       "download": "ダウンロード",
       "textlift": "フキダシ化"
     },
+    "procedural": {
+      "settings": "プロシージャル設定"
+    },
     "effects": {
       "outline": "アウトライン",
       "color": "色",
