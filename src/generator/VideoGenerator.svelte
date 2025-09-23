@@ -49,7 +49,7 @@
         { value: "16:9", label: $_('generator.landscapeRatio') },
       ],
       resolution: [
-        { value: "720p", label: "720p" },
+        { value: "1440p", label: "1440p" },
       ]
     },
     "seedance/lite": {
