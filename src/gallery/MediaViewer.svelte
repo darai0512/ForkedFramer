@@ -13,15 +13,29 @@
   import { loading } from '../utils/loadingStore';
   import { onlineStatus } from '../utils/accountStore';
   import type { ImageToVideoRequest } from '$protocolTypes/imagingTypes';
-  
+
   let mediaContainer: HTMLDivElement;
-  
-  function handleClose() {
-    modalStore.close();
+  let contentArea: HTMLDivElement;
+
+  // シークバー操作中フラグを MediaFrame から受け取る
+  let isSeekingGlobal = false;
+
+  function handleBackgroundClick(event: MouseEvent) {
+    // クリック位置がコンテンツエリア外かつシークバー操作中でない場合のみ閉じる
+    if (!contentArea || isSeekingGlobal) return;
+
+    const rect = contentArea.getBoundingClientRect();
+    const x = event.clientX;
+    const y = event.clientY;
+
+    // コンテンツエリアの外側をクリックした場合のみ閉じる
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      modalStore.close();
+    }
   }
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if ((event.key === 'Enter' || event.key === ' ') && !isSeekingGlobal) {
       event.preventDefault();
       modalStore.close();
     }
@@ -128,75 +142,83 @@
   }
 </script>
 
-<div 
-  class="page-container" 
-  role="button" 
+<div
+  class="page-container"
+  role="button"
   tabindex="0"
-  on:click={handleClose}
+  on:click={handleBackgroundClick}
   on:keydown={handleKeyDown}
 >
   {#if $mediaViewerTarget}
-    <div class="media-container" bind:this={mediaContainer}>
-      <MediaFrame 
-        media={$mediaViewerTarget}
-      />
+    <div
+      class="content-area"
+      bind:this={contentArea}
+      on:click|stopPropagation
+      on:keydown|stopPropagation
+      role="presentation">
+      <div class="media-container" bind:this={mediaContainer}>
+        <MediaFrame
+          media={$mediaViewerTarget}
+          bind:isSeekingGlobal={isSeekingGlobal}
+        />
+      </div>
+      {#if materialInfo}
+        <div class="material-info">
+          <h3 class="font-bold text-lg">{materialInfo.name || '無題'}</h3>
+          {#if materialInfo.description}
+            <p class="text-sm mt-2">{materialInfo.description}</p>
+          {/if}
+          {#if materialInfo.author_username}
+            <p class="text-sm mt-2">
+              作成者:
+              <button
+                class="author-link"
+                on:click|stopPropagation={() => openUserProfile(materialInfo.author_username)}
+              >
+                {materialInfo.author_display_name || materialInfo.author_username}
+                {#if materialInfo.author_display_name}
+                  <span class="opacity-70">(@{materialInfo.author_username})</span>
+                {/if}
+              </button>
+            </p>
+          {/if}
+        </div>
+      {/if}
+      {#if $mediaViewerTarget.type === 'video'}
+        <div class="video-controls">
+          <button
+            class="btn variant-filled-primary text-white"
+            on:click|stopPropagation={captureCurrentFrame}
+          >
+            {$_('frame.actions.sendVideoFrameToMaterialCollection')}
+          </button>
+          <button
+            class="btn variant-filled-secondary text-white"
+            disabled={!canPostToPublic}
+            on:click|stopPropagation={handlePostToPublicMaterials}
+          >
+            {$_('publicMaterials.postButton')}
+          </button>
+        </div>
+      {/if}
+      {#if $mediaViewerTarget.type === 'image'}
+        <div class="image-controls">
+          <button
+            class="btn variant-filled-primary text-white"
+            on:click|stopPropagation={generateMovieFromImage}
+          >
+            {$_('publicMaterials.generateVideoButton')}
+          </button>
+          <button
+            class="btn variant-filled-secondary text-white"
+            disabled={!canPostToPublic}
+            on:click|stopPropagation={handlePostToPublicMaterials}
+          >
+            {$_('publicMaterials.postButton')}
+          </button>
+        </div>
+      {/if}
     </div>
-    {#if materialInfo}
-      <div class="material-info">
-        <h3 class="font-bold text-lg">{materialInfo.name || '無題'}</h3>
-        {#if materialInfo.description}
-          <p class="text-sm mt-2">{materialInfo.description}</p>
-        {/if}
-        {#if materialInfo.author_username}
-          <p class="text-sm mt-2">
-            作成者: 
-            <button 
-              class="author-link"
-              on:click|stopPropagation={() => openUserProfile(materialInfo.author_username)}
-            >
-              {materialInfo.author_display_name || materialInfo.author_username}
-              {#if materialInfo.author_display_name}
-                <span class="opacity-70">(@{materialInfo.author_username})</span>
-              {/if}
-            </button>
-          </p>
-        {/if}
-      </div>
-    {/if}
-    {#if $mediaViewerTarget.type === 'video'}
-      <div class="video-controls">
-        <button
-          class="btn variant-filled-primary text-white"
-          on:click|stopPropagation={captureCurrentFrame}
-        >
-          {$_('frame.actions.sendVideoFrameToMaterialCollection')}
-        </button>
-        <button 
-          class="btn variant-filled-secondary text-white"
-          disabled={!canPostToPublic}
-          on:click|stopPropagation={handlePostToPublicMaterials}
-        >
-          {$_('publicMaterials.postButton')}
-        </button>
-      </div>
-    {/if}
-    {#if $mediaViewerTarget.type === 'image'}
-      <div class="image-controls">
-        <button 
-          class="btn variant-filled-primary text-white"
-          on:click|stopPropagation={generateMovieFromImage}
-        >
-          {$_('publicMaterials.generateVideoButton')}
-        </button>
-        <button 
-          class="btn variant-filled-secondary text-white"
-          disabled={!canPostToPublic}
-          on:click|stopPropagation={handlePostToPublicMaterials}
-        >
-          {$_('publicMaterials.postButton')}
-        </button>
-      </div>
-    {/if}
   {/if}
 </div>
 
@@ -207,7 +229,14 @@
     justify-content: center;
     align-items: center;
     position: relative;
+    width: 100%;
+    height: 100%;
+  }
+  .content-area {
+    display: flex;
+    flex-direction: column;
     gap: 1rem;
+    align-items: center;
   }
   .media-container {
     width: 80svw;

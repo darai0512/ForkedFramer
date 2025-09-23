@@ -8,6 +8,17 @@
   export let showControls: boolean = true;
   // 画像は<img>で表示してブラウザ標準ドラッグを有効化するか（trueで<img>）
   export let dragAsImage: boolean = true;
+  // 親コンポーネントにシークバー操作状態を伝える
+  export let isSeekingGlobal: boolean = false;
+
+  // ビデオコントロール用の変数
+  let videoElement: HTMLVideoElement | null = null;
+  let isPlaying = false;
+  let currentTime = 0;
+  let duration = 0;
+  let volume = 1;
+  let isMuted = false;
+  let isSeekbarDragging = false;
 
   function getVideoSource(media: Media) {
     return (media.drawSource as HTMLVideoElement).src;
@@ -97,21 +108,232 @@
   $: usingCanvasNow() ? startRaf() : stopRaf();
   onMount(() => { if (usingCanvasNow()) startRaf(); });
   onDestroy(() => { stopRaf(); });
+
+  // ビデオコントロール関数
+  function togglePlay() {
+    if (!videoElement) return;
+    if (isPlaying) {
+      videoElement.pause();
+    } else {
+      videoElement.play();
+    }
+  }
+
+  function handleTimeUpdate() {
+    if (!videoElement || isSeekbarDragging) return;
+    currentTime = videoElement.currentTime;
+    duration = videoElement.duration;
+  }
+
+  function handlePlayPause() {
+    if (!videoElement) return;
+    isPlaying = !videoElement.paused;
+  }
+
+  function handleSeekStart(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    isSeekbarDragging = true;
+    isSeekingGlobal = true;
+    handleSeek(e);
+  }
+
+  function handleSeek(e: MouseEvent) {
+    if (!videoElement || !isSeekbarDragging) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const seekbar = e.currentTarget as HTMLElement;
+    const rect = seekbar.getBoundingClientRect();
+    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const newTime = percent * duration;
+    videoElement.currentTime = newTime;
+    currentTime = newTime;
+  }
+
+  function handleSeekEnd(e?: MouseEvent) {
+    if (e) {
+      e.stopPropagation();
+    }
+    isSeekbarDragging = false;
+    isSeekingGlobal = false;
+  }
+
+  function handleVolumeChange(e: Event) {
+    if (!videoElement) return;
+    const target = e.target as HTMLInputElement;
+    volume = parseFloat(target.value);
+    videoElement.volume = volume;
+    if (volume > 0 && isMuted) {
+      isMuted = false;
+      videoElement.muted = false;
+    }
+  }
+
+  function toggleMute() {
+    if (!videoElement) return;
+    isMuted = !isMuted;
+    videoElement.muted = isMuted;
+  }
+
+  function formatTime(seconds: number): string {
+    if (!isFinite(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  // ビデオ要素がマウントされたときの初期化
+  function initVideo(node: HTMLVideoElement) {
+    videoElement = node;
+    node.addEventListener('timeupdate', handleTimeUpdate);
+    node.addEventListener('play', handlePlayPause);
+    node.addEventListener('pause', handlePlayPause);
+    node.addEventListener('loadedmetadata', () => {
+      duration = node.duration;
+      currentTime = node.currentTime;
+      volume = node.volume;
+      isMuted = node.muted;
+    });
+
+    return {
+      destroy() {
+        node.removeEventListener('timeupdate', handleTimeUpdate);
+        node.removeEventListener('play', handlePlayPause);
+        node.removeEventListener('pause', handlePlayPause);
+        videoElement = null;
+      }
+    };
+  }
+
+  // グローバルなマウスイベントリスナー
+  onMount(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (isSeekbarDragging) {
+        e.preventDefault();
+        e.stopPropagation();
+        const seekbar = document.querySelector('.custom-seekbar') as HTMLElement;
+        if (seekbar) {
+          const rect = seekbar.getBoundingClientRect();
+          const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+          if (videoElement) {
+            const newTime = percent * duration;
+            videoElement.currentTime = newTime;
+            currentTime = newTime;
+          }
+        }
+      }
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (isSeekbarDragging) {
+        e.stopPropagation();
+        isSeekbarDragging = false;
+        isSeekingGlobal = false;
+      }
+    };
+
+    window.addEventListener('mousemove', handleGlobalMouseMove, true);
+    window.addEventListener('mouseup', handleGlobalMouseUp, true);
+
+    return () => {
+      window.removeEventListener('mousemove', handleGlobalMouseMove, true);
+      window.removeEventListener('mouseup', handleGlobalMouseUp, true);
+    };
+  });
 </script>
 
 <div class="media-frame" bind:this={containerDiv}>
   {#if media.type === 'video' && media.drawSource instanceof HTMLVideoElement}
     <!-- 読み込み完了: ネイティブvideoを表示 -->
-    <!-- svelte-ignore a11y-media-has-caption -->
-    <video 
-      src={getVideoSource(media)}
-      controls={showControls}
-      playsinline
-      use:webkitPlaysinline
-      class="media-element"
-      draggable="true"
-      on:click
-    />
+    <div class="video-container">
+      <!-- svelte-ignore a11y-media-has-caption -->
+      <video
+        src={getVideoSource(media)}
+        controls={false}
+        playsinline
+        use:webkitPlaysinline
+        use:initVideo
+        class="media-element"
+        draggable="true"
+        on:click
+      />
+      {#if showControls}
+        <div class="custom-controls" on:click|stopPropagation on:mousedown|stopPropagation on:mouseup|stopPropagation>
+          <!-- シークバー -->
+          <div class="seekbar-container" on:click|stopPropagation on:mousedown|stopPropagation on:mouseup|stopPropagation>
+            <div
+              class="custom-seekbar"
+              on:mousedown={handleSeekStart}
+              on:click|stopPropagation
+              role="slider"
+              tabindex="0"
+              aria-label="シークバー"
+              aria-valuemin="0"
+              aria-valuemax={duration}
+              aria-valuenow={currentTime}
+            >
+              <div class="seekbar-progress" style="width: {(currentTime / duration) * 100}%"></div>
+              <div class="seekbar-handle" style="left: {(currentTime / duration) * 100}%"></div>
+            </div>
+          </div>
+
+          <!-- 下部コントロール -->
+          <div class="control-buttons">
+            <button
+              class="control-btn play-btn"
+              on:click|stopPropagation={togglePlay}
+              aria-label={isPlaying ? '一時停止' : '再生'}
+            >
+              {#if isPlaying}
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <rect x="5" y="4" width="3" height="12" />
+                  <rect x="12" y="4" width="3" height="12" />
+                </svg>
+              {:else}
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M6 4 L16 10 L6 16 Z" />
+                </svg>
+              {/if}
+            </button>
+
+            <span class="time-display">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+
+            <div class="volume-controls">
+              <button
+                class="control-btn mute-btn"
+                on:click|stopPropagation={toggleMute}
+                aria-label={isMuted ? 'ミュート解除' : 'ミュート'}
+              >
+                {#if isMuted || volume === 0}
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 7 L5 13 L8 13 L12 16 L12 4 L8 7 Z M14 8 L18 12 M18 8 L14 12" stroke="currentColor" stroke-width="2" />
+                  </svg>
+                {:else}
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 7 L5 13 L8 13 L12 16 L12 4 L8 7 Z M14 8 C14 8 16 8 16 10 C16 12 14 12 14 12" stroke="currentColor" stroke-width="1" fill="none" />
+                  </svg>
+                {/if}
+              </button>
+              <input
+                type="range"
+                class="volume-slider"
+                min="0"
+                max="1"
+                step="0.01"
+                value={isMuted ? 0 : volume}
+                on:input={handleVolumeChange}
+                on:click|stopPropagation
+                on:mousedown|stopPropagation
+                on:mouseup|stopPropagation
+                aria-label="音量"
+              />
+            </div>
+          </div>
+        </div>
+      {/if}
+    </div>
   {:else}
     {#if dragAsImage && media.type === 'image' && media.isLoaded && imageDataUrl}
       <!-- 画像ロード完了時は<img>（ドラッグ用に必要） -->
@@ -149,5 +371,160 @@
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+
+  .video-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .video-container video {
+    flex: 1;
+  }
+
+  .custom-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  .custom-controls > * {
+    pointer-events: auto;
+  }
+
+  .seekbar-container {
+    width: 100%;
+    padding: 0.5rem 0;
+  }
+
+  .custom-seekbar {
+    position: relative;
+    width: 100%;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
+
+  .custom-seekbar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  .seekbar-progress {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 6px;
+    background: #3b82f6;
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  .seekbar-handle {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    transition: transform 0.1s;
+  }
+
+  .custom-seekbar:hover .seekbar-handle {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  .custom-seekbar:hover::before {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  .custom-seekbar:hover .seekbar-progress {
+    background: #60a5fa;
+  }
+
+  .control-buttons {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+  }
+
+  .control-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 0.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s;
+  }
+
+  .control-btn:hover {
+    opacity: 0.8;
+  }
+
+  .time-display {
+    font-size: 0.875rem;
+    font-family: monospace;
+    flex: 1;
+  }
+
+  .volume-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .volume-slider {
+    width: 80px;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
   }
 </style>
