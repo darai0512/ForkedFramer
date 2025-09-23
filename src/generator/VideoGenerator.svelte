@@ -46,9 +46,7 @@
         { value: "5", label: $_('generator.fiveSeconds') },
       ],
       aspectRatios: [
-        { value: "1:1", label: $_('generator.squareRatio') },
         { value: "16:9", label: $_('generator.landscapeRatio') },
-        { value: "9:16", label: $_('generator.portraitRatio') },
       ],
       resolution: [
         { value: "720p", label: "720p" },
@@ -228,7 +226,7 @@
           <h3>{$_('generator.model')}</h3>
           <select bind:value={model} class="select">
             <option value="FramePack">FramePack</option>
-            <option value="kling">kling-2.1</option>
+            <option value="kling">kling-2.5</option>
             <option value="seedance/lite">Seedance Lite</option>
             <option value="seedance/pro">Seedance Pro</option>
             <option value="wan/v2.2-a14b/turbo">WAN v2.2-a14b Turbo</option>

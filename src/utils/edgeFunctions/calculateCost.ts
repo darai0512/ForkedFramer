@@ -66,7 +66,7 @@ export function calculateI2VCost(
         case 'FramePack':
             return duration * 5;
         case 'kling':
-            return duration * 8;
+            return duration * 10;
         case 'seedance/lite': {
             const px = pixelsFrom(resolution, aspectRatio);
             return calculateSeedanceCost(1.8, duration, px);
