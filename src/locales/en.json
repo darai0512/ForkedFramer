@@ -255,6 +255,7 @@
       "duplicate": "Duplicate",
       "movieCreation": "Movie Creation",
       "sendToMaterialCollection": "Send to Material Collection",
+      "sendVideoFrameToMaterialCollection": "Send this frame as image to Material Collection",
       "download": "Download",
       "textlift": "Text Lifting"
     },

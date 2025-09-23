@@ -255,6 +255,7 @@
       "duplicate": "複製",
       "movieCreation": "ムービー作成",
       "sendToMaterialCollection": "素材集に送る",
+      "sendVideoFrameToMaterialCollection": "このフレームを画像として素材集に送る",
       "download": "ダウンロード",
       "textlift": "フキダシ化"
     },

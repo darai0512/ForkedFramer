@@ -165,11 +165,11 @@
     {/if}
     {#if $mediaViewerTarget.type === 'video'}
       <div class="video-controls">
-        <button 
+        <button
           class="btn variant-filled-primary text-white"
           on:click|stopPropagation={captureCurrentFrame}
         >
-          {$_('frame.actions.sendToMaterialCollection')}
+          {$_('frame.actions.sendVideoFrameToMaterialCollection')}
         </button>
         <button 
           class="btn variant-filled-secondary text-white"
