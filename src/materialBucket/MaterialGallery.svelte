@@ -19,12 +19,35 @@
 
   export let targetNode: Node | null = null;
 
-  $: displayMaterialImages(targetNode);
-  
-  $: if ($materialCollectionUpdateToken) {
-    displayMaterialImages(targetNode);
+  $: displayMaterialImages(targetNode, $materialCollectionUpdateToken);
+  async function displayMaterialImages(node: Node | null, updateToken: boolean) {
+    if (node == null) return;
+    if (!updateToken) return;
+    const folder = node.asFolder()!;
+    console.log("displayMaterialImages");
+    
+    const materialItems = await loadMaterialsFromFolder(folder);
+    const newItems: (() => Promise<Media[]>)[] = [];
+    const newBindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
+    
+    for (const item of materialItems) {
+      newItems.push(item.loadMedia);
+      newBindIds.set(item.loadMedia, item.bindId);
+      
+      // メディアをロードしてbindIdを関連付け
+      const mediaPromise = item.loadMedia();
+      mediaPromise.then(mediaArray => {
+        if (mediaArray.length > 0) {
+          newBindIds.set(mediaArray[0], item.bindId);
+        }
+      });
+    }
+    
+    items = newItems;
+    bindIds = newBindIds;
     $materialCollectionUpdateToken = false;
   }
+
 
   const dispatch = createEventDispatcher();
   let items: (() => Promise<Media[]>)[] = [];
@@ -59,7 +82,7 @@
     if (targetNode == null || bindId == null) return;
     const folder = targetNode.asFolder()!;
     await deleteMaterialFromFolder(folder, bindId);
-    await displayMaterialImages(targetNode);
+    $materialCollectionUpdateToken = true;
   }
 
   async function onFileDrop(files: FileList) {
@@ -93,33 +116,8 @@
     items = items; // リアクティブ更新をトリガー
   }
 
-  async function displayMaterialImages(node: Node | null) {
-    if (node == null) return;
-    const folder = node.asFolder()!;
-    
-    const materialItems = await loadMaterialsFromFolder(folder);
-    const newItems: (() => Promise<Media[]>)[] = [];
-    const newBindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
-    
-    for (const item of materialItems) {
-      newItems.push(item.loadMedia);
-      newBindIds.set(item.loadMedia, item.bindId);
-      
-      // メディアをロードしてbindIdを関連付け
-      const mediaPromise = item.loadMedia();
-      mediaPromise.then(mediaArray => {
-        if (mediaArray.length > 0) {
-          newBindIds.set(mediaArray[0], item.bindId);
-        }
-      });
-    }
-    
-    items = newItems;
-    bindIds = newBindIds;
-  }
-
   onMount(() => {
-    displayMaterialImages(targetNode);
+    $materialCollectionUpdateToken = true;
   });
 </script>
 

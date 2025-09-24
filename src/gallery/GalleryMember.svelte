@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
   import { ImageMedia, VideoMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
   import GalleryElement from './GalleryElement.svelte';
   import MediaLoading from './MediaLoading.svelte';
@@ -12,9 +12,12 @@
   export let accessable: boolean;
   export let referable: boolean;
   export let viewable: boolean = true;
+  export let label = 'unlabeled';
 
   let medias: Media[] | undefined;
   let observerTarget: HTMLDivElement; // 監視用の DOM 要素
+  let observer: IntersectionObserver | null = null;
+  let cancelled = false;
 
   const distach = createEventDispatcher();
 
@@ -29,30 +32,95 @@
     }
   }
 
+  function disconnectObserver() {
+    if (observer) {
+      observer.disconnect();
+      observer = null;
+    }
+  }
+
+  function getScrollableParent(node: HTMLElement | null): Element | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    let current: HTMLElement | null = node?.parentElement ?? null;
+    while (current) {
+      const style = getComputedStyle(current);
+      const overflowValue = `${style.overflow}${style.overflowX}${style.overflowY}`;
+      if (/(auto|scroll|overlay)/.test(overflowValue)) {
+        return current;
+      }
+      current = current.parentElement;
+    }
+    return null;
+  }
+
+  function waitForNextFrames(): Promise<void> {
+    if (typeof requestAnimationFrame !== 'function') {
+      return Promise.resolve();
+    }
+    return new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+  }
+
+  async function setupObserver() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (medias || !observerTarget || observer) {
+      return;
+    }
+
+    await tick();
+    await waitForNextFrames();
+
+    if (cancelled || medias || !observerTarget || observer) {
+      return;
+    }
+
+    const root = getScrollableParent(observerTarget);
+
+    observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || medias) {
+          return;
+        }
+        (item as () => Promise<Media[]>)().then(result => {
+          if (cancelled) {
+            return;
+          }
+          medias = result;
+          disconnectObserver();
+        });
+      },
+      { root, threshold: 0 }
+    );
+    observer.observe(observerTarget);
+  }
+
   onMount(() => {
-    // すでに単一の ImageMedia / VideoMedia であれば即座に読み込む
     if (item instanceof ImageMedia || item instanceof VideoMedia) {
       medias = [item];
       return;
     }
 
-    // IntersectionObserver をプレースホルダー用の要素にだけ紐付ける
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !medias) {
-          (item as () => Promise<Media[]>)().then(result => {
-            medias = result;
-          });
-        }
-      },
-      { threshold: 0.1 }
-    );
-    observer.observe(observerTarget);
+    setupObserver();
 
     return () => {
-      observer.disconnect();
+      cancelled = true;
+      disconnectObserver();
     };
   });
+
+  onDestroy(() => {
+    cancelled = true;
+    disconnectObserver();
+  });
+
+  $: if (!medias) {
+    setupObserver();
+  }
 </script>
 
 {#if !medias}
