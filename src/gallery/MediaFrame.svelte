@@ -16,8 +16,6 @@
   let isPlaying = false;
   let currentTime = 0;
   let duration = 0;
-  let volume = 1;
-  let isMuted = false;
   let isSeekbarDragging = false;
 
   function getVideoSource(media: Media) {
@@ -158,23 +156,6 @@
     isSeekingGlobal = false;
   }
 
-  function handleVolumeChange(e: Event) {
-    if (!videoElement) return;
-    const target = e.target as HTMLInputElement;
-    volume = parseFloat(target.value);
-    videoElement.volume = volume;
-    if (volume > 0 && isMuted) {
-      isMuted = false;
-      videoElement.muted = false;
-    }
-  }
-
-  function toggleMute() {
-    if (!videoElement) return;
-    isMuted = !isMuted;
-    videoElement.muted = isMuted;
-  }
-
   function formatTime(seconds: number): string {
     if (!isFinite(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -191,9 +172,9 @@
     node.addEventListener('loadedmetadata', () => {
       duration = node.duration;
       currentTime = node.currentTime;
-      volume = node.volume;
-      isMuted = node.muted;
     });
+    // 音声を常にミュート
+    node.muted = true;
 
     return {
       destroy() {
@@ -299,37 +280,6 @@
             <span class="time-display">
               {formatTime(currentTime)} / {formatTime(duration)}
             </span>
-
-            <div class="volume-controls">
-              <button
-                class="control-btn mute-btn"
-                on:click|stopPropagation={toggleMute}
-                aria-label={isMuted ? 'ミュート解除' : 'ミュート'}
-              >
-                {#if isMuted || volume === 0}
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 7 L5 13 L8 13 L12 16 L12 4 L8 7 Z M14 8 L18 12 M18 8 L14 12" stroke="currentColor" stroke-width="2" />
-                  </svg>
-                {:else}
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M5 7 L5 13 L8 13 L12 16 L12 4 L8 7 Z M14 8 C14 8 16 8 16 10 C16 12 14 12 14 12" stroke="currentColor" stroke-width="1" fill="none" />
-                  </svg>
-                {/if}
-              </button>
-              <input
-                type="range"
-                class="volume-slider"
-                min="0"
-                max="1"
-                step="0.01"
-                value={isMuted ? 0 : volume}
-                on:input={handleVolumeChange}
-                on:click|stopPropagation
-                on:mousedown|stopPropagation
-                on:mouseup|stopPropagation
-                aria-label="音量"
-              />
-            </div>
           </div>
         </div>
       {/if}
@@ -491,40 +441,5 @@
     font-size: 0.875rem;
     font-family: monospace;
     flex: 1;
-  }
-
-  .volume-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .volume-slider {
-    width: 80px;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 2px;
-    outline: none;
-  }
-
-  .volume-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .volume-slider::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: white;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
   }
 </style>
