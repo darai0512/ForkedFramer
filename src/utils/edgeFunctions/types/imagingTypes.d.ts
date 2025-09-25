@@ -103,6 +103,7 @@ export const ImageToVideoModelSchema = z.enum([
   "seedance/pro", 
   "seedance/lite", 
   "wan/v2.2-a14b/turbo",
+  "wan-25-preview/image-to-video",
   "decart/lucy-14b",
   "failure"
 ]);

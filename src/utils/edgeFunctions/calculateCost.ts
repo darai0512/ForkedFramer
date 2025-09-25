@@ -82,6 +82,14 @@ export function calculateI2VCost(
                 default: return 0; // 未対応
             }
         }
+        case 'wan-25-preview/image-to-video': {
+            switch (resolution) {
+                case '480p': return 50;
+                case '720p': return 80;
+                case '1080p': return 120;
+                default: return 0; // 未対応
+            }
+        }
         case 'decart/lucy-14b':
             return duration * 11;
         case 'failure':

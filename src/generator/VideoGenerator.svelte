@@ -95,6 +95,19 @@
         { value: "720p", label: "720p" },
       ]
     },
+    "wan-25-preview/image-to-video": {
+      durations: [
+        { value: "5", label: $_('generator.fiveSeconds') },
+      ],
+      aspectRatios: [
+        { value: "1:1", label: $_('generator.squareRatio') },
+      ],
+      resolution: [
+        { value: "480p", label: "480p" },
+        { value: "720p", label: "720p" },
+        { value: "1080p", label: "1080p" },
+      ]
+    },
     "decart/lucy-14b": {
       durations: [
         { value: "5", label: $_('generator.fiveSeconds') },
@@ -229,7 +242,7 @@
             <option value="kling">kling-2.5</option>
             <option value="seedance/lite">Seedance Lite</option>
             <option value="seedance/pro">Seedance Pro</option>
-            <option value="wan/v2.2-a14b/turbo">WAN v2.2-a14b Turbo</option>
+            <!-- <option value="wan-25-preview/image-to-video">Wan 2.5 Preview</option> -->
             <!-- <option value="decart/lucy-14b">Lucy-14b</option> -->
             {#if $developmentFlag}
               <option value="failure">failure</option>
