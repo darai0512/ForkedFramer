@@ -19,39 +19,90 @@
 
   export let targetNode: Node | null = null;
 
+  let items: (() => Promise<Media[]>)[] = [];
+  let bindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
+
+  interface LoaderEntry {
+    loader: () => Promise<Media[]>;
+    setLoadMedia: (loadMedia: () => Promise<Media[]>) => void;
+  }
+
+  let loaderEntries = new Map<BindId, LoaderEntry>();
+
   $: displayMaterialImages(targetNode, $materialCollectionUpdateToken);
   async function displayMaterialImages(node: Node | null, updateToken: boolean) {
     if (node == null) return;
     if (!updateToken) return;
     const folder = node.asFolder()!;
-    console.log("displayMaterialImages");
-    
     const materialItems = await loadMaterialsFromFolder(folder);
-    const newItems: (() => Promise<Media[]>)[] = [];
-    const newBindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
-    
+    const nextItems: (() => Promise<Media[]>)[] = [];
+    const nextEntries = new Map<BindId, LoaderEntry>();
+
     for (const item of materialItems) {
-      newItems.push(item.loadMedia);
-      newBindIds.set(item.loadMedia, item.bindId);
-      
-      // メディアをロードしてbindIdを関連付け
-      const mediaPromise = item.loadMedia();
-      mediaPromise.then(mediaArray => {
-        if (mediaArray.length > 0) {
-          newBindIds.set(mediaArray[0], item.bindId);
-        }
-      });
+      let entry = loaderEntries.get(item.bindId);
+      if (!entry) {
+        entry = createLoaderEntry(item.bindId, item.loadMedia);
+      } else {
+        entry.setLoadMedia(item.loadMedia);
+      }
+      bindIds.set(entry.loader, item.bindId);
+      nextEntries.set(item.bindId, entry);
+      nextItems.push(entry.loader);
     }
-    
-    items = newItems;
-    bindIds = newBindIds;
+
+    loaderEntries = nextEntries;
+    if (!areItemsEqual(items, nextItems)) {
+      items = nextItems;
+    }
     $materialCollectionUpdateToken = false;
   }
 
 
   const dispatch = createEventDispatcher();
-  let items: (() => Promise<Media[]>)[] = [];
-  let bindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
+
+  function createLoaderEntry(bindId: BindId, loadMedia: () => Promise<Media[]>): LoaderEntry {
+    let currentLoadMedia = loadMedia;
+    let cachedPromise: Promise<Media[]> | null = null;
+
+    const loader = async () => {
+      if (!cachedPromise) {
+        cachedPromise = currentLoadMedia()
+          .then(mediaArray => {
+            for (const media of mediaArray) {
+              bindIds.set(media, bindId);
+            }
+            return mediaArray;
+          })
+          .catch(error => {
+            cachedPromise = null;
+            throw error;
+          });
+      }
+      return cachedPromise;
+    };
+
+    bindIds.set(loader, bindId);
+
+    return {
+      loader,
+      setLoadMedia(nextLoadMedia: () => Promise<Media[]>) {
+        currentLoadMedia = nextLoadMedia;
+        cachedPromise = null;
+      }
+    };
+  }
+
+  function areItemsEqual(
+    current: (() => Promise<Media[]>)[],
+    next: (() => Promise<Media[]>)[]
+  ): boolean {
+    if (current === next) return true;
+    if (current.length !== next.length) return false;
+    for (let i = 0; i < current.length; i++) {
+      if (current[i] !== next[i]) return false;
+    }
+    return true;
+  }
 
   function onChooseImage(e: CustomEvent<Media>) {
     const page = $bookOperators!.getFocusedPage();
@@ -106,6 +157,7 @@
           }
           
           const bindId = await saveMaterialToFolder(folder, media, file.name);
+          bindIds.set(loadMedia, bindId);
           bindIds.set(media, bindId);
           return [media];
         };
