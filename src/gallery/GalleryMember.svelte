@@ -39,15 +39,24 @@
     }
   }
 
+  function isScrollableElement(element: HTMLElement): boolean {
+    const style = getComputedStyle(element);
+    const overflowY = style.overflowY ?? style.overflow;
+    const overflowX = style.overflowX ?? style.overflow;
+    const scrollableY = /(auto|scroll|overlay)/.test(overflowY);
+    const scrollableX = /(auto|scroll|overlay)/.test(overflowX);
+    const canScrollY = scrollableY && Math.ceil(element.scrollHeight) > Math.ceil(element.clientHeight);
+    const canScrollX = scrollableX && Math.ceil(element.scrollWidth) > Math.ceil(element.clientWidth);
+    return canScrollY || canScrollX;
+  }
+
   function getScrollableParent(node: HTMLElement | null): Element | null {
     if (typeof window === 'undefined') {
       return null;
     }
     let current: HTMLElement | null = node?.parentElement ?? null;
     while (current) {
-      const style = getComputedStyle(current);
-      const overflowValue = `${style.overflow}${style.overflowX}${style.overflowY}`;
-      if (/(auto|scroll|overlay)/.test(overflowValue)) {
+      if (isScrollableElement(current)) {
         return current;
       }
       current = current.parentElement;

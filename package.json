@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.svelte-check.json",
     "deploy": "git branch --show-current | grep -q '^sns_main$' && npm run stamp && wrangler pages deploy || echo 'Deployment failed: not on sns_main branch'",
+    "force-deploy": "npm run stamp && wrangler pages deploy",
     "which": "which wrangler",
     "vitest": "vitest",
     "stamp": "git log -10 | tee public/stamp.txt",
