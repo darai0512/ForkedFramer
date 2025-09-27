@@ -239,9 +239,25 @@
         on:click
       />
       {#if showControls}
-        <div class="custom-controls" on:click|stopPropagation on:mousedown|stopPropagation on:mouseup|stopPropagation>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <div
+          class="custom-controls"
+          role="presentation"
+          on:click|stopPropagation
+          on:mousedown|stopPropagation
+          on:mouseup|stopPropagation
+        >
           <!-- シークバー -->
-          <div class="seekbar-container" on:click|stopPropagation on:mousedown|stopPropagation on:mouseup|stopPropagation>
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+          <div
+            class="seekbar-container"
+            role="presentation"
+            on:click|stopPropagation
+            on:mousedown|stopPropagation
+            on:mouseup|stopPropagation
+          >
             <div
               class="custom-seekbar"
               on:mousedown={handleSeekStart}

@@ -34,7 +34,6 @@
 <div class="gallery">
   {#each items as item, i (item)}
     <GalleryMember
-      label={`item-${i}`}
       item={item}
       {columnWidth}
       bind:chosen

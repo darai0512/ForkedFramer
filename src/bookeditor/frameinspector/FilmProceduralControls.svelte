@@ -90,7 +90,7 @@
 {#if film.content.kind === 'procedural'}
 <div class="procedural-controls">
   <div class="selector-row">
-    <label class="selector-label">{$_('film.procedural.selectorLabel')}</label>
+    <div class="selector-label">{$_('film.procedural.selectorLabel')}</div>
     <div class="type-display">
       {#if type === 'motion-lines'}
         {$_('film.procedural.type.motion-lines')}
@@ -147,15 +147,6 @@
     font-size: 14px;
     min-width: 92px;
     white-space: nowrap;
-  }
-  .selector-control {
-    flex: 1;
-    min-height: 28px;
-    font-size: 0.9rem;
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid rgb(var(--color-surface-300));
-    background: white;
   }
   .type-display {
     flex: 1;
