@@ -1,7 +1,8 @@
 <script lang="ts">
   import { setLayerRefs, commit } from './operations/commitOperations';
   import { BookWorkspaceOperators } from './BookWorkspaceOperators';
-  import { onDestroy } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
+  import { get } from 'svelte/store';
   import { type LayeredCanvas, Viewport } from '../lib/layeredCanvas/system/layeredCanvas';
   import { PaperRendererLayer } from '../lib/layeredCanvas/layers/paperRendererLayer';
   import { setBubbleCommandTools } from './bubbleinspector/bubbleInspectorStore';
@@ -16,6 +17,7 @@
   import ImageProvider from '../generator/ImageProvider.svelte';
   import { bubbleBucketDirty } from '../bubbleBucket/bubbleBucketStore';
   import { DefaultBubbleSlot } from '../lib/layeredCanvas/layers/bubbleLayer';
+  import { currentLocale, type Locale } from '../stores/i18n';
   import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
 
   let canvas: HTMLCanvasElement;
@@ -30,6 +32,11 @@
 
   let operators: BookWorkspaceOperators;
   const defaultBubbleSlot = new DefaultBubbleSlot(new Bubble());
+
+  $: applyDefaultBubbleDirection($currentLocale);
+  function applyDefaultBubbleDirection(locale: Locale) {
+    defaultBubbleSlot.bubble.direction = locale === 'ja' ? 'v' : 'h';
+  }
 
   $: onUndoCommand($undoToken);
   function onUndoCommand(t: 'undo' | 'redo' | null) {

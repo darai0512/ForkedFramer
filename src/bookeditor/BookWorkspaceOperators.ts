@@ -183,7 +183,7 @@ export class BookWorkspaceOperators implements BookOperators {
         });
         
         // defaultBubbleSlotを設定
-        this.defaultBubbleSlot!.bubble = b;
+        this.defaultBubbleSlot!.bubble = b.clone(false);
       }
     } else {
       // バブルのインスペクタを非表示
