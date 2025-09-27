@@ -206,6 +206,7 @@
     "ruby": "ルビ",
     "rubySpacing": "ルビ 間隔",
     "content": "内容",
+    "verticalTextConsecutiveHint": "縦書きモードでは、連続する半角英数字は横にならべて表示されます。縦に並べたい場合は全角にしてください。横に並べたまま倒したい場合は縦中横の指定をしてください。",
     "colorButton": "色",
     "rubyButton": "ルビ",
     "rotationButton": "縦中横",

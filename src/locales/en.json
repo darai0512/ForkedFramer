@@ -206,6 +206,7 @@
     "ruby": "Ruby",
     "rubySpacing": "Ruby Spacing",
     "content": "Content",
+    "verticalTextConsecutiveHint": "In vertical writing mode, consecutive half-width alphanumeric characters stay horizontal. Use full-width characters to stack them vertically, or apply tate-chu-yoko to keep the run horizontal while rotating it.",
     "colorButton": "Color",
     "rubyButton": "Ruby",
     "rotationButton": "Tate-chu-yoko",

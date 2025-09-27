@@ -511,6 +511,11 @@
             </select>
             <button type="button" class="btn btn-sm variant-filled" on:click={onTransformText}><span class="text-sm text-white" use:toolTip={$_('bubble.aiTextEditTooltip')}>{$_('bubble.applyTransform')}</span></button>
           </div>          
+          {#if $bubble.direction === 'v'}
+          <div class="vertical-note">
+            {$_('bubble.verticalTextConsecutiveHint')}
+          </div>
+          {/if}
         </div>
       </details>
 
@@ -670,5 +675,18 @@
   }
   .label {
     font-size: 14px;
+  }
+  .vertical-note {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(0, 0, 0, 0.75);
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin-top: 4px;
+  }
+  :global(body.dark) .vertical-note {
+    color: rgba(255, 255, 255, 0.85);
+    background-color: rgba(255, 255, 255, 0.08);
   }
 </style>
