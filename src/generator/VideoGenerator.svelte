@@ -313,7 +313,7 @@
             <option value="kling">kling-2.5</option>
             <option value="seedance/lite">Seedance Lite</option>
             <option value="seedance/pro">Seedance Pro</option>
-            <!-- <option value="wan-25-preview/image-to-video">Wan 2.5 Preview</option> -->
+            <option value="wan-25-preview/image-to-video">Wan 2.5 Preview</option>
             <!-- <option value="decart/lucy-14b">Lucy-14b</option> -->
             {#if $developmentFlag}
               <option value="failure">failure</option>
