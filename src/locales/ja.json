@@ -288,6 +288,7 @@
     "blank": "白紙",
     "costDisclaimer": "※GPT-1のコストは将来変更の可能性があります",
     "prompt": "プロンプト",
+    "historyHint": "Ctrl + ↑↓ で履歴を表示",
     "copyToClipboard": "クリップボードにコピー",
     "square": "正方形(1024x1024)",
     "landscape": "横長(1536x1024)",

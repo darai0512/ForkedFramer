@@ -288,6 +288,7 @@
     "blank": "Blank",
     "costDisclaimer": "※GPT-1 costs may change in the future",
     "prompt": "Prompt",
+    "historyHint": "Ctrl + ↑↓ to browse history",
     "copyToClipboard": "Copy to clipboard",
     "square": "Square (1024x1024)",
     "landscape": "Landscape (1536x1024)",

@@ -34,7 +34,7 @@
       <ProgressRadial stroke={100} width="w-10"/>
     </div>
   {:else}
-    <AutoSizeTextarea minHeight={minHeight} bind:value={value} placeholder={placeholder}/>
+    <AutoSizeTextarea minHeight={minHeight} bind:value={value} placeholder={placeholder} on:keydown/>
     <div class="icon-container flex flex-row-reverse gap-2">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->

@@ -4,12 +4,13 @@
   import NotebookTextarea from '../notebook/NotebookTextarea.svelte';
   import { recognizeImage } from '../supabase';
   import type { Media } from '../lib/layeredCanvas/dataModels/media';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { resizeCanvasIfNeeded } from '../lib/layeredCanvas/tools/imageUtil';
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { _ } from 'svelte-i18n';
   import { calculateI2VCost } from '../utils/edgeFunctions/calculateCost';
   import { developmentFlag } from '../utils/developmentFlagStore';
+  import { createPreferenceStore } from '../preferences';
   
   type Option = { value: string; label: string };
   
@@ -21,6 +22,20 @@
   let sourceMedia: Media;
   let promptWaiting: boolean;
   let cost: number = 50;
+
+  const MAX_HISTORY_SIZE = 50;
+  const videoPromptHistoryStore = createPreferenceStore<string[]>("tweakUi", "videoGeneratorPromptHistory", []);
+  let promptHistory: string[] = [];
+  let historyIndex = -1;
+  let temporaryPrompt = '';
+
+  const unsubscribeHistory = videoPromptHistoryStore.subscribe(value => {
+    promptHistory = value;
+  });
+
+  onDestroy(() => {
+    unsubscribeHistory();
+  });
 
   // モデルごとの利用可能なオプション
   $: modelOptions = ({
@@ -164,6 +179,7 @@
   }
 
   async function onSubmit() {
+    addToHistory(prompt);
     const resizedCanvas = resizeCanvasIfNeeded(sourceMedia.drawSourceCanvas, 1024);
     const resizedImageUrl = resizedCanvas.toDataURL();
     const request: ImageToVideoRequest = {
@@ -202,6 +218,57 @@
     }
   }
 
+  function addToHistory(newPrompt: string) {
+    if (!newPrompt.trim()) return;
+
+    const filteredHistory = promptHistory.filter(item => item !== newPrompt);
+    const newHistory = [newPrompt, ...filteredHistory];
+
+    if (newHistory.length > MAX_HISTORY_SIZE) {
+      newHistory.splice(MAX_HISTORY_SIZE);
+    }
+
+    videoPromptHistoryStore.set(newHistory);
+    historyIndex = -1;
+    temporaryPrompt = '';
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (!event.ctrlKey) return;
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      navigateHistory('up');
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      navigateHistory('down');
+    }
+  }
+
+  function navigateHistory(direction: 'up' | 'down') {
+    if (promptHistory.length === 0) return;
+
+    if (historyIndex === -1 && prompt.trim()) {
+      temporaryPrompt = prompt;
+    }
+
+    if (direction === 'up') {
+      if (historyIndex < promptHistory.length - 1) {
+        historyIndex++;
+        prompt = promptHistory[historyIndex];
+      }
+    } else {
+      if (historyIndex > -1) {
+        historyIndex--;
+        if (historyIndex === -1) {
+          prompt = temporaryPrompt;
+        } else {
+          prompt = promptHistory[historyIndex];
+        }
+      }
+    }
+  }
+
   onMount(() => {
     sourceMedia = $modalStore[0].meta.media;
   });
@@ -224,14 +291,18 @@
 
       <div>
         <h3>{$_('generator.prompt')}</h3>
-        <NotebookTextarea
-          bind:value={prompt}
-          minHeight={90}
-          placeholder="Describe the video you want to generate..."
-          cost={2}
-          bind:waiting={promptWaiting}
-          on:advise={onAskPrompt}
-        />
+        <div class="prompt-input" role="group">
+          <NotebookTextarea
+            bind:value={prompt}
+            minHeight={90}
+            placeholder="Describe the video you want to generate..."
+            cost={2}
+            bind:waiting={promptWaiting}
+            on:advise={onAskPrompt}
+            on:keydown={handleKeyDown}
+          />
+          <div class="history-hint">{$_('generator.historyHint')}</div>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
@@ -307,5 +378,15 @@
   button .generate-text {
     font-family: '源暎エムゴ';
     font-size: 18px;
+  }
+  .prompt-input {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .history-hint {
+    font-size: 12px;
+    color: rgb(var(--color-surface-500));
+    padding-left: 4px;
   }
 </style>
