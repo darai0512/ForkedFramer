@@ -21,6 +21,7 @@
   import { onlineStatus, onlineProfile } from './accountStore';
   import { waitDialog } from "./waitDialog";
   import { canvasToBlob } from "../lib/layeredCanvas/tools/imageUtil";
+  import { ulid } from "ulid";
 
   $: onTask($bookArchiver);
   async function onTask(ba: BookArchiveOperation[]) {
@@ -150,15 +151,16 @@
       const canvas = await renderPage($mainBook!.pages[0]);
       const cover = await canvasToBlob(canvas);
       const thumbnail = await renderThumbnailToWebpBlob($mainBook!.pages[0], [384, 516]);
+      const publishId = ulid();
 
       // 本体
-      const content_url = await postFile(`${file.id}.envelope`, blob);
+      const content_url = await postFile(`${publishId}.envelope`, blob);
       $progress = 0.6;
-      const cover_url = await postFile(`${file.id}_cover.webp`, cover);
+      const cover_url = await postFile(`${publishId}_cover.webp`, cover);
       $progress = 0.7;
-      const thumbnail_url = await postFile(`${file.id}_thumbnail.webp`, thumbnail);
+      const thumbnail_url = await postFile(`${publishId}_thumbnail.webp`, thumbnail);
       $progress = 0.8;
-      const socialcard_url = socialCard ? await postFile(`${file.id}_socialcard.webp`, socialCard) : null;
+      const socialcard_url = socialCard ? await postFile(`${publishId}_socialcard.webp`, socialCard) : null;
       $progress = 0.9;
 
       console.log("recordPublication", {
@@ -276,8 +278,6 @@
   }
 
   async function transport(pages: Page[]) {
-    let title, description;
-    
     $loading = true;
     try {
       const pageToBlob = async (page: Page) => {
