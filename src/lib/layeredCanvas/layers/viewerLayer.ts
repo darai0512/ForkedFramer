@@ -158,6 +158,7 @@ export class ViewerLayer extends LayerBase {
     if (depth === 1) {
       for (const bubble of this.bubbles) {
         const paperSize = this.getPaperSize();
+        if (!this.hasVideo(bubble.filmStack)) { continue; }
         if (bubble.contains(paperSize, point)) {
           return { action: "click", layout: bubble };
         }
