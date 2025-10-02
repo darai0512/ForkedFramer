@@ -32,6 +32,31 @@ export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(H
     }
   }
 
+  if (result.length === 0) {
+    const uriListRaw = dataTransfer.getData('text/uri-list');
+    if (uriListRaw) {
+      const uri = uriListRaw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .find((line) => line.length > 0 && !line.startsWith('#'));
+      if (uri) {
+        try {
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          if (blob.type.startsWith('video/')) {
+            const video = await createVideoFromBlob(blob);
+            result.push(video);
+          } else {
+            const canvas = await createCanvasFromBlob(blob);
+            result.push(canvas);
+          }
+        } catch (error) {
+          console.warn('Failed to load media from uri-list', error);
+        }
+      }
+    }
+  }
+
   return result;
 }
 
