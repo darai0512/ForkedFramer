@@ -393,3 +393,17 @@ export function mediaResourceSize(mediaResource: MediaResource): Vector | null {
     return null;
   }
 }
+
+export function getVideoElementFromMedia(media: Media): HTMLVideoElement | null {
+  const persistent = media.persistentSource;
+  if (persistent instanceof HTMLVideoElement) {
+    return persistent;
+  }
+
+  const drawSource = media.drawSource;
+  if (drawSource instanceof HTMLVideoElement) {
+    return drawSource;
+  }
+
+  return null;
+}

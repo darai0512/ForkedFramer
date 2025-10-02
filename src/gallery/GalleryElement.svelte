@@ -3,10 +3,11 @@
   import { type ModalSettings, modalStore } from '@skeletonlabs/skeleton';
   import { mediaViewerTarget } from './mediaViewerStore';
   import { toolTip } from '../utils/passiveToolTipStore';
-  import type { Media } from "../lib/layeredCanvas/dataModels/media";
+  import { getVideoElementFromMedia, type Media } from "../lib/layeredCanvas/dataModels/media";
   import { formatDuration } from '../utils/timeFormat';
   import MediaFrame from './MediaFrame.svelte';
   import { _ } from 'svelte-i18n';
+  import { attachFileToDataTransfer } from '../lib/layeredCanvas/tools/dragUtil';
 
   import drop from '../assets/drop.webp';
   import reference from '../assets/reference.webp';
@@ -57,10 +58,55 @@
     refered = refered === media ? null : media;
   }
 
+  const videoFileCache = new WeakMap<Media, Promise<File | null>>();
+
+  function deriveVideoFileName(blobType: string): string {
+    if (blobType.includes('webm')) return 'material-video.webm';
+    if (blobType.includes('ogg') || blobType.includes('ogv')) return 'material-video.ogv';
+    return 'material-video.mp4';
+  }
+
+  async function ensureVideoFile(target: Media): Promise<File | null> {
+    let promise = videoFileCache.get(target);
+    if (promise) return promise;
+
+    promise = (async () => {
+      const videoElement = getVideoElementFromMedia(target);
+      const src = videoElement?.src;
+      if (!src) return null;
+      try {
+        const response = await fetch(src);
+        const blob = await response.blob();
+        if (!blob || blob.size === 0) return null;
+        const type = blob.type || 'video/mp4';
+        const name = deriveVideoFileName(type);
+        return new File([blob], name, { type });
+      } catch (error) {
+        console.warn('Failed to prepare video file for drag', error);
+        return null;
+      }
+    })();
+
+    videoFileCache.set(target, promise);
+    return promise;
+  }
+
   function onDragStart(e: DragEvent) {
     console.log("onDragStart");
-    if (media.type === 'video' && e.dataTransfer) {
-      e.dataTransfer.setData("video/mp4", (media.persistentSource as HTMLVideoElement).src);
+    if (e.dataTransfer && media.type === 'video') {
+      const videoElement = getVideoElementFromMedia(media);
+      const src = videoElement?.src;
+      if (src) {
+        try {
+          e.dataTransfer.setData("video/mp4", src);
+        } catch (error) {
+          console.warn('Failed to set video/mp4 drag data', error);
+        }
+        void ensureVideoFile(media).then((file) => {
+          if (!file) return;
+          attachFileToDataTransfer(e.dataTransfer!, file, { setUriList: true });
+        });
+      }
     }
     dispatch("dragstart", media);
   }

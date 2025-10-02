@@ -3,8 +3,9 @@
   import Drawer from '../utils/Drawer.svelte';
   import MediaFrame from '../gallery/MediaFrame.svelte';
   import { dolphinRoomOpen } from './dolphinRoomStore';
-  import { buildMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
+  import { buildMedia, getVideoElementFromMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
+  import { attachFileToDataTransfer } from '../lib/layeredCanvas/tools/dragUtil';
 
   interface ChatMessage {
     id: number;
@@ -268,22 +269,9 @@
 
     const file = attachment.file;
     if (file) {
-      try {
-        dataTransfer.items.add(file);
-      } catch (error) {
-        console.warn('Failed to add file to DataTransfer', error);
-      }
-
-      if (attachment.url) {
-        const downloadType = file.type || (attachment.type === 'image' ? 'image/png' : 'video/mp4');
-        const downloadName = file.name || attachment.name || `attachment-${attachment.id}`;
-        const downloadUrl = `${downloadType}:${downloadName}:${attachment.url}`;
-        try {
-          dataTransfer.setData('DownloadURL', downloadUrl);
-        } catch (error) {
-          console.warn('Failed to set DownloadURL drag data', error);
-        }
-      }
+      attachFileToDataTransfer(dataTransfer, file, {
+        downloadUrl: attachment.url,
+      });
     } else if (attachment.url) {
       try {
         dataTransfer.setData('text/uri-list', attachment.url);
@@ -293,10 +281,8 @@
     }
 
     if (attachment.type === 'video') {
-      const videoUrl = attachment.url ?? (() => {
-        const mediaSource = attachment.media?.persistentSource;
-        return mediaSource instanceof HTMLVideoElement ? mediaSource.src : null;
-      })();
+      const fallbackElement = attachment.media ? getVideoElementFromMedia(attachment.media) : null;
+      const videoUrl = attachment.url ?? fallbackElement?.src ?? null;
       if (videoUrl) {
         try {
           dataTransfer.setData('video/mp4', videoUrl);
