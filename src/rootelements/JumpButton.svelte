@@ -128,9 +128,9 @@
     width: 80px;
     height: 80px;
     bottom: 20px;
-    right: 160px;
+    right: 320px;
     @media (max-width: 640px), (max-height: 800px) {
-      right: 100px;
+      right: 210px;
       width: 60px;
       height: 60px;
       bottom: 10px;
@@ -145,7 +145,7 @@
   .slider-container {
     position: absolute;
     bottom: 20px;
-    right: 260px;
+    right: 420px;
     width: 250px;
     background-color: rgba(240, 240, 240, 0.95);
     border-radius: 8px;
@@ -153,7 +153,7 @@
     pointer-events: auto;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
     @media (max-width: 640px), (max-height: 800px) {
-      right: 170px;
+      right: 310px;
       width: 200px;
       bottom: 10px;
       padding: 10px 15px;

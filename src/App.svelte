@@ -36,6 +36,7 @@
   import DownloadButton from './rootelements/DownloadButton.svelte';
   import VideoButton from './rootelements/VideoButton.svelte';
   import PostButton from './rootelements/PostButton.svelte';
+  import DolphinRoomButton from './rootelements/DolphinRoomButton.svelte';
   import BatchImaging from './generator/BatchImaging.svelte';
   import BookArchiver from './utils/BookArchiver.svelte';
   import FileBrowser from './utils/FileBrowser.svelte';
@@ -46,6 +47,7 @@
   import DebugOnly from './utils/DebugOnly.svelte';
   import StructureTree from './about/StructureTree.svelte';
   import MaterialBucket from './materialBucket/MaterialBucket.svelte';
+  import DolphinRoom from './dolphinroom/DolphinRoom.svelte';
   import BubbleBucket from './bubbleBucket/BubbleBucket.svelte';
   //  import JsonReader from './utils/JsonReader.svelte';
   import VideoMaker from './videomaker/VideoMaker.svelte';
@@ -219,6 +221,7 @@
       <DownloadButton />
       <VideoButton />
       <PostButton />
+      <DolphinRoomButton />
       <DebugOnly>
         <SaveOffButton/>
       </DebugOnly>
@@ -233,6 +236,7 @@
 <BubbleInspector/>
 <StructureTree/>
 <MaterialBucket/>
+<DolphinRoom/>
 <BubbleBucket/>
 <Downloader/>
 <ColorPickerDialog/>
@@ -296,4 +300,3 @@
   }
   
 </style>
-
