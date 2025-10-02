@@ -37,21 +37,36 @@
   }
 
   function drawFrame() {
-    if (!canvas || !media) return;
-    const sourceCanvas = media.drawSourceCanvas; // ローディング/失敗時はフォールバックが返る
-    // シンプルに毎回レイアウトを合わせる
+    if (!media) return;
+
     const rect = containerDiv?.getBoundingClientRect();
+    const [mediaWidth, mediaHeight] = media.size;
     if (rect) {
-      const { width: targetWidth, height: targetHeight } = computeAspectFitSize(rect, media.size);
-      canvas.style.width = `${targetWidth}px`;
-      canvas.style.height = `${targetHeight}px`;
+      if (mediaWidth > 0 && mediaHeight > 0) {
+        const { width: targetWidth, height: targetHeight } = computeAspectFitSize(rect, media.size);
+        const controlWidth = Math.max(targetWidth, 1);
+        const controlScale = Math.min(1, Math.max(0.35, controlWidth / 480));
+        containerDiv?.style.setProperty('--media-controls-scale', controlScale.toString());
+
+        if (canvas) {
+          canvas.style.width = `${targetWidth}px`;
+          canvas.style.height = `${targetHeight}px`;
+        }
+      } else {
+        const fallbackScale = Math.min(1, Math.max(0.35, rect.width / 480));
+        containerDiv?.style.setProperty('--media-controls-scale', fallbackScale.toString());
+      }
     }
+
+    if (!canvas) return;
+
     if (canvas.width !== media.size[0] || canvas.height !== media.size[1]) {
       canvas.width = media.size[0];
       canvas.height = media.size[1];
     }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const sourceCanvas = media.drawSourceCanvas; // ローディング/失敗時はフォールバックが返る
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -172,6 +187,7 @@
     node.addEventListener('loadedmetadata', () => {
       duration = node.duration;
       currentTime = node.currentTime;
+      drawFrame();
     });
     // 音声を常にミュート
     node.muted = true;
@@ -317,6 +333,7 @@
       <canvas
         bind:this={canvas}
         class="media-element"
+        draggable="true"
         on:click
       />
     {/if}
@@ -332,6 +349,7 @@
     align-items: center;
     overflow: hidden;
     position: relative;
+    --media-controls-scale: 1;
   }
   .media-element {
     width: 100%;
@@ -356,11 +374,11 @@
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
-    padding: 1rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent 70%);
+    padding: calc(0.25rem + 0.55rem * var(--media-controls-scale, 1));
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: calc(0.2rem + 0.2rem * var(--media-controls-scale, 1));
     pointer-events: none;
   }
 
@@ -370,13 +388,13 @@
 
   .seekbar-container {
     width: 100%;
-    padding: 0.5rem 0;
+    padding: calc(0.15rem + 0.25rem * var(--media-controls-scale, 1)) 0;
   }
 
   .custom-seekbar {
     position: relative;
     width: 100%;
-    height: 40px;
+    height: clamp(14px, calc(34px * var(--media-controls-scale, 1)), 34px);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -388,7 +406,7 @@
     top: 50%;
     transform: translateY(-50%);
     width: 100%;
-    height: 6px;
+    height: clamp(2px, calc(5px * var(--media-controls-scale, 1)), 5px);
     background: rgba(255, 255, 255, 0.3);
     border-radius: 3px;
     pointer-events: none;
@@ -399,7 +417,7 @@
     left: 0;
     top: 50%;
     transform: translateY(-50%);
-    height: 6px;
+    height: clamp(2px, calc(5px * var(--media-controls-scale, 1)), 5px);
     background: #3b82f6;
     border-radius: 3px;
     pointer-events: none;
@@ -409,8 +427,8 @@
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
-    width: 16px;
-    height: 16px;
+    width: clamp(7px, calc(14px * var(--media-controls-scale, 1)), 14px);
+    height: clamp(7px, calc(14px * var(--media-controls-scale, 1)), 14px);
     background: white;
     border-radius: 50%;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -433,7 +451,7 @@
   .control-buttons {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: calc(0.3rem + 0.45rem * var(--media-controls-scale, 1));
     color: white;
   }
 
@@ -442,7 +460,7 @@
     border: none;
     color: white;
     cursor: pointer;
-    padding: 0.25rem;
+    padding: calc(0.1rem + 0.1rem * var(--media-controls-scale, 1));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -454,7 +472,7 @@
   }
 
   .time-display {
-    font-size: 0.875rem;
+    font-size: clamp(0.6rem, calc(0.65rem + 0.2rem * var(--media-controls-scale, 1)), 0.85rem);
     font-family: monospace;
     flex: 1;
   }

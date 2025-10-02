@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher, onDestroy, tick } from 'svelte';
   import Drawer from '../utils/Drawer.svelte';
+  import MediaFrame from '../gallery/MediaFrame.svelte';
   import { dolphinRoomOpen } from './dolphinRoomStore';
   import { buildMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
@@ -40,8 +41,12 @@
   let nextAttachmentId = 0;
   let logElement: HTMLDivElement | null = null;
   const objectUrls: string[] = [];
-  const videoElements = new Map<number, HTMLVideoElement>();
+  const attachmentElements = new Map<number, HTMLButtonElement>();
   let capturingAttachmentIds = new Set<number>();
+
+  function refreshMessages() {
+    messages = [...messages];
+  }
 
   function closeDrawer() {
     $dolphinRoomOpen = false;
@@ -166,19 +171,19 @@
     });
   }
 
-  function registerVideoElement(id: number, element: HTMLVideoElement | null) {
+  function registerAttachmentElement(id: number, element: HTMLButtonElement | null) {
     if (element) {
-      videoElements.set(id, element);
+      attachmentElements.set(id, element);
     } else {
-      videoElements.delete(id);
+      attachmentElements.delete(id);
     }
   }
 
-  function videoElementAction(node: HTMLVideoElement, attachmentId: number) {
-    registerVideoElement(attachmentId, node);
+  function attachmentElementAction(node: HTMLButtonElement, attachmentId: number) {
+    registerAttachmentElement(attachmentId, node);
     return {
       destroy() {
-        registerVideoElement(attachmentId, null);
+        registerAttachmentElement(attachmentId, null);
       }
     };
   }
@@ -230,6 +235,7 @@
         const canvas = await createCanvasFromBlob(file);
         const media = buildMedia(canvas);
         attachment.media = media;
+        refreshMessages();
         return media;
       } else {
         const video = await createVideoFromBlob(file);
@@ -238,6 +244,7 @@
         }
         const media = buildMedia(video);
         attachment.media = media;
+        refreshMessages();
         return media;
       }
     })();
@@ -305,7 +312,8 @@
   }
 
   async function captureCurrentFrame(messageId: number, attachmentId: number) {
-    const video = videoElements.get(attachmentId);
+    const container = attachmentElements.get(attachmentId);
+    const video = container?.querySelector('video');
     if (!video) return;
 
     if (capturingAttachmentIds.has(attachmentId)) return;
@@ -370,7 +378,7 @@
     for (const url of objectUrls) {
       URL.revokeObjectURL(url);
     }
-    videoElements.clear();
+    attachmentElements.clear();
   });
 </script>
 
@@ -421,18 +429,18 @@
                       on:dragstart={(event) => handleAttachmentDragStart(event, attachment)}
                       aria-pressed={attachment.selected}
                       data-attachment-id={attachment.id}
+                      use:attachmentElementAction={attachment.id}
                     >
-                      {#if attachment.type === 'image'}
-                        <img src={attachment.url} alt={attachment.name} loading="lazy" draggable={false} />
+                      {#if attachment.media}
+                        <div class="attachment-media">
+                          <MediaFrame
+                            media={attachment.media}
+                            showControls={attachment.type === 'video'}
+                            dragAsImage={attachment.type === 'image'}
+                          />
+                        </div>
                       {:else}
-                        <!-- svelte-ignore a11y-media-has-caption -->
-                        <video
-                          src={attachment.url}
-                          controls
-                          preload="metadata"
-                          draggable={false}
-                          use:videoElementAction={attachment.id}
-                        />
+                        <div class="attachment-placeholder">読み込み中…</div>
                       {/if}
                     </button>
                   {/each}
@@ -606,11 +614,29 @@
     outline-offset: 2px;
   }
 
-  .attachment img,
-  .attachment video {
+  .attachment-media {
+    width: 100%;
     display: block;
+  }
+
+  .attachment-media :global(.media-frame) {
+    width: 100%;
+  }
+
+  .attachment-media :global(.media-element) {
     width: 100%;
     height: auto;
+  }
+
+  .attachment-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 2rem 1rem;
+    color: rgba(15, 23, 42, 0.6);
+    font-size: 0.9rem;
+    background: rgba(15, 23, 42, 0.05);
   }
 
   .message-footer {
