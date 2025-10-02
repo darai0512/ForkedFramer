@@ -261,42 +261,52 @@
     event: DragEvent,
     attachment: MediaAttachment
   ) {
-    event.stopPropagation();
     const dataTransfer = event.dataTransfer;
     if (!dataTransfer) return;
 
     dataTransfer.effectAllowed = 'copy';
 
-    const addFileToTransfer = (file: File | null | undefined) => {
-      if (!file) return;
+    const file = attachment.file;
+    if (file) {
       try {
         dataTransfer.items.add(file);
       } catch (error) {
         console.warn('Failed to add file to DataTransfer', error);
       }
-    };
 
-    if (attachment.file) {
-      addFileToTransfer(attachment.file);
-    } else {
-      ensureAttachmentFile(attachment)
-        .then((file) => addFileToTransfer(file ?? undefined))
-        .catch((error) => {
-          console.warn('Failed to prepare file for drag', error);
-        });
+      if (attachment.url) {
+        const downloadType = file.type || (attachment.type === 'image' ? 'image/png' : 'video/mp4');
+        const downloadName = file.name || attachment.name || `attachment-${attachment.id}`;
+        const downloadUrl = `${downloadType}:${downloadName}:${attachment.url}`;
+        try {
+          dataTransfer.setData('DownloadURL', downloadUrl);
+        } catch (error) {
+          console.warn('Failed to set DownloadURL drag data', error);
+        }
+      }
+    } else if (attachment.url) {
+      try {
+        dataTransfer.setData('text/uri-list', attachment.url);
+      } catch (error) {
+        console.warn('Failed to set text/uri-list drag data', error);
+      }
+    }
+
+    if (attachment.type === 'video') {
+      const videoUrl = attachment.url ?? (() => {
+        const mediaSource = attachment.media?.persistentSource;
+        return mediaSource instanceof HTMLVideoElement ? mediaSource.src : null;
+      })();
+      if (videoUrl) {
+        try {
+          dataTransfer.setData('video/mp4', videoUrl);
+        } catch (error) {
+          console.warn('Failed to set video/mp4 drag data', error);
+        }
+      }
     }
 
     const notifyDragStart = (media: Media) => {
-      if (attachment.type === 'video') {
-        const source = media.persistentSource;
-        if (source instanceof HTMLVideoElement) {
-          try {
-            dataTransfer.setData('video/mp4', source.src);
-          } catch (error) {
-            console.warn('Failed to set video/mp4 drag data', error);
-          }
-        }
-      }
       dispatch('dragstart', media);
     };
 
@@ -308,6 +318,12 @@
         .catch((error) => {
           console.error('Failed to prepare attachment media for drag', error);
         });
+    }
+  }
+
+  function handleAttachmentDragStartEvent(event: Event, attachment: MediaAttachment) {
+    if (typeof DragEvent !== 'undefined' && event instanceof DragEvent) {
+      handleAttachmentDragStart(event, attachment);
     }
   }
 
@@ -424,9 +440,8 @@
                       class:image={attachment.type === 'image'}
                       class:video={attachment.type === 'video'}
                       class:selected={attachment.selected}
-                      draggable="true"
                       on:click={() => toggleAttachmentSelection(message.id, attachment.id)}
-                      on:dragstart={(event) => handleAttachmentDragStart(event, attachment)}
+                      on:dragstart={(event) => handleAttachmentDragStartEvent(event, attachment)}
                       aria-pressed={attachment.selected}
                       data-attachment-id={attachment.id}
                       use:attachmentElementAction={attachment.id}
@@ -457,7 +472,7 @@
                           on:click|stopPropagation={() => captureCurrentFrame(message.id, attachment.id)}
                           disabled={capturingAttachmentIds.has(attachment.id)}
                         >
-                          {capturingAttachmentIds.has(attachment.id) ? 'キャプチャ中…' : 'このフレームを送る'}
+                          {capturingAttachmentIds.has(attachment.id) ? 'キャプチャ中…' : 'キャプチャ'}
                         </button>
                       {/if}
                     {/each}
