@@ -1,58 +1,16 @@
 import { createCanvasFromBlob, createVideoFromBlob, createVideoFromDataUrl, getFirstFrameOfVideo } from "../tools/imageUtil";
 
 export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(HTMLCanvasElement | HTMLVideoElement | string)[]> {
-  const result: (HTMLCanvasElement | HTMLVideoElement | string)[] = [];
-
-  // video/mp4があればそれを優先（従来挙動を維持）
-  const videoUrl = dataTransfer.getData('video/mp4');
-  if (videoUrl !== "") {
-    console.log("video url", videoUrl);
-    const video = await createVideoFromDataUrl(videoUrl);
+  // video/mp4があればそれを優先
+  const url = dataTransfer.getData('video/mp4');
+  if (url !== "") {
+    console.log("video url", url);
+    const video = await createVideoFromDataUrl(url);
     return [video];
   }
 
-  const collectFromUrls = async (urls: string[]) => {
-    for (const url of urls) {
-      try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        if (blob.type.startsWith('image/')) {
-          const canvas = await createCanvasFromBlob(blob);
-          result.push(canvas);
-        } else if (blob.type.startsWith('video/')) {
-          const video = await createVideoFromBlob(blob);
-          result.push(video);
-        }
-      } catch (error) {
-        console.warn('Failed to resolve drag URL', url, error);
-      }
-    }
-  };
-
-  const uriList = dataTransfer.getData('text/uri-list');
-  if (uriList) {
-    const urls = uriList
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0 && !line.startsWith('#'));
-    await collectFromUrls(urls);
-    if (result.length > 0) {
-      return result;
-    }
-  }
-
-  const plainText = dataTransfer.getData('text/plain');
-  if (plainText) {
-    const trimmed = plainText.trim();
-    if (/^(blob:|https?:|data:)/.test(trimmed)) {
-      await collectFromUrls([trimmed]);
-      if (result.length > 0) {
-        return result;
-      }
-    }
-  }
-
   const files = [...dataTransfer.files]; // なぜかこうしないとawaitの間に変化するらしく、うまく列挙できない
+  const result = [];
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
     console.log("file", i, file.type);

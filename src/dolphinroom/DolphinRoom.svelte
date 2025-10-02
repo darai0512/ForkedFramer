@@ -4,7 +4,6 @@
   import { dolphinRoomOpen } from './dolphinRoomStore';
   import { buildMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
-  import MediaFrame from '../gallery/MediaFrame.svelte';
 
   interface ChatMessage {
     id: number;
@@ -231,7 +230,6 @@
         const canvas = await createCanvasFromBlob(file);
         const media = buildMedia(canvas);
         attachment.media = media;
-        messages = [...messages];
         return media;
       } else {
         const video = await createVideoFromBlob(file);
@@ -240,7 +238,6 @@
         }
         const media = buildMedia(video);
         attachment.media = media;
-        messages = [...messages];
         return media;
       }
     })();
@@ -257,10 +254,30 @@
     event: DragEvent,
     attachment: MediaAttachment
   ) {
+    event.stopPropagation();
     const dataTransfer = event.dataTransfer;
     if (!dataTransfer) return;
 
     dataTransfer.effectAllowed = 'copy';
+
+    const addFileToTransfer = (file: File | null | undefined) => {
+      if (!file) return;
+      try {
+        dataTransfer.items.add(file);
+      } catch (error) {
+        console.warn('Failed to add file to DataTransfer', error);
+      }
+    };
+
+    if (attachment.file) {
+      addFileToTransfer(attachment.file);
+    } else {
+      ensureAttachmentFile(attachment)
+        .then((file) => addFileToTransfer(file ?? undefined))
+        .catch((error) => {
+          console.warn('Failed to prepare file for drag', error);
+        });
+    }
 
     const notifyDragStart = (media: Media) => {
       if (attachment.type === 'video') {
@@ -399,34 +416,23 @@
                       class:image={attachment.type === 'image'}
                       class:video={attachment.type === 'video'}
                       class:selected={attachment.selected}
+                      draggable="true"
                       on:click={() => toggleAttachmentSelection(message.id, attachment.id)}
                       on:dragstart={(event) => handleAttachmentDragStart(event, attachment)}
                       aria-pressed={attachment.selected}
                       data-attachment-id={attachment.id}
                     >
                       {#if attachment.type === 'image'}
-                        {#if attachment.media}
-                          <MediaFrame
-                            media={attachment.media}
-                            showControls={false}
-                            dragAsImage={true}
-                          />
-                        {:else}
-                          <div class="attachment-loading">読み込み中...</div>
-                        {/if}
+                        <img src={attachment.url} alt={attachment.name} loading="lazy" draggable={false} />
                       {:else}
-                        {#if attachment.media}
-                          <!-- svelte-ignore a11y-media-has-caption -->
-                          <video
-                            src={attachment.url}
-                            controls
-                            preload="metadata"
-                            draggable="true"
-                            use:videoElementAction={attachment.id}
-                          />
-                        {:else}
-                          <div class="attachment-loading">読み込み中...</div>
-                        {/if}
+                        <!-- svelte-ignore a11y-media-has-caption -->
+                        <video
+                          src={attachment.url}
+                          controls
+                          preload="metadata"
+                          draggable={false}
+                          use:videoElementAction={attachment.id}
+                        />
                       {/if}
                     </button>
                   {/each}
@@ -600,24 +606,11 @@
     outline-offset: 2px;
   }
 
-  .attachment :global(.media-frame) {
-    width: 100%;
-  }
-
+  .attachment img,
   .attachment video {
     display: block;
     width: 100%;
     height: auto;
-  }
-
-  .attachment-loading {
-    width: 100%;
-    height: 160px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    color: rgb(var(--color-surface-500));
   }
 
   .message-footer {
