@@ -193,13 +193,20 @@
     }
   }
 
-  async function captureCurrentFrame(itemId: number) {
-    const container = mediaElements.get(itemId);
-    const video = container?.querySelector('video');
-    if (!video) return;
-    if (capturingMediaIds.has(itemId)) return;
-    setMediaCapturing(itemId, true);
+  async function captureCurrentFrame(item: MediaItem) {
+    if (capturingMediaIds.has(item.id)) return;
+    setMediaCapturing(item.id, true);
     try {
+      const container = mediaElements.get(item.id);
+      let video = container?.querySelector('video') ?? null;
+
+      if (!video) {
+        const media = item.media ?? (await ensureMediaItemMedia(item).catch(() => null));
+        video = media ? getVideoElementFromMedia(media) : null;
+      }
+
+      if (!video) return;
+
       if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
         await new Promise<void>((resolve, reject) => {
           const onLoaded = () => {
@@ -237,7 +244,7 @@
       const url = URL.createObjectURL(blob);
       objectUrls.push(url);
 
-      const fileName = `frame-${itemId}-${Date.now()}.png`;
+      const fileName = `frame-${item.id}-${Date.now()}.png`;
       const file = new File([blob], fileName, { type: 'image/png' });
       const frameItem: MediaItem = {
         id: nextId++,
@@ -251,7 +258,7 @@
 
       await appendMediaItems([frameItem]);
     } finally {
-      setMediaCapturing(itemId, false);
+      setMediaCapturing(item.id, false);
     }
   }
 
@@ -286,7 +293,7 @@
       <div class="message-log" bind:this={logElement}>
         {#each timelineBlocks as block ((block.kind === 'message-block'
           ? `message-${block.item.id}`
-          : `media-${block.items.map((item) => item.id).join('-')}`))}
+          : `media-${block.groupId}`))}
           <TimelineItemView
             messageItem={block.kind === 'message-block' ? block.item : null}
             mediaItems={block.kind === 'media-group' ? block.items : null}

@@ -43,6 +43,7 @@ export interface MessageBlock {
 export interface MediaGroupBlock {
   kind: 'media-group';
   items: MediaItem[];
+  groupId: number;
 }
 
 export type TimelineBlock = MessageBlock | MediaGroupBlock;
@@ -54,7 +55,7 @@ export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
   for (const item of items) {
     if (isMessageItem(item)) {
       if (pendingMedia && pendingMedia.length > 0) {
-        blocks.push({ kind: 'media-group', items: pendingMedia });
+        blocks.push({ kind: 'media-group', items: pendingMedia, groupId: pendingMedia[0].id });
         pendingMedia = null;
       }
       blocks.push({ kind: 'message-block', item });
@@ -68,7 +69,7 @@ export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
   }
 
   if (pendingMedia && pendingMedia.length > 0) {
-    blocks.push({ kind: 'media-group', items: pendingMedia });
+    blocks.push({ kind: 'media-group', items: pendingMedia, groupId: pendingMedia[0].id });
   }
 
   return blocks;

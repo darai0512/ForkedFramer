@@ -9,7 +9,7 @@
   export let messageItem: MessageItem | null = null;
   export let mediaItems: MediaItem[] | null = null;
   export let toggleMediaSelection: (id: number) => void = () => {};
-  export let captureCurrentFrame: (id: number) => void = () => {};
+  export let captureCurrentFrame: (item: MediaItem) => void = () => {};
   export let handleMediaDragStartEvent: (event: Event, item: MediaItem) => void = () => {};
   export let registerMediaElement: (id: number, element: HTMLButtonElement | null) => void = () => {};
   export let capturingMediaIds: Set<number> = new Set();
@@ -75,7 +75,7 @@
                 <button
                   type="button"
                   class="capture-button"
-                  on:click|stopPropagation={() => captureCurrentFrame(mediaItem.id)}
+                  on:click|stopPropagation={() => captureCurrentFrame(mediaItem)}
                   disabled={capturingMediaIds.has(mediaItem.id)}
                 >
                   {capturingMediaIds.has(mediaItem.id) ? 'キャプチャ中…' : 'キャプチャ'}
