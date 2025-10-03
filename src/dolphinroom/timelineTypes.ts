@@ -34,3 +34,42 @@ export function isMediaItem(item: TimelineItem): item is MediaItem {
 export function formatTimestamp(timestamp: number): string {
   return new Date(timestamp).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 }
+
+export interface MessageBlock {
+  kind: 'message-block';
+  item: MessageItem;
+}
+
+export interface MediaGroupBlock {
+  kind: 'media-group';
+  items: MediaItem[];
+}
+
+export type TimelineBlock = MessageBlock | MediaGroupBlock;
+
+export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
+  const blocks: TimelineBlock[] = [];
+  let pendingMedia: MediaItem[] | null = null;
+
+  for (const item of items) {
+    if (isMessageItem(item)) {
+      if (pendingMedia && pendingMedia.length > 0) {
+        blocks.push({ kind: 'media-group', items: pendingMedia });
+        pendingMedia = null;
+      }
+      blocks.push({ kind: 'message-block', item });
+      continue;
+    }
+
+    if (!pendingMedia) {
+      pendingMedia = [];
+    }
+    pendingMedia.push(item);
+  }
+
+  if (pendingMedia && pendingMedia.length > 0) {
+    blocks.push({ kind: 'media-group', items: pendingMedia });
+  }
+
+  return blocks;
+}

@@ -2,23 +2,17 @@
   import MediaFrame from '../gallery/MediaFrame.svelte';
   import {
     formatTimestamp,
-    isMessageItem,
     type MediaItem,
-    type MessageItem,
-    type TimelineItem
+    type MessageItem
   } from './timelineTypes';
 
-  export let item: TimelineItem;
+  export let messageItem: MessageItem | null = null;
+  export let mediaItems: MediaItem[] | null = null;
   export let toggleMediaSelection: (id: number) => void = () => {};
   export let captureCurrentFrame: (id: number) => void = () => {};
   export let handleMediaDragStartEvent: (event: Event, item: MediaItem) => void = () => {};
   export let registerMediaElement: (id: number, element: HTMLButtonElement | null) => void = () => {};
   export let capturingMediaIds: Set<number> = new Set();
-
-  $: isMessage = isMessageItem(item);
-  $: messageItem = isMessage ? (item as MessageItem) : null;
-  $: mediaItem = isMessage ? null : (item as MediaItem);
-  $: isCapturing = mediaItem?.kind === 'video' && capturingMediaIds.has(item.id);
 
   function mediaElementAction(node: HTMLButtonElement, elementId: number) {
     registerMediaElement(elementId, node);
@@ -28,6 +22,12 @@
       }
     };
   }
+
+  $: groupItems = mediaItems ?? [];
+  $: hasMediaGroup = groupItems.length > 0;
+  $: groupTimestamp = hasMediaGroup
+    ? formatTimestamp(groupItems[groupItems.length - 1].timestamp)
+    : '';
 </script>
 
 {#if messageItem}
@@ -41,46 +41,52 @@
       </div>
     </div>
   </div>
-{:else if mediaItem}
-  <div class="message-row" class:from-user={true}>
+{:else if hasMediaGroup}
+  <div class="message-row from-user">
     <div class="bubble media-bubble" role="group">
-      <button
-        type="button"
-        class="attachment"
-        class:image={mediaItem.kind === 'image'}
-        class:video={mediaItem.kind === 'video'}
-        class:selected={mediaItem.selected}
-        on:click={() => toggleMediaSelection(mediaItem.id)}
-        on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
-        aria-pressed={mediaItem.selected}
-        use:mediaElementAction={mediaItem.id}
-      >
-        {#if mediaItem.media}
-          <div class="attachment-media">
-            <MediaFrame
-              media={mediaItem.media}
-              showControls={mediaItem.kind === 'video'}
-              dragAsImage={mediaItem.kind === 'image'}
-            />
-          </div>
-        {:else}
-          <div class="attachment-placeholder">読み込み中…</div>
-        {/if}
-      </button>
-      <div class="message-footer">
-        {#if mediaItem.kind === 'video'}
-          <div class="message-actions">
+      <div class="media-grid">
+        {#each groupItems as mediaItem (mediaItem.id)}
+          <div class="media-cell">
             <button
               type="button"
-              class="message-action-button"
-              on:click|stopPropagation={() => captureCurrentFrame(mediaItem.id)}
-              disabled={isCapturing}
+              class="attachment"
+              class:image={mediaItem.kind === 'image'}
+              class:video={mediaItem.kind === 'video'}
+              class:selected={mediaItem.selected}
+              on:click={() => toggleMediaSelection(mediaItem.id)}
+              on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
+              aria-pressed={mediaItem.selected}
+              use:mediaElementAction={mediaItem.id}
             >
-              {isCapturing ? 'キャプチャ中…' : 'キャプチャ'}
+              {#if mediaItem.media}
+                <div class="attachment-media">
+                  <MediaFrame
+                    media={mediaItem.media}
+                    showControls={mediaItem.kind === 'video'}
+                    dragAsImage={mediaItem.kind === 'image'}
+                  />
+                </div>
+              {:else}
+                <div class="attachment-placeholder">読み込み中…</div>
+              {/if}
             </button>
+            {#if mediaItem.kind === 'video'}
+              <div class="media-actions">
+                <button
+                  type="button"
+                  class="capture-button"
+                  on:click|stopPropagation={() => captureCurrentFrame(mediaItem.id)}
+                  disabled={capturingMediaIds.has(mediaItem.id)}
+                >
+                  {capturingMediaIds.has(mediaItem.id) ? 'キャプチャ中…' : 'キャプチャ'}
+                </button>
+              </div>
+            {/if}
           </div>
-        {/if}
-        <span class="timestamp">{formatTimestamp(mediaItem.timestamp)}</span>
+        {/each}
+      </div>
+      <div class="message-footer">
+        <span class="timestamp">{groupTimestamp}</span>
       </div>
     </div>
   </div>
@@ -100,8 +106,8 @@
   }
 
   .bubble {
-    max-width: min(70%, 520px);
-    padding: 0.75rem 1rem;
+    max-width: min(72%, 560px);
+    padding: 0.7rem 1rem;
     border-radius: 14px;
     background-color: rgb(var(--color-primary-200));
     display: flex;
@@ -109,12 +115,6 @@
     gap: 0.5rem;
     color: rgb(var(--color-surface-900));
     border: 2px solid transparent;
-    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .media-bubble {
-    gap: 0.75rem;
-    align-items: flex-start;
   }
 
   .message-row.from-user .bubble {
@@ -122,22 +122,48 @@
     color: white;
   }
 
+  .media-bubble {
+    gap: 0.7rem;
+    align-items: flex-start;
+    max-width: min(100%, 680px);
+    width: min(100%, 680px);
+    margin-left: auto;
+  }
+
   .bubble p {
     margin: 0;
     white-space: pre-wrap;
     word-break: break-word;
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .media-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  .media-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 0 0 calc((100% - 1.2rem) / 3);
+    max-width: calc((100% - 1.2rem) / 3);
+    min-width: 140px;
   }
 
   .attachment {
-    border-radius: 12px;
+    border-radius: 14px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.6);
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    max-width: 220px;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(15, 23, 42, 0.08);
     cursor: pointer;
     position: relative;
     transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-    display: inline-flex;
+    display: flex;
     justify-content: center;
     align-items: stretch;
     padding: 0;
@@ -153,7 +179,7 @@
 
   .attachment.selected {
     border: 3px dashed rgba(37, 99, 235, 0.95);
-    box-shadow: 0 0 0 4px rgba(147, 197, 253, 0.6);
+    box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.55);
     background: rgba(191, 219, 254, 0.5);
   }
 
@@ -181,57 +207,52 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    padding: 2rem 1rem;
+    padding: 1.9rem 1rem;
     color: rgba(15, 23, 42, 0.6);
-    font-size: 0.9rem;
-    background: rgba(15, 23, 42, 0.05);
+    font-size: 0.85rem;
+    background: rgba(15, 23, 42, 0.07);
+  }
+
+  .media-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .capture-button {
+    background: rgba(37, 99, 235, 0.9);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    padding: 0.4rem 1.05rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    box-shadow: 0 3px 8px rgba(15, 23, 42, 0.25);
+  }
+
+  .capture-button:hover:not(:disabled),
+  .capture-button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+    background: rgba(29, 78, 216, 0.95);
+    outline: none;
+  }
+
+  .capture-button:disabled {
+    opacity: 0.65;
+    cursor: progress;
   }
 
   .message-footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-top: 0.75rem;
-    flex-wrap: wrap;
-  }
-
-  .message-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .message-action-button {
-    background: rgba(59, 130, 246, 0.95);
-    color: white;
-    border: none;
-    border-radius: 9999px;
-    padding: 0.4rem 1rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
-  }
-
-  .message-action-button:hover:not(:disabled),
-  .message-action-button:focus-visible {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px rgba(15, 23, 42, 0.35);
-    background: rgba(37, 99, 235, 0.95);
-    outline: none;
-  }
-
-  .message-action-button:disabled {
-    opacity: 0.6;
-    cursor: progress;
+    justify-content: flex-end;
+    margin-top: 0.4rem;
   }
 
   .timestamp {
-    font-size: 0.75rem;
-    opacity: 0.7;
-    align-self: flex-end;
-    margin-left: auto;
+    font-size: 0.72rem;
+    opacity: 0.75;
   }
 </style>

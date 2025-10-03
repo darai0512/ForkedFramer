@@ -5,36 +5,35 @@
   import { dolphinRoomOpen } from './dolphinRoomStore';
   import { getVideoElementFromMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
   import { attachFileToDataTransfer } from '../lib/layeredCanvas/tools/dragUtil';
-  import type { MediaItem, TimelineItem } from './timelineTypes';
+  import {
+    toTimelineBlocks,
+    type MediaItem,
+    type TimelineBlock,
+    type TimelineItem
+  } from './timelineTypes';
   import { createMediaLoaders } from './mediaLoaders';
 
   const botReplies = [
-    'うんうん、なるほど！',
-    'ちょっと考えてみますね。',
-    'それは面白いアイデアですね。',
-    '詳しく聞かせてもらえますか？',
-    'いいですね、その調子です！'
+    'うんうん、なるほど！', 'ちょっと考えてみますね。', 'それは面白いアイデアですね。',
+    '詳しく聞かせてもらえますか？', 'いいですね、その調子です！'
   ];
 
   const dispatch = createEventDispatcher<{ dragstart: Media }>();
 
-  let timelineItems: TimelineItem[] = [];
-  let draft = '';
-  let nextId = 0;
+  let timelineItems: TimelineItem[] = [], timelineBlocks: TimelineBlock[] = [];
+  let draft = '', nextId = 0;
   let logElement: HTMLDivElement | null = null;
-  const objectUrls: string[] = [];
-  const mediaElements = new Map<number, HTMLButtonElement>();
+  const objectUrls: string[] = [], mediaElements = new Map<number, HTMLButtonElement>();
   let capturingMediaIds = new Set<number>();
 
   const { ensureMediaItemMedia } = createMediaLoaders({
     refreshTimeline,
     addObjectUrl: (url: string) => objectUrls.push(url)
   });
-
   function refreshTimeline() {
     timelineItems = [...timelineItems];
   }
-
+  $: timelineBlocks = toTimelineBlocks(timelineItems);
   function closeDrawer() {
     $dolphinRoomOpen = false;
   }
@@ -51,11 +50,9 @@
       scheduleBotReply();
     }
   }
-
   async function enqueueBotMessage(text: string) {
     await appendMessage('bot', text);
   }
-
   async function appendMessage(sender: 'user' | 'bot', content: string) {
     const entry = {
       id: nextId++,
@@ -71,14 +68,12 @@
       logElement.scrollTo({ top: logElement.scrollHeight, behavior: 'smooth' });
     }
   }
-
   function scheduleBotReply() {
     const reply = botReplies[Math.floor(Math.random() * botReplies.length)];
     setTimeout(() => {
       void enqueueBotMessage(reply);
     }, 500 + Math.random() * 700);
   }
-
   function handleSubmit(event: Event) {
     event.preventDefault();
     const text = draft.trim();
@@ -91,9 +86,7 @@
     event.preventDefault();
     const items = event.dataTransfer?.files;
     if (!items || items.length === 0) return;
-
     const mediaItems: MediaItem[] = [];
-
     for (const file of Array.from(items)) {
       const type = file.type;
       if (!type.startsWith('image/') && !type.startsWith('video/')) continue;
@@ -111,9 +104,7 @@
         timestamp: Date.now()
       });
     }
-
     if (mediaItems.length === 0) return;
-
     void appendMediaItems(mediaItems);
     event.dataTransfer?.clearData();
   }
@@ -129,14 +120,12 @@
       logElement.scrollTo({ top: logElement.scrollHeight, behavior: 'smooth' });
     }
   }
-
   function toggleMediaSelection(itemId: number) {
     timelineItems = timelineItems.map((item) => {
       if (item.id !== itemId || item.kind === 'message') return item;
       return { ...item, selected: !item.selected };
     });
   }
-
   function registerMediaElement(id: number, element: HTMLButtonElement | null) {
     if (element) {
       mediaElements.set(id, element);
@@ -158,9 +147,7 @@
   function handleMediaDragStart(event: DragEvent, item: MediaItem) {
     const dataTransfer = event.dataTransfer;
     if (!dataTransfer) return;
-
     dataTransfer.effectAllowed = 'copy';
-
     const file = item.file;
     if (file) {
       attachFileToDataTransfer(dataTransfer, file, {
@@ -189,7 +176,6 @@
     const notifyDragStart = (media: Media) => {
       dispatch('dragstart', media);
     };
-
     if (item.media) {
       notifyDragStart(item.media);
     } else {
@@ -211,10 +197,8 @@
     const container = mediaElements.get(itemId);
     const video = container?.querySelector('video');
     if (!video) return;
-
     if (capturingMediaIds.has(itemId)) return;
     setMediaCapturing(itemId, true);
-
     try {
       if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
         await new Promise<void>((resolve, reject) => {
@@ -250,7 +234,6 @@
         canvas.toBlob(resolve, 'image/png')
       );
       if (!blob) return;
-
       const url = URL.createObjectURL(blob);
       objectUrls.push(url);
 
@@ -301,9 +284,12 @@
       </header>
 
       <div class="message-log" bind:this={logElement}>
-        {#each timelineItems as item (item.id)}
+        {#each timelineBlocks as block ((block.kind === 'message-block'
+          ? `message-${block.item.id}`
+          : `media-${block.items.map((item) => item.id).join('-')}`))}
           <TimelineItemView
-            {item}
+            messageItem={block.kind === 'message-block' ? block.item : null}
+            mediaItems={block.kind === 'media-group' ? block.items : null}
             {capturingMediaIds}
             {toggleMediaSelection}
             captureCurrentFrame={captureCurrentFrame}
@@ -311,7 +297,7 @@
             registerMediaElement={registerMediaElement}
           />
         {/each}
-        {#if timelineItems.length === 0}
+        {#if timelineBlocks.length === 0}
           <div class="empty-state">
             <p>まだメッセージがありません。下のフォームから送信してみましょう！</p>
           </div>
