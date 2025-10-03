@@ -13,6 +13,7 @@
   export let handleMediaDragStartEvent: (event: Event, item: MediaItem) => void = () => {};
   export let registerMediaElement: (id: number, element: HTMLButtonElement | null) => void = () => {};
   export let capturingMediaIds: Set<number> = new Set();
+  export let deleteMediaItem: (item: MediaItem) => void = () => {};
 
   function mediaElementAction(node: HTMLButtonElement, elementId: number) {
     registerMediaElement(elementId, node);
@@ -69,6 +70,14 @@
               {:else}
                 <div class="attachment-placeholder">読み込み中…</div>
               {/if}
+            </button>
+            <button
+              type="button"
+              class="delete-button"
+              on:click|stopPropagation={() => deleteMediaItem(mediaItem)}
+              aria-label="メディアを削除"
+            >
+              ×
             </button>
             {#if mediaItem.kind === 'video'}
               <div class="media-actions">
@@ -153,6 +162,7 @@
     flex: 0 0 calc((100% - 1.2rem) / 3);
     max-width: calc((100% - 1.2rem) / 3);
     min-width: 140px;
+    position: relative;
   }
 
   .attachment {
@@ -211,6 +221,33 @@
     color: rgba(15, 23, 42, 0.6);
     font-size: 0.85rem;
     background: rgba(15, 23, 42, 0.07);
+  }
+
+  .delete-button {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: none;
+    background: rgba(15, 23, 42, 0.7);
+    color: white;
+    font-size: 1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  }
+
+  .delete-button:hover,
+  .delete-button:focus-visible {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.35);
+    background: rgba(220, 38, 38, 0.85);
+    outline: none;
   }
 
   .media-actions {

@@ -134,6 +134,24 @@
     }
   }
 
+  function releaseObjectUrl(url: string | null | undefined) {
+    if (!url) return;
+    let index = objectUrls.indexOf(url);
+    let removed = false;
+    while (index !== -1) {
+      objectUrls.splice(index, 1);
+      removed = true;
+      index = objectUrls.indexOf(url);
+    }
+    if (removed) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.warn('Failed to revoke object URL', error);
+      }
+    }
+  }
+
   function setMediaCapturing(id: number, enabled: boolean) {
     const next = new Set(capturingMediaIds);
     if (enabled) {
@@ -142,6 +160,22 @@
       next.delete(id);
     }
     capturingMediaIds = next;
+  }
+
+  function deleteMediaItem(target: MediaItem) {
+    releaseObjectUrl(target.url);
+    if (target.kind === 'video') {
+      const media = target.media;
+      const video = media ? getVideoElementFromMedia(media) : null;
+      releaseObjectUrl(video?.src ?? null);
+    }
+
+    mediaElements.delete(target.id);
+    const nextCapturing = new Set(capturingMediaIds);
+    nextCapturing.delete(target.id);
+    capturingMediaIds = nextCapturing;
+
+    timelineItems = timelineItems.filter((item) => item.id !== target.id);
   }
 
   function handleMediaDragStart(event: DragEvent, item: MediaItem) {
@@ -302,6 +336,7 @@
             captureCurrentFrame={captureCurrentFrame}
             handleMediaDragStartEvent={handleMediaDragStartEvent}
             registerMediaElement={registerMediaElement}
+            deleteMediaItem={deleteMediaItem}
           />
         {/each}
         {#if timelineBlocks.length === 0}
