@@ -33,6 +33,8 @@ let capturingMediaIds = new Set<number>();
 let imagingMode: ImagingMode = 'schnell';
 let hasSelectedMedia = false;
 $: messageHeading = hasSelectedMedia ? '編集' : '生成';
+let isDraftEmpty = true;
+$: isDraftEmpty = draft.trim().length === 0;
 
 const videoModelStore = createPreferenceStore<ImageToVideoModel>('tweakUi', 'dolphinRoomVideoModel', 'FramePack');
 const videoModelOptions: Array<{ value: ImageToVideoModel; label: string; devOnly?: boolean }> = [
@@ -390,12 +392,12 @@ onDestroy(() => {
 
       <form class="input-row" on:submit={handleSubmit}>
         <div class="input-wrapper">
-          <input
+          <textarea
             id="dolphin-room-message"
-            type="text"
             placeholder="メッセージを入力してください"
             bind:value={draft}
             aria-label="メッセージ入力"
+            rows={5}
           />
         </div>
         <button
@@ -403,10 +405,11 @@ onDestroy(() => {
           class="btn send-button mode-button"
           class:editing={hasSelectedMedia}
           title={hasSelectedMedia ? '選択中メディアを編集' : '新規生成モード'}
+          disabled={isDraftEmpty}
         >
           {messageHeading}
         </button>
-        <button type="submit" class="btn send-button speak-button">発言</button>
+        <button type="submit" class="btn send-button speak-button" disabled={isDraftEmpty}>発言</button>
       </form>
     </div>
   {/if}
@@ -513,23 +516,28 @@ onDestroy(() => {
     display: flex;
   }
 
-  .input-row input {
+  .input-row textarea {
     flex: 1;
-    padding: 0.75rem 1rem;
-    border-radius: 9999px;
+    padding: 0.85rem 1.1rem;
+    border-radius: 1rem;
     border: 1px solid rgb(var(--color-surface-400));
     background-color: white;
     font-size: 1rem;
+    line-height: 1.45;
+    min-height: 140px;
+    resize: vertical;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .input-row input:focus {
+  .input-row textarea:focus {
     outline: none;
     border-color: rgb(var(--color-primary-500));
-    box-shadow: 0 0 0 2px rgba(var(--color-primary-500), 0.1);
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-500), 0.12);
   }
 
   .input-row button {
     padding: 0.75rem 1.5rem;
+    align-self: center;
   }
 
   .send-button {
@@ -544,6 +552,19 @@ onDestroy(() => {
   .send-button:hover,
   .send-button:focus-visible {
     transform: translateY(-1px);
+  }
+
+  .send-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .send-button:disabled:hover,
+  .send-button:disabled:focus-visible {
+    transform: none;
+    box-shadow: none;
   }
 
   .mode-button {
