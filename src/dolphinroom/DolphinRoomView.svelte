@@ -212,7 +212,7 @@ async function handleAddCollection() {
                 : hasSelectedImages
                   ? (isGenerating ? '編集中です…' : '選択中メディアを編集')
                   : (isGenerating ? '生成中です…' : '新規生成モード')}
-              disabled={isDraftEmpty || isGenerating || (generationType === 'video' && !hasSelectedImages)}
+              disabled={!!generationDisableReason}
               on:click={handleModeButtonClick}
               aria-busy={isGenerating}
             >

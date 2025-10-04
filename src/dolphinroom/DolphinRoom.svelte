@@ -25,6 +25,7 @@ import {
   pickVideoAspectRatio,
 } from '../generator/videoModelConfig';
 import { createObjectUrlManager } from './objectUrlManager';
+import { supportsRefImages } from '../utils/feathralImaging';
 import {
   createPlaceholderMediaItems,
   removeMediaItems as removeTimelineMediaItems,
@@ -201,6 +202,9 @@ $: generationDisableReason = (() => {
   if (isGenerating) return '現在処理中です';
   if (isDraftEmpty) return 'プロンプトを入力してください';
   if (generationType === 'video' && !hasSelectedImages) return '動画生成には画像を選択してください';
+  if (generationType === 'image' && hasSelectedImages && !supportsRefImages(imagingMode)) {
+    return 'このモードは参照画像に対応していません';
+  }
   return '';
 })();
 
