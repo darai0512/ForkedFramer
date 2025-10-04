@@ -19,7 +19,7 @@ import type { ImagingMode, ImageToVideoModel, ImagingBackground } from '$protoco
 import { createPreferenceStore } from '../preferences';
 import { developmentFlag } from '../utils/developmentFlagStore';
 import { executeProcessAndNotify } from '../utils/executeProcessAndNotify';
-import { generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
+import { generateImage, isContentsPolicyViolationError, supportsRefImages, getRefMaxForMode } from '../utils/feathralImaging';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { _ } from 'svelte-i18n';
 
@@ -114,11 +114,19 @@ async function createMediaItemFromCanvas(canvas: HTMLCanvasElement, index: numbe
 }
 
 async function handleModeButtonClick() {
-  if (hasSelectedMedia || isDraftEmpty || isGenerating) return;
+  if (isGenerating || isDraftEmpty) return;
 
   const prompt = composeGenerationPrompt(draft);
   if (!prompt) return;
 
+  if (hasSelectedMedia) {
+    await handleEditSelected(prompt);
+  } else {
+    await handleGenerateNew(prompt);
+  }
+}
+
+async function handleGenerateNew(prompt: string) {
   isGenerating = true;
   try {
     const canvases = await executeProcessAndNotify(
@@ -141,6 +149,70 @@ async function handleModeButtonClick() {
     } else {
       console.error('画像生成に失敗しました', error);
       toastStore.trigger({ message: '画像生成に失敗しました。', timeout: 3000 });
+    }
+  } finally {
+    isGenerating = false;
+  }
+}
+
+async function handleEditSelected(prompt: string) {
+  const selectedItems = timelineItems.filter((item): item is MediaItem => isMediaItem(item) && item.selected && item.kind === 'image');
+  if (selectedItems.length === 0) {
+    toastStore.trigger({ message: '編集には画像を選択してください。', timeout: 2500 });
+    return;
+  }
+
+  if (!supportsRefImages(imagingMode)) {
+    toastStore.trigger({ message: 'このモードは参照画像に対応していません。', timeout: 2500 });
+    return;
+  }
+
+  const refMax = Math.max(0, getRefMaxForMode(imagingMode));
+  if (refMax === 0) {
+    toastStore.trigger({ message: '参照画像の上限により編集を実行できません。', timeout: 2500 });
+    return;
+  }
+
+  const limitedItems = selectedItems.slice(0, refMax);
+  isGenerating = true;
+  try {
+    const medias = await Promise.all(limitedItems.map((item) => ensureMediaItemMedia(item)));
+    const canvasesForRefs = medias
+      .filter((media) => media.type === 'image')
+      .map((media) => media.drawSourceCanvas);
+
+    if (canvasesForRefs.length === 0) {
+      toastStore.trigger({ message: '参照画像を取得できませんでした。', timeout: 2500 });
+      return;
+    }
+
+    const referenceUrls = canvasesForRefs.map((canvas) => canvas.toDataURL('image/png'));
+    const baseCanvas = canvasesForRefs[0];
+    const imageSize = baseCanvas
+      ? { width: baseCanvas.width || DEFAULT_IMAGE_SIZE.width, height: baseCanvas.height || DEFAULT_IMAGE_SIZE.height }
+      : DEFAULT_IMAGE_SIZE;
+
+    const canvases = await executeProcessAndNotify(
+      5000,
+      $_('generator.imageGenerated'),
+      async () =>
+        await generateImage(prompt, imageSize, imagingMode, DEFAULT_IMAGE_COUNT, 'auto', referenceUrls)
+    );
+
+    const items: MediaItem[] = [];
+    for (let i = 0; i < canvases.length; i += 1) {
+      items.push(await createMediaItemFromCanvas(canvases[i], i));
+    }
+
+    if (items.length > 0) {
+      await appendMediaItems(items);
+    }
+  } catch (error) {
+    if (isContentsPolicyViolationError(error)) {
+      // エラー通知は generateImage 側で行われる
+    } else {
+      console.error('画像編集に失敗しました', error);
+      toastStore.trigger({ message: '画像編集に失敗しました。', timeout: 3000 });
     }
   } finally {
     isGenerating = false;
