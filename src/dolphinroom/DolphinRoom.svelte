@@ -14,10 +14,16 @@ import type {
   ImagingMode,
   ImageToVideoModel,
   ImageToVideoRequest,
+  ImageToVideoResolution,
 } from '$protocolTypes/imagingTypes';
 import { createPreferenceStore } from '../preferences';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
-import { videoModelOptions } from '../generator/videoModelConfig';
+import {
+  videoModelOptions,
+  pickVideoDuration,
+  pickVideoResolution,
+  pickVideoAspectRatio,
+} from '../generator/videoModelConfig';
 import { createObjectUrlManager } from './objectUrlManager';
 import {
   createPlaceholderMediaItems,
@@ -35,6 +41,7 @@ import { createFrameCapture } from './frameCapture';
 import type { AllocateId } from './types';
 import { createGenerationActions } from './generationActions';
 import DolphinRoomView from './DolphinRoomView.svelte';
+import { DEFAULT_IMAGE_SIZE } from './constants';
 
 const dispatch = createEventDispatcher<{ dragstart: Media }>();
 
@@ -56,6 +63,12 @@ let generationDisableReason = '';
 let selectedImageItems: MediaItem[] = [];
 let hasSelectedImages = false;
 let isDraftEmpty = true;
+
+let imageSizeForCost = DEFAULT_IMAGE_SIZE;
+let videoSourceSize = DEFAULT_IMAGE_SIZE;
+let videoDurationForCost: ImageToVideoRequest['duration'];
+let videoResolutionForCost: ImageToVideoResolution;
+let videoAspectRatioForCost: ImageToVideoRequest['aspectRatio'];
 
 const allocateId: AllocateId = () => nextId++;
 
@@ -93,8 +106,14 @@ const videoModelStore = createPreferenceStore<ImageToVideoModel>(
 );
 
 let videoModel: ImageToVideoModel = get(videoModelStore);
+videoDurationForCost = pickVideoDuration(videoModel);
+videoResolutionForCost = pickVideoResolution(videoModel);
+videoAspectRatioForCost = pickVideoAspectRatio(videoModel, videoSourceSize.width, videoSourceSize.height);
 const unsubscribeVideoModel = videoModelStore.subscribe((value) => {
   videoModel = value;
+  videoDurationForCost = pickVideoDuration(videoModel);
+  videoResolutionForCost = pickVideoResolution(videoModel);
+  videoAspectRatioForCost = pickVideoAspectRatio(videoModel, videoSourceSize.width, videoSourceSize.height);
 });
 
 const { handleMediaDragStartEvent } = createDragActions({
@@ -158,6 +177,19 @@ $: {
     (item): item is MediaItem => isMediaItem(item) && item.selected && item.kind === 'image',
   );
   hasSelectedImages = selectedImageItems.length > 0;
+}
+$: {
+  const candidate = selectedImageItems.find((item) => item.media && item.media.type === 'image' && item.media.isLoaded);
+  if (candidate?.media) {
+    imageSizeForCost = {
+      width: candidate.media.naturalWidth || candidate.media.drawSourceCanvas.width || DEFAULT_IMAGE_SIZE.width,
+      height: candidate.media.naturalHeight || candidate.media.drawSourceCanvas.height || DEFAULT_IMAGE_SIZE.height,
+    };
+  } else {
+    imageSizeForCost = DEFAULT_IMAGE_SIZE;
+  }
+  videoSourceSize = imageSizeForCost;
+  videoAspectRatioForCost = pickVideoAspectRatio(videoModel, videoSourceSize.width, videoSourceSize.height);
 }
 $: timelineRows = toTimelineRows(timelineItems);
 $: messageHeading = generationType === 'video'
@@ -277,6 +309,11 @@ onDestroy(() => {
   bind:generationType={generationType}
   videoModel={videoModel}
   videoModelOptions={videoModelOptions}
+  imageSize={imageSizeForCost}
+  videoSourceSize={videoSourceSize}
+  videoDuration={videoDurationForCost}
+  videoResolution={videoResolutionForCost}
+  videoAspectRatio={videoAspectRatioForCost}
   onVideoModelChange={handleVideoModelChange}
   onClose={closeDrawer}
   toggleMediaSelection={toggleMediaSelection}

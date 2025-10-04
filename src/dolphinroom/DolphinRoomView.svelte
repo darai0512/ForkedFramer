@@ -5,7 +5,12 @@ import ImagingModes from '../generator/ImagingModes.svelte';
 import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
 import type { TimelineRow, MediaItem } from './timelineTypes';
-import type { ImagingMode, ImageToVideoModel } from '$protocolTypes/imagingTypes';
+import type {
+  ImagingMode,
+  ImageToVideoModel,
+  ImageToVideoRequest,
+  ImageToVideoResolution,
+} from '$protocolTypes/imagingTypes';
 
 export let open = false;
 export let logElement: HTMLDivElement | null = null;
@@ -21,6 +26,11 @@ export let imagingMode: ImagingMode = 'schnell';
 export let generationType: 'image' | 'video' = 'image';
 export let videoModel: ImageToVideoModel = 'FramePack';
 export let videoModelOptions: Array<{ value: ImageToVideoModel; label: string; devOnly?: boolean }> = [];
+export let imageSize: { width: number; height: number } = { width: 1024, height: 1024 };
+export let videoSourceSize: { width: number; height: number } = { width: 1024, height: 1024 };
+export let videoDuration: ImageToVideoRequest['duration'] = '5';
+export let videoResolution: ImageToVideoResolution = '720p';
+export let videoAspectRatio: ImageToVideoRequest['aspectRatio'] = '16:9';
 export let onVideoModelChange: (model: ImageToVideoModel) => void = () => {};
 
 export let onClose: () => void = () => {};
@@ -85,16 +95,35 @@ export let handleDrop: (event: DragEvent) => void = () => {};
 
       <form class="generation-form" on:submit={handleSubmit}>
         <div class="model-row" role="group" aria-label="生成モデル設定">
-          <div class="model-item">
+          <div
+            class="model-item"
+            class:inactive={generationType !== 'image'}
+            aria-disabled={generationType !== 'image'}
+          >
             <span class="model-label">画像</span>
-            <ImagingModes bind:mode={imagingMode} group="imaging" width={200} />
+            <ImagingModes
+              bind:mode={imagingMode}
+              group="imaging"
+              width={240}
+              disabled={generationType !== 'image'}
+              {imageSize}
+            />
           </div>
-          <div class="model-item">
+          <div
+            class="model-item"
+            class:inactive={generationType !== 'video'}
+            aria-disabled={generationType !== 'video'}
+          >
             <span class="model-label">動画</span>
             <VideoGenerationModes
               model={videoModel}
               options={videoModelOptions}
-              width={200}
+              width={240}
+              disabled={generationType !== 'video'}
+              duration={videoDuration}
+              resolution={videoResolution}
+              aspectRatio={videoAspectRatio}
+              sourceSize={videoSourceSize}
               on:change={(event) => onVideoModelChange(event.detail)}
             />
           </div>
@@ -210,6 +239,10 @@ export let handleDrop: (event: DragEvent) => void = () => {};
     gap: 0.5rem;
     font-size: 0.85rem;
     color: rgb(var(--color-surface-600));
+  }
+
+  .model-item.inactive {
+    opacity: 0.55;
   }
 
   .model-label {

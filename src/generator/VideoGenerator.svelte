@@ -22,6 +22,7 @@
   let resolution: ImageToVideoResolution = "720p";
   let model: ImageToVideoModel = "FramePack";
   let sourceMedia: Media;
+  let sourceSize: { width: number; height: number } | null = null;
   let promptWaiting: boolean;
   let cost: number = 50;
 
@@ -49,7 +50,7 @@
   $: durationOptions = buildDurationOptions(capability);
   $: aspectRatioOptions = buildAspectRatioOptions(capability);
   $: resolutionOptions = buildResolutionOptions(capability);
-  
+
   // モデル変更時に互換性のあるオプションに自動調整
   $: if (capability) {
     const availableDurations = durationOptions.map((option) => option.value);
@@ -73,6 +74,13 @@
   } else {
     cost = 0;
   }
+
+  $: sourceSize = sourceMedia
+    ? {
+        width: sourceMedia.naturalWidth || sourceMedia.drawSourceCanvas.width,
+        height: sourceMedia.naturalHeight || sourceMedia.drawSourceCanvas.height,
+      }
+    : null;
 
   function buildDurationOptions(cap?: VideoModelCapability): Option[] {
     if (!cap) return [];
@@ -253,7 +261,15 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="label">
           <h3>{$_('generator.model')}</h3>
-          <VideoGenerationModes bind:model={model} options={videoModelOptions} width={240} />
+          <VideoGenerationModes
+            bind:model={model}
+            options={videoModelOptions}
+            width={240}
+            duration={duration}
+            resolution={resolution}
+            aspectRatio={aspectRatio}
+            sourceSize={sourceSize}
+          />
         </div>
 
         <div class="label">

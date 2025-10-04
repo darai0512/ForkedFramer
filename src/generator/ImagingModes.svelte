@@ -9,9 +9,12 @@
 
   export let mode: ImagingMode;
   export let group: 'imaging' | 'textedit' | 'ref' | 'all' = 'imaging';
-  export let imageSize: { width: number; height: number } | undefined = undefined;
+  const DEFAULT_IMAGE_SIZE = { width: 1024, height: 1024 };
+
+  export let imageSize: { width: number; height: number } | undefined = DEFAULT_IMAGE_SIZE;
   export let comment: string = '';
   export let width: number = 270;
+  export let disabled = false;
 
   const preference = createPreference<ImagingMode>('imaging', 'mode');
 
@@ -56,13 +59,15 @@
     return option as ModeOption;
   }
 
+  $: effectiveImageSize = imageSize ?? DEFAULT_IMAGE_SIZE;
+
   let allOptions: ModeOption[] = [];
   $: allOptions = unifiedModeOptions
     .filter(filterByGroup())
     .map(o => ({
       value: o.value as ImagingMode,
       label: group === 'ref' && o.refImaging && o.textedit ? `☆ ${o.name}` : o.name,
-      cost: imageSize ? calculateImagingCost(o.value as ImagingMode, imageSize) : 0,
+      cost: calculateImagingCost(o.value as ImagingMode, effectiveImageSize),
       uiType: o.uiType as ImagingProvider,
     }));
 
@@ -102,7 +107,7 @@
       on:change={handleChange}
       width={width}
       placeholder="選択可能なモードがありません"
-      disabled={allOptions.length === 0}
+      disabled={disabled || allOptions.length === 0}
     >
       <svelte:fragment slot="trigger" let:selectedOption>
         {#if selectedOption}
