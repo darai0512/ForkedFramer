@@ -9,6 +9,7 @@ import { attachFileToDataTransfer } from '../lib/layeredCanvas/tools/dragUtil';
 import {
   toTimelineBlocks,
   type MediaItem,
+  type MessageItem,
   type TimelineBlock,
   type TimelineItem,
   isMediaItem
@@ -110,22 +111,7 @@ async function buildMediaPayloadFromCanvas(canvas: HTMLCanvasElement, index: num
   };
 }
 
-async function createMediaItemFromCanvas(canvas: HTMLCanvasElement, index: number): Promise<MediaItem> {
-  const payload = await buildMediaPayloadFromCanvas(canvas, index);
-
-  return {
-    id: nextId++,
-    kind: 'image',
-    name: payload.name,
-    url: payload.url,
-    selected: false,
-    file: payload.file,
-    media: payload.media,
-    timestamp: payload.timestamp,
-  };
-}
-
-function createPlaceholderMediaItems(count: number): MediaItem[] {
+function createPlaceholderMediaItems(count: number, promptId?: number): MediaItem[] {
   if (count <= 0) return [];
   const baseTimestamp = Date.now();
   const placeholders: MediaItem[] = [];
@@ -139,6 +125,7 @@ function createPlaceholderMediaItems(count: number): MediaItem[] {
       file: null,
       timestamp: baseTimestamp + i,
       placeholder: true,
+      promptId,
     });
   }
   timelineItems = [...timelineItems, ...placeholders];
@@ -156,7 +143,7 @@ function removeMediaItems(targets: MediaItem[]) {
   );
 }
 
-async function hydratePlaceholdersWithCanvases(placeholders: MediaItem[], canvases: HTMLCanvasElement[]) {
+async function hydratePlaceholdersWithCanvases(placeholders: MediaItem[], canvases: HTMLCanvasElement[], promptId?: number) {
   const extras: MediaItem[] = [];
 
   for (let i = 0; i < canvases.length; i += 1) {
@@ -173,6 +160,9 @@ async function hydratePlaceholdersWithCanvases(placeholders: MediaItem[], canvas
       target.timestamp = payload.timestamp;
       target.placeholder = false;
       target.selected = false;
+      if (promptId != null) {
+        target.promptId = promptId;
+      }
     } else {
       extras.push({
         id: nextId++,
@@ -183,6 +173,7 @@ async function hydratePlaceholdersWithCanvases(placeholders: MediaItem[], canvas
         file: payload.file,
         media: payload.media,
         timestamp: payload.timestamp,
+        promptId,
       });
     }
   }
@@ -200,18 +191,20 @@ async function handleModeButtonClick() {
   const prompt = composeGenerationPrompt(draft);
   if (!prompt) return;
 
-  await appendMessage('user', prompt);
+  const promptMessage = await appendMessage('user', prompt);
+
+  if (!promptMessage) return;
 
   if (hasSelectedMedia) {
-    await handleEditSelected(prompt);
+    await handleEditSelected(prompt, promptMessage.id);
   } else {
-    await handleGenerateNew(prompt);
+    await handleGenerateNew(prompt, promptMessage.id);
   }
 }
 
-async function handleGenerateNew(prompt: string) {
+async function handleGenerateNew(prompt: string, promptId: number) {
   isGenerating = true;
-  const placeholders = createPlaceholderMediaItems(DEFAULT_IMAGE_COUNT);
+  const placeholders = createPlaceholderMediaItems(DEFAULT_IMAGE_COUNT, promptId);
   try {
     const canvases = await executeProcessAndNotify(
       5000,
@@ -219,7 +212,7 @@ async function handleGenerateNew(prompt: string) {
       async () => await generateImage(prompt, DEFAULT_IMAGE_SIZE, imagingMode, DEFAULT_IMAGE_COUNT, DEFAULT_BACKGROUND, [])
     );
 
-    await hydratePlaceholdersWithCanvases(placeholders, canvases);
+    await hydratePlaceholdersWithCanvases(placeholders, canvases, promptId);
   } catch (error) {
     if (isContentsPolicyViolationError(error)) {
       // エラー通知は generateImage 側で行われる
@@ -233,7 +226,7 @@ async function handleGenerateNew(prompt: string) {
   }
 }
 
-async function handleEditSelected(prompt: string) {
+async function handleEditSelected(prompt: string, promptId: number) {
   const selectedItems = timelineItems.filter((item): item is MediaItem => isMediaItem(item) && item.selected && item.kind === 'image');
   if (selectedItems.length === 0) {
     toastStore.trigger({ message: '編集には画像を選択してください。', timeout: 2500 });
@@ -253,7 +246,7 @@ async function handleEditSelected(prompt: string) {
 
   const limitedItems = selectedItems.slice(0, refMax);
   isGenerating = true;
-  const placeholders = createPlaceholderMediaItems(DEFAULT_IMAGE_COUNT);
+  const placeholders = createPlaceholderMediaItems(DEFAULT_IMAGE_COUNT, promptId);
   try {
     const medias = await Promise.all(limitedItems.map((item) => ensureMediaItemMedia(item)));
     const canvasesForRefs = medias
@@ -278,7 +271,7 @@ async function handleEditSelected(prompt: string) {
         await generateImage(prompt, imageSize, imagingMode, DEFAULT_IMAGE_COUNT, 'auto', referenceUrls)
     );
 
-    await hydratePlaceholdersWithCanvases(placeholders, canvases);
+    await hydratePlaceholdersWithCanvases(placeholders, canvases, promptId);
   } catch (error) {
     if (isContentsPolicyViolationError(error)) {
       // エラー通知は generateImage 側で行われる
@@ -303,7 +296,7 @@ async function enqueueUserMessage(text: string, shouldRespond = true) {
 async function enqueueBotMessage(text: string) {
   await appendMessage('bot', text);
 }
-async function appendMessage(sender: 'user' | 'bot', content: string) {
+async function appendMessage(sender: 'user' | 'bot', content: string): Promise<MessageItem> {
   const entry = {
     id: nextId++,
     kind: 'message' as const,
@@ -317,6 +310,7 @@ async function appendMessage(sender: 'user' | 'bot', content: string) {
   if (logElement) {
     logElement.scrollTo({ top: logElement.scrollHeight, behavior: 'smooth' });
   }
+  return entry;
 }
 function scheduleBotReply() {
   const reply = botReplies[Math.floor(Math.random() * botReplies.length)];
@@ -599,10 +593,13 @@ onDestroy(() => {
       <div class="message-log" bind:this={logElement}>
         {#each timelineBlocks as block ((block.kind === 'message-block'
           ? `message-${block.item.id}`
-          : `media-${block.groupId}`))}
+          : block.kind === 'media-group'
+            ? `media-${block.groupId}`
+            : `message-media-${block.groupId}`))}
           <TimelineItemView
-            messageItem={block.kind === 'message-block' ? block.item : null}
-            mediaItems={block.kind === 'media-group' ? block.items : null}
+            messageItem={block.kind === 'message-block' ? block.item : block.kind === 'message-media' ? block.message : null}
+            mediaItems={block.kind === 'media-group' ? block.items : block.kind === 'message-media' ? block.items : null}
+            combined={block.kind === 'message-media'}
             {capturingMediaIds}
             {toggleMediaSelection}
             captureCurrentFrame={captureCurrentFrame}

@@ -8,30 +8,97 @@
 
   export let messageItem: MessageItem | null = null;
   export let mediaItems: MediaItem[] | null = null;
-  export let toggleMediaSelection: (id: number) => void = () => {};
-  export let captureCurrentFrame: (item: MediaItem) => void = () => {};
-  export let handleMediaDragStartEvent: (event: Event, item: MediaItem) => void = () => {};
-  export let registerMediaElement: (id: number, element: HTMLButtonElement | null) => void = () => {};
-  export let capturingMediaIds: Set<number> = new Set();
-  export let deleteMediaItem: (item: MediaItem) => void = () => {};
+export let toggleMediaSelection: (id: number) => void = () => {};
+export let captureCurrentFrame: (item: MediaItem) => void = () => {};
+export let handleMediaDragStartEvent: (event: Event, item: MediaItem) => void = () => {};
+export let registerMediaElement: (id: number, element: HTMLButtonElement | null) => void = () => {};
+export let capturingMediaIds: Set<number> = new Set();
+export let deleteMediaItem: (item: MediaItem) => void = () => {};
+export let combined = false;
 
-  function mediaElementAction(node: HTMLButtonElement, elementId: number) {
-    registerMediaElement(elementId, node);
-    return {
-      destroy() {
-        registerMediaElement(elementId, null);
-      }
-    };
-  }
+function mediaElementAction(node: HTMLButtonElement, elementId: number) {
+  registerMediaElement(elementId, node);
+  return {
+    destroy() {
+      registerMediaElement(elementId, null);
+    }
+  };
+}
 
-  $: groupItems = mediaItems ?? [];
-  $: hasMediaGroup = groupItems.length > 0;
-  $: groupTimestamp = hasMediaGroup
-    ? formatTimestamp(groupItems[groupItems.length - 1].timestamp)
-    : '';
+$: groupItems = mediaItems ?? [];
+$: hasMessage = messageItem != null;
+$: hasMediaGroup = groupItems.length > 0;
+$: showCombined = combined && hasMessage && hasMediaGroup;
+$: groupTimestamp = hasMediaGroup
+  ? formatTimestamp(groupItems[groupItems.length - 1].timestamp)
+  : '';
+$: messageTimestamp = messageItem ? formatTimestamp(messageItem.timestamp) : '';
 </script>
 
-{#if messageItem}
+{#if showCombined}
+  <div class="message-row from-user">
+    <div class="bubble media-bubble combined-bubble" role="group">
+      {#if messageItem?.content}
+        <p class="combined-message">{messageItem.content}</p>
+      {/if}
+      <div class="media-grid">
+        {#each groupItems as mediaItem (mediaItem.id)}
+          <div class="media-cell">
+            <button
+              type="button"
+              class="attachment"
+              class:image={mediaItem.kind === 'image'}
+              class:video={mediaItem.kind === 'video'}
+              class:selected={mediaItem.selected}
+              on:click={() => toggleMediaSelection(mediaItem.id)}
+              on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
+              aria-pressed={mediaItem.selected}
+              use:mediaElementAction={mediaItem.id}
+            >
+              {#if mediaItem.media}
+                <div class="attachment-media">
+                  <MediaFrame
+                    media={mediaItem.media}
+                    showControls={mediaItem.kind === 'video'}
+                    dragAsImage={mediaItem.kind === 'image'}
+                  />
+                </div>
+              {:else}
+                <div class="attachment-placeholder" aria-live="polite">
+                  <div class="spinner" />
+                  <span>{mediaItem.placeholder ? '生成中…' : '読み込み中…'}</span>
+                </div>
+              {/if}
+            </button>
+            <button
+              type="button"
+              class="delete-button"
+              on:click|stopPropagation={() => deleteMediaItem(mediaItem)}
+              aria-label="メディアを削除"
+            >
+              ×
+            </button>
+            {#if mediaItem.kind === 'video'}
+              <div class="media-actions">
+                <button
+                  type="button"
+                  class="capture-button"
+                  on:click|stopPropagation={() => captureCurrentFrame(mediaItem)}
+                  disabled={capturingMediaIds.has(mediaItem.id)}
+                >
+                  {capturingMediaIds.has(mediaItem.id) ? 'キャプチャ中…' : 'キャプチャ'}
+                </button>
+              </div>
+            {/if}
+          </div>
+        {/each}
+      </div>
+      <div class="message-footer">
+        <span class="timestamp">{messageTimestamp}</span>
+      </div>
+    </div>
+  </div>
+{:else if messageItem}
   <div class="message-row" class:from-user={messageItem.sender === 'user'} class:from-bot={messageItem.sender === 'bot'}>
     <div class="bubble" role="group">
       {#if messageItem.content}
@@ -140,6 +207,18 @@
     max-width: min(100%, 680px);
     width: min(100%, 680px);
     margin-left: auto;
+  }
+
+  .combined-bubble {
+    gap: 1rem;
+  }
+
+  .combined-message {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.95rem;
+    line-height: 1.45;
   }
 
   .bubble p {

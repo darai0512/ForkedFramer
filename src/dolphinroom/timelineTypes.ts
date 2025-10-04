@@ -20,6 +20,7 @@ export interface MediaItem extends BaseTimelineItem {
   media?: Media;
   mediaPromise?: Promise<Media>;
   placeholder?: boolean;
+  promptId?: number;
 }
 
 export type TimelineItem = MessageItem | MediaItem;
@@ -47,30 +48,66 @@ export interface MediaGroupBlock {
   groupId: number;
 }
 
-export type TimelineBlock = MessageBlock | MediaGroupBlock;
+export interface MessageMediaBlock {
+  kind: 'message-media';
+  message: MessageItem;
+  items: MediaItem[];
+  groupId: number;
+}
+
+export type TimelineBlock = MessageBlock | MediaGroupBlock | MessageMediaBlock;
 
 export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
   const blocks: TimelineBlock[] = [];
-  let pendingMedia: MediaItem[] | null = null;
 
-  for (const item of items) {
-    if (isMessageItem(item)) {
-      if (pendingMedia && pendingMedia.length > 0) {
-        blocks.push({ kind: 'media-group', items: pendingMedia, groupId: pendingMedia[0].id });
-        pendingMedia = null;
+  let index = 0;
+  while (index < items.length) {
+    const current = items[index];
+    if (isMessageItem(current)) {
+      const message = current;
+      const combined: MediaItem[] = [];
+      let nextIndex = index + 1;
+      while (nextIndex < items.length) {
+        const candidate = items[nextIndex];
+        if (!isMediaItem(candidate)) {
+          break;
+        }
+        if (candidate.promptId !== message.id) {
+          break;
+        }
+        combined.push(candidate);
+        nextIndex += 1;
       }
-      blocks.push({ kind: 'message-block', item });
+
+      if (combined.length > 0) {
+        blocks.push({ kind: 'message-media', message, items: combined, groupId: combined[0].id });
+        index = nextIndex;
+        continue;
+      }
+
+      blocks.push({ kind: 'message-block', item: message });
+      index += 1;
       continue;
     }
 
-    if (!pendingMedia) {
-      pendingMedia = [];
+    const mediaGroup: MediaItem[] = [];
+    let nextIndex = index;
+    while (nextIndex < items.length) {
+      const candidate = items[nextIndex];
+      if (!isMediaItem(candidate) || candidate.promptId != null) {
+        break;
+      }
+      mediaGroup.push(candidate);
+      nextIndex += 1;
     }
-    pendingMedia.push(item);
-  }
 
-  if (pendingMedia && pendingMedia.length > 0) {
-    blocks.push({ kind: 'media-group', items: pendingMedia, groupId: pendingMedia[0].id });
+    if (mediaGroup.length > 0) {
+      blocks.push({ kind: 'media-group', items: mediaGroup, groupId: mediaGroup[0].id });
+      index = nextIndex;
+    } else {
+      // Safety: skip items that didn't fit above conditions to avoid infinite loop
+      index += 1;
+    }
   }
 
   return blocks;
