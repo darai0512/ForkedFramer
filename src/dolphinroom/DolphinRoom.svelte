@@ -43,12 +43,14 @@ import type { AllocateId } from './types';
 import { createGenerationActions } from './generationActions';
 import DolphinRoomView from './DolphinRoomView.svelte';
 import { DEFAULT_IMAGE_SIZE } from './constants';
+import { persistentText } from '../utils/persistentText';
 
 const dispatch = createEventDispatcher<{ dragstart: Media }>();
 
 let timelineItems: TimelineItem[] = [];
 let timelineRows: TimelineRow[] = [];
 let draft = '';
+let style = '';
 let nextId = 0;
 let logElement: HTMLDivElement | null = null;
 
@@ -155,6 +157,7 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
   getGenerationType: () => generationType,
   isDraftEmpty: () => isDraftEmpty,
   getDraft: () => draft,
+  getStyle: () => style,
   getImagingMode: () => imagingMode,
   getIsGenerating: () => isGenerating,
   setIsGenerating: (value) => {
@@ -354,6 +357,7 @@ onDestroy(() => {
   {isGenerating}
   {hasSelectedImages}
   bind:draft={draft}
+  bind:style={style}
   bind:imagingMode={imagingMode}
   bind:generationType={generationType}
   videoModel={videoModel}

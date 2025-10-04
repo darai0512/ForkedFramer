@@ -7,6 +7,7 @@ import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelt
 import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
 import type { TimelineRow, MediaItem } from './timelineTypes';
 import { promptHistory as promptHistoryAction, type PromptHistoryActionOptions } from '../utils/promptHistoryAction';
+import { persistentText } from '../utils/persistentText';
 import type {
   ImagingMode,
   ImageToVideoModel,
@@ -48,6 +49,7 @@ export let handleModeButtonClick: () => void = () => {};
 export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
+export let style: string = '';
 
 // プロンプト履歴用のバインディング
 let draftBinding = {
@@ -183,6 +185,17 @@ async function handleAddCollection() {
               on:change={(event) => onVideoModelChange(event.detail)}
             />
           </div>
+        </div>
+        <div class="style-row">
+          <span class="style-label">スタイル</span>
+          <input
+            type="text"
+            class="style-input"
+            bind:value={style}
+            use:persistentText={{store:'imaging', key:'style', onLoad: (v) => style = v}}
+            placeholder="例: Japanese anime style"
+            aria-label="スタイル入力"
+          />
         </div>
         <div class="input-row">
           <div class="input-wrapper">
@@ -484,5 +497,38 @@ async function handleAddCollection() {
   .speak-button:hover,
   .speak-button:focus-visible {
     box-shadow: 0 8px 18px rgb(var(--color-tertiary-500, 16 185 129) / 0.28);
+  }
+
+  .style-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .style-label {
+    white-space: nowrap;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: rgb(var(--color-surface-600));
+  }
+
+  .style-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(var(--color-surface-400));
+    background-color: white;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .style-input:focus {
+    outline: none;
+    border-color: rgb(var(--color-primary-500));
+    box-shadow: 0 0 0 2px rgba(var(--color-primary-500), 0.12);
+  }
+
+  .style-input::placeholder {
+    color: rgb(var(--color-surface-400));
   }
 </style>

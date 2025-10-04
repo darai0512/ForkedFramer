@@ -38,6 +38,7 @@ interface GenerationDeps {
   getGenerationType(): 'image' | 'video';
   isDraftEmpty(): boolean;
   getDraft(): string;
+  getStyle(): string;
   getImagingMode(): ImagingMode;
   getIsGenerating(): boolean;
   setIsGenerating(value: boolean): void;
@@ -84,10 +85,12 @@ export function createGenerationActions(deps: GenerationDeps) {
     });
     deps.setTimelineItems(timelineItems);
     try {
+      const style = deps.getStyle();
+      const fullPrompt = style ? `${style}\n${prompt}` : prompt;
       const canvases = await executeProcessAndNotify(
         5000,
         get(_)("generator.imageGenerated"),
-        async () => await generateImage(prompt, DEFAULT_IMAGE_SIZE, deps.getImagingMode(), DEFAULT_IMAGE_COUNT, DEFAULT_BACKGROUND, []),
+        async () => await generateImage(fullPrompt, DEFAULT_IMAGE_SIZE, deps.getImagingMode(), DEFAULT_IMAGE_COUNT, DEFAULT_BACKGROUND, []),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({
@@ -163,11 +166,13 @@ export function createGenerationActions(deps: GenerationDeps) {
         ? { width: baseCanvas.width || DEFAULT_IMAGE_SIZE.width, height: baseCanvas.height || DEFAULT_IMAGE_SIZE.height }
         : DEFAULT_IMAGE_SIZE;
 
+      const style = deps.getStyle();
+      const fullPrompt = style ? `${style}\n${prompt}` : prompt;
       const canvases = await executeProcessAndNotify(
         5000,
         get(_)("generator.imageGenerated"),
         async () =>
-          await generateImage(prompt, imageSize, deps.getImagingMode(), DEFAULT_IMAGE_COUNT, 'auto', referenceUrls),
+          await generateImage(fullPrompt, imageSize, deps.getImagingMode(), DEFAULT_IMAGE_COUNT, 'auto', referenceUrls),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({
@@ -228,8 +233,10 @@ export function createGenerationActions(deps: GenerationDeps) {
 
       const resizedCanvas = resizeCanvasIfNeeded(baseMedia.drawSourceCanvas, DEFAULT_VIDEO_SOURCE_MAX);
       const model = get(deps.videoModelStore);
+      const style = deps.getStyle();
+      const fullPrompt = style ? `${style}\n${prompt}` : prompt;
       const request: ImageToVideoRequest = {
-        prompt,
+        prompt: fullPrompt,
         imageUrl: resizedCanvas.toDataURL('image/png'),
         duration: pickVideoDuration(model),
         aspectRatio: pickVideoAspectRatio(model, resizedCanvas.width, resizedCanvas.height),
