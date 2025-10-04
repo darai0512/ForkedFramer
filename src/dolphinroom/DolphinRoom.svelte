@@ -3,7 +3,8 @@ import { createEventDispatcher, onDestroy, tick } from 'svelte';
 import Drawer from '../utils/Drawer.svelte';
 import TimelineItemView from './TimelineItemView.svelte';
 import { dolphinRoomOpen } from './dolphinRoomStore';
-import { getVideoElementFromMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
+import { getVideoElementFromMedia, buildMedia } from '../lib/layeredCanvas/dataModels/media';
+import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import { attachFileToDataTransfer } from '../lib/layeredCanvas/tools/dragUtil';
 import {
   toTimelineBlocks,
@@ -14,9 +15,13 @@ import {
 } from './timelineTypes';
 import { createMediaLoaders } from './mediaLoaders';
 import ImagingModes from '../generator/ImagingModes.svelte';
-import type { ImagingMode, ImageToVideoModel } from '$protocolTypes/imagingTypes';
+import type { ImagingMode, ImageToVideoModel, ImagingBackground } from '$protocolTypes/imagingTypes';
 import { createPreferenceStore } from '../preferences';
 import { developmentFlag } from '../utils/developmentFlagStore';
+import { executeProcessAndNotify } from '../utils/executeProcessAndNotify';
+import { generateImage, isContentsPolicyViolationError } from '../utils/feathralImaging';
+import { toastStore } from '@skeletonlabs/skeleton';
+import { _ } from 'svelte-i18n';
 
 const botReplies = [
   'うんうん、なるほど！', 'ちょっと考えてみますね。', 'それは面白いアイデアですね。',
@@ -32,9 +37,15 @@ const objectUrls: string[] = [], mediaElements = new Map<number, HTMLButtonEleme
 let capturingMediaIds = new Set<number>();
 let imagingMode: ImagingMode = 'schnell';
 let hasSelectedMedia = false;
-$: messageHeading = hasSelectedMedia ? '編集' : '生成';
+let isGenerating = false;
+$: messageHeading = hasSelectedMedia ? '編集' : (isGenerating ? '生成中…' : '生成');
 let isDraftEmpty = true;
 $: isDraftEmpty = draft.trim().length === 0;
+
+const DEFAULT_PROMPT_POSTFIX = 'masterpiece, best quality, high detail';
+const DEFAULT_IMAGE_SIZE: { width: number; height: number } = { width: 1024, height: 1024 };
+const DEFAULT_BACKGROUND: ImagingBackground = 'opaque';
+const DEFAULT_IMAGE_COUNT = 1;
 
 const videoModelStore = createPreferenceStore<ImageToVideoModel>('tweakUi', 'dolphinRoomVideoModel', 'FramePack');
 const videoModelOptions: Array<{ value: ImageToVideoModel; label: string; devOnly?: boolean }> = [
@@ -63,6 +74,78 @@ $: if ($dolphinRoomOpen && timelineItems.length === 0) {
 }
 
 $: hasSelectedMedia = timelineItems.some((item) => isMediaItem(item) && item.selected);
+
+function composeGenerationPrompt(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  return DEFAULT_PROMPT_POSTFIX ? `${DEFAULT_PROMPT_POSTFIX}\n${trimmed}` : trimmed;
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+      } else {
+        reject(new Error('Failed to convert canvas to Blob'));
+      }
+    }, 'image/png');
+  });
+}
+
+async function createMediaItemFromCanvas(canvas: HTMLCanvasElement, index: number): Promise<MediaItem> {
+  const blob = await canvasToBlob(canvas);
+  const timestamp = Date.now();
+  const fileName = `dolphin-image-${timestamp}-${index}.png`;
+  const file = new File([blob], fileName, { type: 'image/png' });
+  const url = URL.createObjectURL(blob);
+  objectUrls.push(url);
+
+  return {
+    id: nextId++,
+    kind: 'image',
+    name: fileName,
+    url,
+    selected: false,
+    file,
+    media: buildMedia(canvas),
+    timestamp
+  };
+}
+
+async function handleModeButtonClick() {
+  if (hasSelectedMedia || isDraftEmpty || isGenerating) return;
+
+  const prompt = composeGenerationPrompt(draft);
+  if (!prompt) return;
+
+  isGenerating = true;
+  try {
+    const canvases = await executeProcessAndNotify(
+      5000,
+      $_('generator.imageGenerated'),
+      async () => await generateImage(prompt, DEFAULT_IMAGE_SIZE, imagingMode, DEFAULT_IMAGE_COUNT, DEFAULT_BACKGROUND, [])
+    );
+
+    const items: MediaItem[] = [];
+    for (let i = 0; i < canvases.length; i += 1) {
+      items.push(await createMediaItemFromCanvas(canvases[i], i));
+    }
+
+    if (items.length > 0) {
+      await appendMediaItems(items);
+    }
+  } catch (error) {
+    if (isContentsPolicyViolationError(error)) {
+      // エラー通知は generateImage 側で行われる
+    } else {
+      console.error('画像生成に失敗しました', error);
+      toastStore.trigger({ message: '画像生成に失敗しました。', timeout: 3000 });
+    }
+  } finally {
+    isGenerating = false;
+  }
+}
 
 async function enqueueUserMessage(text: string, shouldRespond = true) {
   const content = text.trim();
@@ -404,8 +487,10 @@ onDestroy(() => {
           type="button"
           class="btn send-button mode-button"
           class:editing={hasSelectedMedia}
-          title={hasSelectedMedia ? '選択中メディアを編集' : '新規生成モード'}
-          disabled={isDraftEmpty}
+          title={hasSelectedMedia ? '選択中メディアを編集' : isGenerating ? '生成中です…' : '新規生成モード'}
+          disabled={isDraftEmpty || isGenerating}
+          on:click={handleModeButtonClick}
+          aria-busy={isGenerating}
         >
           {messageHeading}
         </button>
