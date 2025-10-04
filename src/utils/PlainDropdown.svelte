@@ -145,19 +145,23 @@
   <button
     type="button"
     class={`plain-dropdown__trigger ${triggerClass}`}
+    class:is-open={isOpen}
     bind:this={triggerEl}
     on:click|stopPropagation={toggleDropdown}
     aria-haspopup="listbox"
     aria-expanded={isOpen}
     disabled={disabled || options.length === 0}
   >
-    <slot name="trigger" selectedOption={selectedOption} isOpen={isOpen} placeholder={placeholder}>
-      {#if selectedOption}
-        {selectedOption.label ?? `${selectedOption.value}`}
-      {:else}
-        <span class="plain-dropdown__placeholder">{placeholder}</span>
-      {/if}
-    </slot>
+    <span class="plain-dropdown__label">
+      <slot name="trigger" selectedOption={selectedOption} isOpen={isOpen} placeholder={placeholder}>
+        {#if selectedOption}
+          {selectedOption.label ?? `${selectedOption.value}`}
+        {:else}
+          <span class="plain-dropdown__placeholder">{placeholder}</span>
+        {/if}
+      </slot>
+    </span>
+    <span class="plain-dropdown__icon" aria-hidden="true">▾</span>
   </button>
 
   {#if isOpen}
@@ -223,6 +227,14 @@
     text-align: left;
   }
 
+  .plain-dropdown__label {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .plain-dropdown__trigger:hover:not(:disabled),
   .plain-dropdown__trigger:focus-visible:not(:disabled) {
     border-color: rgb(var(--color-primary-500, 59 130 246));
@@ -232,6 +244,19 @@
   .plain-dropdown__trigger:disabled {
     cursor: not-allowed;
     opacity: 0.6;
+  }
+
+  .plain-dropdown__icon {
+    flex: 0 0 auto;
+    transition: transform 0.2s ease;
+    color: rgb(var(--color-surface-500, 100 116 139));
+    font-size: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .plain-dropdown__trigger.is-open .plain-dropdown__icon {
+    transform: rotate(-180deg);
   }
 
   .plain-dropdown__placeholder {

@@ -11,6 +11,7 @@
   import { calculateI2VCost } from '../utils/edgeFunctions/calculateCost';
   import { createPreferenceStore } from '../preferences';
   import VideoGenerationModes from './VideoGenerationModes.svelte';
+  import PlainDropdown from '../utils/PlainDropdown.svelte';
   import { videoModelOptions, getVideoModelCapability, type VideoModelCapability } from './videoModelConfig';
   
   type Option = { value: string; label: string };
@@ -34,6 +35,7 @@
   let durationOptions: Option[] = [];
   let aspectRatioOptions: Option[] = [];
   let resolutionOptions: Option[] = [];
+  const noOptionText = '利用可能なオプションがありません';
 
   const unsubscribeHistory = videoPromptHistoryStore.subscribe(value => {
     promptHistory = value;
@@ -254,34 +256,91 @@
           <VideoGenerationModes bind:model={model} options={videoModelOptions} width={240} />
         </div>
 
-        <label class="label">
+        <div class="label">
           <h3>{$_('generator.time')}</h3>
-          <select bind:value={duration} class="select">
-            {#each durationOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </label>
+          <div class="video-dialog-dropdown-wrapper">
+            <PlainDropdown
+              options={durationOptions}
+              bind:selectedValue={duration}
+              containerClass="video-dialog-dropdown"
+              triggerClass="video-dialog-dropdown__trigger"
+              listClass="video-dialog-dropdown__list"
+              optionClass="video-dialog-dropdown__option"
+              placeholder={noOptionText}
+              disabled={durationOptions.length === 0}
+              optionKey={(option) => option.value}
+            >
+              <svelte:fragment slot="trigger" let:selectedOption>
+                {#if selectedOption}
+                  <span>{selectedOption.label ?? `${selectedOption.value}`}</span>
+                {:else}
+                  <span class="video-dialog-dropdown__placeholder">{noOptionText}</span>
+                {/if}
+              </svelte:fragment>
+              <svelte:fragment slot="option" let:option>
+                <span>{option.label ?? `${option.value}`}</span>
+              </svelte:fragment>
+            </PlainDropdown>
+          </div>
+        </div>
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <label class="label">
+        <div class="label">
           <h3>{$_('generator.aspectRatio')}</h3>
-          <select bind:value={aspectRatio} class="select">
-            {#each aspectRatioOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </label>
+          <div class="video-dialog-dropdown-wrapper">
+            <PlainDropdown
+              options={aspectRatioOptions}
+              bind:selectedValue={aspectRatio}
+              containerClass="video-dialog-dropdown"
+              triggerClass="video-dialog-dropdown__trigger"
+              listClass="video-dialog-dropdown__list"
+              optionClass="video-dialog-dropdown__option"
+              placeholder={noOptionText}
+              disabled={aspectRatioOptions.length === 0}
+              optionKey={(option) => option.value}
+            >
+              <svelte:fragment slot="trigger" let:selectedOption>
+                {#if selectedOption}
+                  <span>{selectedOption.label ?? `${selectedOption.value}`}</span>
+                {:else}
+                  <span class="video-dialog-dropdown__placeholder">{noOptionText}</span>
+                {/if}
+              </svelte:fragment>
+              <svelte:fragment slot="option" let:option>
+                <span>{option.label ?? `${option.value}`}</span>
+              </svelte:fragment>
+            </PlainDropdown>
+          </div>
+        </div>
 
-        <label class="label">
+        <div class="label">
           <h3>{$_('generator.resolution')}</h3>
-          <select bind:value={resolution} class="select">
-            {#each resolutionOptions as option}
-              <option value={option.value}>{option.label}</option>
-            {/each}
-          </select>
-        </label>
+          <div class="video-dialog-dropdown-wrapper">
+            <PlainDropdown
+              options={resolutionOptions}
+              bind:selectedValue={resolution}
+              containerClass="video-dialog-dropdown"
+              triggerClass="video-dialog-dropdown__trigger"
+              listClass="video-dialog-dropdown__list"
+              optionClass="video-dialog-dropdown__option"
+              placeholder={noOptionText}
+              disabled={resolutionOptions.length === 0}
+              optionKey={(option) => option.value}
+            >
+              <svelte:fragment slot="trigger" let:selectedOption>
+                {#if selectedOption}
+                  <span>{selectedOption.label ?? `${selectedOption.value}`}</span>
+                {:else}
+                  <span class="video-dialog-dropdown__placeholder">{noOptionText}</span>
+                {/if}
+              </svelte:fragment>
+              <svelte:fragment slot="option" let:option>
+                <span>{option.label ?? `${option.value}`}</span>
+              </svelte:fragment>
+            </PlainDropdown>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -321,5 +380,41 @@
     font-size: 12px;
     color: rgb(var(--color-surface-500));
     padding-left: 4px;
+  }
+
+  .video-dialog-dropdown-wrapper {
+    width: 100%;
+  }
+
+  :global(.video-dialog-dropdown) {
+    width: 100%;
+    display: block;
+  }
+
+  :global(.video-dialog-dropdown__trigger) {
+    border-radius: 0.75rem;
+    padding: 0.6rem 0.9rem;
+    background-color: rgb(var(--color-surface-0, 255 255 255));
+    color: rgb(var(--color-surface-900, 15 23 42));
+    border: 1px solid rgb(var(--color-surface-400, 148 163 184));
+    font-size: 0.95rem;
+  }
+
+  :global(.video-dialog-dropdown__list) {
+    border-radius: 0.75rem;
+    padding: 0.35rem;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.18);
+  }
+
+  :global(.video-dialog-dropdown__option) {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.6rem;
+  }
+
+  .video-dialog-dropdown__placeholder {
+    color: rgb(var(--color-surface-500, 100 116 139));
   }
 </style>
