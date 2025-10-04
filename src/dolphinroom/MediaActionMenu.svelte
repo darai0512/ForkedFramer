@@ -7,6 +7,7 @@
 
   import downloadIcon from '../assets/download.webp';
   import clipboardIcon from '../assets/clipboard.webp';
+  import popupIcon from '../assets/filmlist/popup.webp';
 
   export let mediaItem: MediaItem;
 
@@ -224,7 +225,7 @@
   aria-expanded={menuOpen}
   aria-label="メディア操作メニュー"
 >
-  {activeAction ? '...' : '...'}
+  <img src={popupIcon} alt="" />
 </button>
 
 {#if menuOpen}
@@ -269,13 +270,17 @@
     border: none;
     background: rgba(15, 23, 42, 0.75);
     color: white;
-    font-size: 1.4rem;
-    line-height: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .media-action-trigger img {
+    width: 18px;
+    height: 18px;
+    filter: invert(1);
   }
 
   .media-action-trigger:hover,
