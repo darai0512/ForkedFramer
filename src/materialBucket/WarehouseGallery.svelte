@@ -10,6 +10,8 @@
   import { ls } from '../lib/filesystem/fileSystem';
   import type { GalleryItem } from "../gallery/gallery";
 
+  export let columnWidth: number = 220;
+
   const dispatch = createEventDispatcher();
   let items: (() => Promise<Media[]>)[] = [];
   let requestIds = new WeakMap<(Media | (() => Promise<Media[]>)), string>();
@@ -97,7 +99,7 @@
 </script>
 
 <div class="gallery-content">
-  <Gallery columnWidth={220} bind:items={items} on:dragstart={onChildDragStart} on:delete={onDelete}/>
+  <Gallery {columnWidth} bind:items={items} on:dragstart={onChildDragStart} on:delete={onDelete}/>
 </div>
 
 <style>

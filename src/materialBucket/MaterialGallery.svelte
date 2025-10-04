@@ -18,6 +18,7 @@
   import { materialCollectionUpdateToken } from './materialBucketStore';
 
   export let targetNode: Node | null = null;
+  export let columnWidth: number = 220;
 
   let items: (() => Promise<Media[]>)[] = [];
   let bindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
@@ -175,7 +176,7 @@
 
 <div class="dropzone" use:dropzone={onFileDrop}>
   {#if items.length > 0}
-    <Gallery columnWidth={220} referable={false} bind:items={items} on:commit={onChooseImage} on:dragstart={onChildDragStart} on:delete={onDelete}/>
+    <Gallery {columnWidth} referable={false} bind:items={items} on:commit={onChooseImage} on:dragstart={onChildDragStart} on:delete={onDelete}/>
   {:else}
     <div class="empty-state">
       <p class="empty-message">ここに画像や動画をドロップしてください</p>

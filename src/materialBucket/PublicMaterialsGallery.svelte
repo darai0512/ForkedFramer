@@ -18,6 +18,8 @@
   // カテゴリは一旦無視
   const actualCategory = '';
 
+  export let columnWidth: number = 220;
+
   const dispatch = createEventDispatcher();
   let items: (() => Promise<Media[]>)[] = [];
   let materials: Material[] = [];
@@ -183,11 +185,11 @@
 {:else}
   <div class="gallery-container" on:scroll={handleScroll}>
     {#if items.length > 0}
-      <Gallery 
-        columnWidth={220} 
-        referable={false} 
-        bind:items={items} 
-        on:commit={onChooseImage} 
+      <Gallery
+        {columnWidth}
+        referable={false}
+        bind:items={items}
+        on:commit={onChooseImage}
         on:dragstart={onChildDragStart}
       />
     {:else if !$loading}

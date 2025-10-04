@@ -21,6 +21,8 @@
 
   const dispatch = createEventDispatcher<{ dragstart: void; addcollection: void }>();
 
+  export let galleryColumnWidth: number = 220;
+
   let materialCollectionFolders: EmbodiedEntry[] = [];
   let openStates: { [key: string]: boolean } = {};
   let collectionFolderNode: Node | null = null;
@@ -101,7 +103,7 @@
   }
 </script>
 
-<div class="content-container">
+<div class="content-container" style="--gallery-column-width: {galleryColumnWidth}px;">
   <Accordion>
     {#each materialCollectionFolders as folder}
       <AccordionItem bind:open={openStates[folder[1]]}>
@@ -146,7 +148,7 @@
         </svelte:fragment>
         <svelte:fragment slot="content">
           <div class="accordion-content">
-            <MaterialGallery targetNode={folder[2]} on:dragstart={onDragStart} />
+            <MaterialGallery targetNode={folder[2]} columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
           </div>
         </svelte:fragment>
       </AccordionItem>
@@ -158,7 +160,7 @@
       </svelte:fragment>
       <svelte:fragment slot="content">
         <div class="accordion-content">
-          <PublicMaterialsGallery on:dragstart={onDragStart} />
+          <PublicMaterialsGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
         </div>
       </svelte:fragment>
     </AccordionItem>
@@ -169,7 +171,7 @@
       </svelte:fragment>
       <svelte:fragment slot="content">
         <div class="accordion-content">
-          <WarehouseGallery on:dragstart={onDragStart} />
+          <WarehouseGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
         </div>
       </svelte:fragment>
     </AccordionItem>

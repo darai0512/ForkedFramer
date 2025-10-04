@@ -3,7 +3,8 @@ import Drawer from '../utils/Drawer.svelte';
 import TimelineItemView from './TimelineItemView.svelte';
 import ImagingModes from '../generator/ImagingModes.svelte';
 import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
-import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
+import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
+import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
 import type { TimelineRow, MediaItem } from './timelineTypes';
 import type {
   ImagingMode,
@@ -13,6 +14,8 @@ import type {
 } from '$protocolTypes/imagingTypes';
 
 export let open = false;
+let materialBucketOpen = false;
+let materialBucketContentRef: MaterialBucketContent | null = null;
 export let logElement: HTMLDivElement | null = null;
 export let timelineRows: TimelineRow[] = [];
 export let capturingMediaIds = new Set<number>();
@@ -53,31 +56,61 @@ function handleTextareaPaste(event: ClipboardEvent) {
     event.stopPropagation();
   }
 }
+
+function handleMaterialBucketDragStart() {
+  // MaterialBucketからのドラッグ開始時の処理（必要に応じて追加）
+}
+
+async function handleAddCollection() {
+  if (materialBucketContentRef) {
+    await materialBucketContentRef.addCollection();
+  }
+}
 </script>
 
 <Drawer
   placement="right"
   {open}
-  size="800px"
+  size={materialBucketOpen ? "1200px" : "800px"}
   on:clickAway={onClose}
   hideOverlayOnDrag
 >
   {#if open}
-    <div
-      class="dolphin-room-container"
-      role="region"
-      aria-label="ドルフィンルームのタイムライン"
-      on:dragover|preventDefault
-      on:drop={handleDrop}
-      on:paste={handlePaste}
-      tabindex="-1"
-    >
-      <header class="room-header">
-        <div class="header-text">
-          <h2>ドルフィンルーム</h2>
-          <p>チャットで気軽にアイデアを整理しましょう。</p>
+    <div class="dolphin-room-wrapper">
+      {#if materialBucketOpen}
+        <div class="material-bucket-panel">
+          <MaterialBucketContent
+            bind:this={materialBucketContentRef}
+            galleryColumnWidth={100}
+            on:dragstart={handleMaterialBucketDragStart}
+            on:addcollection={handleAddCollection}
+          />
         </div>
-      </header>
+      {/if}
+      <div
+        class="dolphin-room-container"
+        role="region"
+        aria-label="ドルフィンルームのタイムライン"
+        on:dragover|preventDefault
+        on:drop={handleDrop}
+        on:paste={handlePaste}
+        tabindex="-1"
+      >
+        <header class="room-header">
+          <div class="header-text">
+            <h2>ドルフィンルーム</h2>
+            <p>チャットで気軽にアイデアを整理しましょう。</p>
+          </div>
+          <div class="header-actions">
+            <SlideToggle
+              name="material-bucket-toggle"
+              bind:checked={materialBucketOpen}
+              size="sm"
+            >
+              素材集
+            </SlideToggle>
+          </div>
+        </header>
 
       <div class="message-log" bind:this={logElement}>
         {#each timelineRows as block ((block.kind === 'message-block'
@@ -192,15 +225,31 @@ function handleTextareaPaste(event: ClipboardEvent) {
           </div>
         </div>
       </form>
+      </div>
     </div>
   {/if}
 </Drawer>
 
 <style>
+  .dolphin-room-wrapper {
+    display: flex;
+    height: 100%;
+    width: 100%;
+  }
+
+  .material-bucket-panel {
+    width: 400px;
+    flex-shrink: 0;
+    border-right: 1px solid rgb(var(--color-surface-300));
+    background-color: rgb(var(--color-surface-100));
+    overflow-y: auto;
+  }
+
   .dolphin-room-container {
     display: flex;
     flex-direction: column;
     height: 100%;
+    flex: 1;
     padding: 1.5rem;
     gap: 1rem;
     background-color: rgb(var(--color-surface-50));
@@ -219,6 +268,12 @@ function handleTextareaPaste(event: ClipboardEvent) {
     display: flex;
     flex-direction: column;
     gap: 0.3rem;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .room-header h2 {
