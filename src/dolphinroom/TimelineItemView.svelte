@@ -455,19 +455,27 @@
   }
 
   .media-actions {
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    justify-content: flex-end;
+    pointer-events: none;
+    z-index: 2;
   }
 
   .capture-button {
     border: none;
-    border-radius: 10px;
-    padding: 0.35rem 0.7rem;
-    background: rgba(15, 23, 42, 0.75);
+    border-radius: 9999px;
+    padding: 0.3rem 0.9rem;
+    background: rgba(15, 23, 42, 0.8);
     color: white;
     cursor: pointer;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    pointer-events: auto;
     transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.25);
   }
 
   .capture-button:hover,
