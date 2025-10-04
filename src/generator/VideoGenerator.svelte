@@ -9,8 +9,9 @@
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { _ } from 'svelte-i18n';
   import { calculateI2VCost } from '../utils/edgeFunctions/calculateCost';
-  import { developmentFlag } from '../utils/developmentFlagStore';
   import { createPreferenceStore } from '../preferences';
+  import VideoGenerationModes from './VideoGenerationModes.svelte';
+  import { videoModelOptions, getVideoModelCapability, type VideoModelCapability } from './videoModelConfig';
   
   type Option = { value: string; label: string };
   
@@ -29,6 +30,11 @@
   let historyIndex = -1;
   let temporaryPrompt = '';
 
+  let capability: VideoModelCapability | undefined;
+  let durationOptions: Option[] = [];
+  let aspectRatioOptions: Option[] = [];
+  let resolutionOptions: Option[] = [];
+
   const unsubscribeHistory = videoPromptHistoryStore.subscribe(value => {
     promptHistory = value;
   });
@@ -37,141 +43,78 @@
     unsubscribeHistory();
   });
 
-  // モデルごとの利用可能なオプション
-  $: modelOptions = ({
-    FramePack: {
-      durations: [
-        { value: "1", label: $_('generator.oneSecond') },
-        { value: "2", label: $_('generator.twoSeconds') },
-        { value: "3", label: $_('generator.threeSeconds') },
-        { value: "4", label: $_('generator.fourSeconds') },
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "16:9", label: $_('generator.landscapeRatio') },
-        { value: "9:16", label: $_('generator.portraitRatio') }
-      ],
-      resolution: [
-        { value: "480p", label: "480p" },
-        { value: "720p", label: "720p" },
-      ]
-    },
-    kling: {
-      durations: [
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "16:9", label: $_('generator.landscapeRatio') },
-      ],
-      resolution: [
-        { value: "720p", label: "720p" },
-      ]
-    },
-    "seedance/lite": {
-      durations: [
-        { value: "3", label: $_('generator.threeSeconds') },
-        { value: "4", label: $_('generator.fourSeconds') },
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "16:9", label: $_('generator.landscapeRatio') },
-      ],
-      resolution: [
-        { value: "480p", label: "480p" },
-        { value: "720p", label: "720p" },
-        { value: "1080p", label: "1080p" },
-      ]
-    },
-    "seedance/pro": {
-      durations: [
-        { value: "3", label: $_('generator.threeSeconds') },
-        { value: "4", label: $_('generator.fourSeconds') },
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "16:9", label: $_('generator.landscapeRatio') },
-      ],
-      resolution: [
-        { value: "480p", label: "480p" },
-        { value: "1080p", label: "1080p" },
-      ]
-    },
-    "wan/v2.2-a14b/turbo": {
-      durations: [
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "1:1", label: $_('generator.squareRatio') },
-        { value: "16:9", label: $_('generator.landscapeRatio') },
-        { value: "9:16", label: $_('generator.portraitRatio') }
-      ],
-      resolution: [
-        { value: "480p", label: "480p" },
-        { value: "720p", label: "720p" },
-      ]
-    },
-    "wan-25-preview/image-to-video": {
-      durations: [
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "1:1", label: $_('generator.squareRatio') },
-      ],
-      resolution: [
-        { value: "480p", label: "480p" },
-        { value: "720p", label: "720p" },
-        { value: "1080p", label: "1080p" },
-      ]
-    },
-    "decart/lucy-14b": {
-      durations: [
-        { value: "5", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "16:9", label: $_('generator.landscapeRatio') },
-        { value: "9:16", label: $_('generator.portraitRatio') }
-      ],
-      resolution: [
-        { value: "720p", label: "720p" },
-      ]
-    },
-    "failure": { // テスト用の失敗モデル
-      durations: [
-        { value: "1", label: $_('generator.fiveSeconds') },
-      ],
-      aspectRatios: [
-        { value: "1:1", label: $_('generator.squareRatio') },
-      ],
-      resolution: [
-        { value: "480p", label: "480p" },
-      ]
-    }
-  }) as Record<
-    ImageToVideoModel,
-    { durations: Option[]; aspectRatios: Option[]; resolution: Option[] }
-  >;
+  $: capability = getVideoModelCapability(model);
+  $: durationOptions = buildDurationOptions(capability);
+  $: aspectRatioOptions = buildAspectRatioOptions(capability);
+  $: resolutionOptions = buildResolutionOptions(capability);
   
   // モデル変更時に互換性のあるオプションに自動調整
-  $: if (model) {
-    const availableDurations = modelOptions[model].durations.map(d => d.value);
-    const availableAspectRatios = modelOptions[model].aspectRatios.map(a => a.value);
-    const availableResolutions = modelOptions[model].resolution.map(r => r.value);
-    
-    // 現在の値が新しいモデルで利用可能でない場合は、最初のオプションに設定
-    if (!availableDurations.includes(duration)) {
-      duration = availableDurations[0] as any;
-    }
-    
-    if (!availableAspectRatios.includes(aspectRatio)) {
-      aspectRatio = availableAspectRatios[0] as any;
+  $: if (capability) {
+    const availableDurations = durationOptions.map((option) => option.value);
+    const availableAspectRatios = aspectRatioOptions.map((option) => option.value);
+    const availableResolutions = resolutionOptions.map((option) => option.value);
+
+    if (availableDurations.length > 0 && !availableDurations.includes(duration)) {
+      duration = availableDurations[0] as typeof duration;
     }
 
-    if (!availableResolutions.includes(resolution)) {
-      resolution = availableResolutions[0] as any;
+    if (availableAspectRatios.length > 0 && !availableAspectRatios.includes(aspectRatio)) {
+      aspectRatio = availableAspectRatios[0] as typeof aspectRatio;
     }
 
-    cost = calculateI2VCost(model, parseInt(duration), resolution, aspectRatio);
+    if (availableResolutions.length > 0 && !availableResolutions.includes(resolution)) {
+      resolution = availableResolutions[0] as ImageToVideoResolution;
+    }
+
+    cost = calculateI2VCost(model, parseInt(duration, 10), resolution, aspectRatio);
     console.log(`Model: ${model}, Duration: ${duration}, Resolution: ${resolution}, Cost: ${cost}`);
+  } else {
+    cost = 0;
+  }
+
+  function buildDurationOptions(cap?: VideoModelCapability): Option[] {
+    if (!cap) return [];
+    return cap.durations.map((value) => ({ value, label: translateDuration(value) }));
+  }
+
+  function buildAspectRatioOptions(cap?: VideoModelCapability): Option[] {
+    if (!cap) return [];
+    return cap.aspectRatios.map((value) => ({ value, label: translateAspect(value) }));
+  }
+
+  function buildResolutionOptions(cap?: VideoModelCapability): Option[] {
+    if (!cap) return [];
+    return cap.resolutions.map((value) => ({ value, label: value }));
+  }
+
+  function translateDuration(value: string): string {
+    switch (value) {
+      case '1':
+        return $_('generator.oneSecond');
+      case '2':
+        return $_('generator.twoSeconds');
+      case '3':
+        return $_('generator.threeSeconds');
+      case '4':
+        return $_('generator.fourSeconds');
+      case '5':
+        return $_('generator.fiveSeconds');
+      default:
+        return `${value}s`;
+    }
+  }
+
+  function translateAspect(value: string): string {
+    switch (value) {
+      case '1:1':
+        return $_('generator.squareRatio');
+      case '16:9':
+        return $_('generator.landscapeRatio');
+      case '9:16':
+        return $_('generator.portraitRatio');
+      default:
+        return value;
+    }
   }
 
   function onCancel() {
@@ -306,26 +249,15 @@
       </div>
 
       <div class="grid grid-cols-2 gap-4">
-        <label class="label">
+        <div class="label">
           <h3>{$_('generator.model')}</h3>
-          <select bind:value={model} class="select">
-            <option value="FramePack">FramePack</option>
-            <option value="kling">kling-2.5</option>
-            <option value="seedance/lite">Seedance Lite</option>
-            <option value="seedance/pro">Seedance Pro</option>
-            <option value="wan/v2.2-a14b/turbo">Wan v2.2 Turbo</option>
-            <!-- <option value="wan-25-preview/image-to-video">Wan 2.5 Preview</option> -->
-            <!-- <option value="decart/lucy-14b">Lucy-14b</option> -->
-            {#if $developmentFlag}
-              <option value="failure">failure</option>
-            {/if}
-          </select>
-        </label>
+          <VideoGenerationModes bind:model={model} options={videoModelOptions} width={240} />
+        </div>
 
         <label class="label">
           <h3>{$_('generator.time')}</h3>
           <select bind:value={duration} class="select">
-            {#each modelOptions[model].durations as option}
+            {#each durationOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
           </select>
@@ -336,7 +268,7 @@
         <label class="label">
           <h3>{$_('generator.aspectRatio')}</h3>
           <select bind:value={aspectRatio} class="select">
-            {#each modelOptions[model].aspectRatios as option}
+            {#each aspectRatioOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
           </select>
@@ -345,7 +277,7 @@
         <label class="label">
           <h3>{$_('generator.resolution')}</h3>
           <select bind:value={resolution} class="select">
-            {#each modelOptions[model].resolution as option}
+            {#each resolutionOptions as option}
               <option value={option.value}>{option.label}</option>
             {/each}
           </select>
