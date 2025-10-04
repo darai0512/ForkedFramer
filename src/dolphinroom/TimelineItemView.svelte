@@ -87,6 +87,11 @@
     } else {
       const validIds = new Set(mediaItems.map((item) => item.id));
       expandedMediaIds = new Set([...expandedMediaIds].filter((id) => validIds.has(id)));
+      // 生成画像が1枚だけの場合は自動的に展開する
+      const generatedImages = mediaItems.filter((item) => item.placeholder);
+      if (generatedImages.length === 1 && expandedMediaIds.size === 0) {
+        expandedMediaIds = new Set([generatedImages[0].id]);
+      }
     }
   }
 
