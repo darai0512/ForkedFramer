@@ -68,7 +68,10 @@
                   />
                 </div>
               {:else}
-                <div class="attachment-placeholder">読み込み中…</div>
+                <div class="attachment-placeholder" aria-live="polite">
+                  <div class="spinner" />
+                  <span>{mediaItem.placeholder ? '生成中…' : '読み込み中…'}</span>
+                </div>
               {/if}
             </button>
             <button
@@ -214,13 +217,34 @@
 
   .attachment-placeholder {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 0.75rem;
     width: 100%;
+    min-height: 140px;
     padding: 1.9rem 1rem;
-    color: rgba(15, 23, 42, 0.6);
+    color: rgba(15, 23, 42, 0.65);
     font-size: 0.85rem;
-    background: rgba(15, 23, 42, 0.07);
+    background: rgba(15, 23, 42, 0.05);
+  }
+
+  .attachment-placeholder .spinner {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid rgba(148, 163, 184, 0.3);
+    border-top-color: rgba(59, 130, 246, 0.8);
+    animation: attachment-spin 1s linear infinite;
+  }
+
+  @keyframes attachment-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   .delete-button {

@@ -93,7 +93,7 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
   });
 }
 
-async function createMediaItemFromCanvas(canvas: HTMLCanvasElement, index: number): Promise<MediaItem> {
+async function buildMediaPayloadFromCanvas(canvas: HTMLCanvasElement, index: number) {
   const blob = await canvasToBlob(canvas);
   const timestamp = Date.now();
   const fileName = `dolphin-image-${timestamp}-${index}.png`;
@@ -102,15 +102,96 @@ async function createMediaItemFromCanvas(canvas: HTMLCanvasElement, index: numbe
   objectUrls.push(url);
 
   return {
+    file,
+    url,
+    name: fileName,
+    media: buildMedia(canvas),
+    timestamp,
+  };
+}
+
+async function createMediaItemFromCanvas(canvas: HTMLCanvasElement, index: number): Promise<MediaItem> {
+  const payload = await buildMediaPayloadFromCanvas(canvas, index);
+
+  return {
     id: nextId++,
     kind: 'image',
-    name: fileName,
-    url,
+    name: payload.name,
+    url: payload.url,
     selected: false,
-    file,
-    media: buildMedia(canvas),
-    timestamp
+    file: payload.file,
+    media: payload.media,
+    timestamp: payload.timestamp,
   };
+}
+
+function createPlaceholderMediaItems(count: number): MediaItem[] {
+  if (count <= 0) return [];
+  const baseTimestamp = Date.now();
+  const placeholders: MediaItem[] = [];
+  for (let i = 0; i < count; i += 1) {
+    placeholders.push({
+      id: nextId++,
+      kind: 'image',
+      name: '生成中',
+      url: '',
+      selected: false,
+      file: null,
+      timestamp: baseTimestamp + i,
+      placeholder: true,
+    });
+  }
+  timelineItems = [...timelineItems, ...placeholders];
+  return placeholders;
+}
+
+function removeMediaItems(targets: MediaItem[]) {
+  if (targets.length === 0) return;
+  const idSet = new Set(targets.map((item) => item.id));
+  for (const item of targets) {
+    releaseObjectUrl(item.url);
+  }
+  timelineItems = timelineItems.filter(
+    (entry) => !(isMediaItem(entry) && idSet.has(entry.id))
+  );
+}
+
+async function hydratePlaceholdersWithCanvases(placeholders: MediaItem[], canvases: HTMLCanvasElement[]) {
+  const extras: MediaItem[] = [];
+
+  for (let i = 0; i < canvases.length; i += 1) {
+    const canvas = canvases[i];
+    const payload = await buildMediaPayloadFromCanvas(canvas, i);
+    const target = placeholders[i];
+
+    if (target) {
+      releaseObjectUrl(target.url);
+      target.name = payload.name;
+      target.url = payload.url;
+      target.file = payload.file;
+      target.media = payload.media;
+      target.timestamp = payload.timestamp;
+      target.placeholder = false;
+      target.selected = false;
+    } else {
+      extras.push({
+        id: nextId++,
+        kind: 'image',
+        name: payload.name,
+        url: payload.url,
+        selected: false,
+        file: payload.file,
+        media: payload.media,
+        timestamp: payload.timestamp,
+      });
+    }
+  }
+
+  if (extras.length > 0) {
+    timelineItems = [...timelineItems, ...extras];
+  } else {
+    timelineItems = [...timelineItems];
+  }
 }
 
 async function handleModeButtonClick() {
@@ -118,6 +199,8 @@ async function handleModeButtonClick() {
 
   const prompt = composeGenerationPrompt(draft);
   if (!prompt) return;
+
+  await appendMessage('user', prompt);
 
   if (hasSelectedMedia) {
     await handleEditSelected(prompt);
@@ -128,6 +211,7 @@ async function handleModeButtonClick() {
 
 async function handleGenerateNew(prompt: string) {
   isGenerating = true;
+  const placeholders = createPlaceholderMediaItems(DEFAULT_IMAGE_COUNT);
   try {
     const canvases = await executeProcessAndNotify(
       5000,
@@ -135,14 +219,7 @@ async function handleGenerateNew(prompt: string) {
       async () => await generateImage(prompt, DEFAULT_IMAGE_SIZE, imagingMode, DEFAULT_IMAGE_COUNT, DEFAULT_BACKGROUND, [])
     );
 
-    const items: MediaItem[] = [];
-    for (let i = 0; i < canvases.length; i += 1) {
-      items.push(await createMediaItemFromCanvas(canvases[i], i));
-    }
-
-    if (items.length > 0) {
-      await appendMediaItems(items);
-    }
+    await hydratePlaceholdersWithCanvases(placeholders, canvases);
   } catch (error) {
     if (isContentsPolicyViolationError(error)) {
       // エラー通知は generateImage 側で行われる
@@ -150,6 +227,7 @@ async function handleGenerateNew(prompt: string) {
       console.error('画像生成に失敗しました', error);
       toastStore.trigger({ message: '画像生成に失敗しました。', timeout: 3000 });
     }
+    removeMediaItems(placeholders);
   } finally {
     isGenerating = false;
   }
@@ -175,6 +253,7 @@ async function handleEditSelected(prompt: string) {
 
   const limitedItems = selectedItems.slice(0, refMax);
   isGenerating = true;
+  const placeholders = createPlaceholderMediaItems(DEFAULT_IMAGE_COUNT);
   try {
     const medias = await Promise.all(limitedItems.map((item) => ensureMediaItemMedia(item)));
     const canvasesForRefs = medias
@@ -199,14 +278,7 @@ async function handleEditSelected(prompt: string) {
         await generateImage(prompt, imageSize, imagingMode, DEFAULT_IMAGE_COUNT, 'auto', referenceUrls)
     );
 
-    const items: MediaItem[] = [];
-    for (let i = 0; i < canvases.length; i += 1) {
-      items.push(await createMediaItemFromCanvas(canvases[i], i));
-    }
-
-    if (items.length > 0) {
-      await appendMediaItems(items);
-    }
+    await hydratePlaceholdersWithCanvases(placeholders, canvases);
   } catch (error) {
     if (isContentsPolicyViolationError(error)) {
       // エラー通知は generateImage 側で行われる
@@ -214,6 +286,7 @@ async function handleEditSelected(prompt: string) {
       console.error('画像編集に失敗しました', error);
       toastStore.trigger({ message: '画像編集に失敗しました。', timeout: 3000 });
     }
+    removeMediaItems(placeholders);
   } finally {
     isGenerating = false;
   }

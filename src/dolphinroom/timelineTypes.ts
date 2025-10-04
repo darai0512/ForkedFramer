@@ -19,6 +19,7 @@ export interface MediaItem extends BaseTimelineItem {
   file: File | null;
   media?: Media;
   mediaPromise?: Promise<Media>;
+  placeholder?: boolean;
 }
 
 export type TimelineItem = MessageItem | MediaItem;
