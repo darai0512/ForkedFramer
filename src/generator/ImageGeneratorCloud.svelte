@@ -46,6 +46,20 @@
   let referenceMedias: Media[] = [];
   $: referenceImagesSupported = supportsRefImages(mode);
   $: refMax = getRefMaxForMode(mode);
+  $: if (!referenceImagesSupported) {
+    if (referenceImages.length > 0 || referenceMedias.length > 0) {
+      referenceImages = [];
+      referenceMedias = [];
+    }
+  } else if (refMax > 0) {
+    // モデル切り替えで上限が変わった場合にUIを追従させる
+    if (referenceImages.length > refMax) {
+      referenceImages = referenceImages.slice(0, refMax);
+    }
+    if (referenceMedias.length > refMax) {
+      referenceMedias = referenceMedias.slice(0, refMax);
+    }
+  }
 
   function onChooseImage({detail}: CustomEvent<Media>) {
     chosen = detail;
