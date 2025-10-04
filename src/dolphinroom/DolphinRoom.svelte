@@ -52,6 +52,13 @@ let draft = '';
 let nextId = 0;
 let logElement: HTMLDivElement | null = null;
 
+// プロンプト履歴
+const MAX_HISTORY_SIZE = 50;
+const promptHistoryStore = createPreferenceStore<string[]>('tweakUi', 'dolphinRoomPromptHistory', []);
+let promptHistory: string[] = [];
+let historyIndex = -1;
+let temporaryPrompt = '';
+
 const objectUrls = createObjectUrlManager();
 const mediaElements = new Map<number, HTMLButtonElement>();
 let capturingMediaIds = new Set<number>();
@@ -117,6 +124,10 @@ const unsubscribeVideoModel = videoModelStore.subscribe((value) => {
   videoAspectRatioForCost = pickVideoAspectRatio(videoModel, videoSourceSize.width, videoSourceSize.height);
 });
 
+const unsubscribePromptHistory = promptHistoryStore.subscribe((value) => {
+  promptHistory = value;
+});
+
 const { handleMediaDragStartEvent } = createDragActions({
   ensureMediaItemMedia,
   dispatch,
@@ -146,7 +157,7 @@ const captureCurrentFrame = createFrameCapture({
   allocateId,
 });
 
-const { handleModeButtonClick } = createGenerationActions({
+const { handleModeButtonClick: originalHandleModeButtonClick } = createGenerationActions({
   getTimelineItems,
   setTimelineItems,
   getSelectedImageItems: () => selectedImageItems,
@@ -165,6 +176,18 @@ const { handleModeButtonClick } = createGenerationActions({
   appendMessage,
   videoModelStore,
 });
+
+async function handleModeButtonClick() {
+  const text = draft.trim();
+  if (text) {
+    addToHistory(text);
+  }
+  await originalHandleModeButtonClick();
+  // 生成処理が完了した後にdraftをクリア
+  draft = '';
+  historyIndex = -1;
+  temporaryPrompt = '';
+}
 
 function handleVideoModelChange(nextModel: ImageToVideoModel) {
   if (nextModel === videoModel) return;
@@ -325,14 +348,72 @@ function handleSubmit(event: Event) {
   event.preventDefault();
   const text = draft.trim();
   if (!text) return;
+  addToHistory(text);
   draft = '';
+  historyIndex = -1;
+  temporaryPrompt = '';
   void enqueueUserMessage(text, true);
+}
+
+function addToHistory(newPrompt: string) {
+  if (!newPrompt.trim()) return;
+
+  // 重複を削除
+  const filteredHistory = promptHistory.filter(item => item !== newPrompt);
+
+  // 新しいプロンプトを先頭に追加
+  const newHistory = [newPrompt, ...filteredHistory];
+
+  // 最大履歴数を超えた場合は古いものを削除
+  if (newHistory.length > MAX_HISTORY_SIZE) {
+    newHistory.splice(MAX_HISTORY_SIZE);
+  }
+
+  promptHistoryStore.set(newHistory);
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (!event.ctrlKey) return;
+
+  if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    navigateHistory('up');
+  } else if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    navigateHistory('down');
+  }
+}
+
+function navigateHistory(direction: 'up' | 'down') {
+  if (promptHistory.length === 0) return;
+
+  // 初めて履歴をナビゲートする場合、現在のプロンプトを保存
+  if (historyIndex === -1 && draft.trim()) {
+    temporaryPrompt = draft;
+  }
+
+  if (direction === 'up') {
+    if (historyIndex < promptHistory.length - 1) {
+      historyIndex++;
+      draft = promptHistory[historyIndex];
+    }
+  } else {
+    if (historyIndex > -1) {
+      historyIndex--;
+      if (historyIndex === -1) {
+        draft = temporaryPrompt;
+      } else {
+        draft = promptHistory[historyIndex];
+      }
+    }
+  }
 }
 
 onDestroy(() => {
   objectUrls.revokeAll();
   mediaElements.clear();
   unsubscribeVideoModel();
+  unsubscribePromptHistory();
 });
 </script>
 
@@ -368,4 +449,5 @@ onDestroy(() => {
   handleSubmit={handleSubmit}
   handleDrop={handleDrop}
   handlePaste={handlePaste}
+  handleKeyDown={handleKeyDown}
 />

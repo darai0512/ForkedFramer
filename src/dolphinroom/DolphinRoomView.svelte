@@ -47,6 +47,7 @@ export let handleModeButtonClick: () => void = () => {};
 export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
+export let handleKeyDown: (event: KeyboardEvent) => void = () => {};
 
 function handleTextareaPaste(event: ClipboardEvent) {
   handlePaste(event);
@@ -175,11 +176,13 @@ async function handleAddCollection() {
         </div>
         <div class="input-row">
           <div class="input-wrapper">
+            <div class="history-hint">Ctrl + ↑/↓ で履歴を移動</div>
             <textarea
               id="dolphin-room-message"
               placeholder="メッセージを入力してください"
               bind:value={draft}
               on:paste={handleTextareaPaste}
+              on:keydown={handleKeyDown}
               aria-label="メッセージ入力"
               rows={5}
             />
@@ -350,6 +353,14 @@ async function handleAddCollection() {
   .input-wrapper {
     flex: 1;
     display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .history-hint {
+    font-size: 0.72rem;
+    color: rgb(var(--color-surface-500));
+    padding-left: 0.3rem;
   }
 
   .action-panel {
