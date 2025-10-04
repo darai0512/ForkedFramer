@@ -1,16 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy, createEventDispatcher } from 'svelte';
-  import { toastStore } from '@skeletonlabs/skeleton';
-  import { canvasToBlob } from '../lib/layeredCanvas/tools/imageUtil';
-  import { getVideoElementFromMedia, type Media, ImageMedia } from '../lib/layeredCanvas/dataModels/media';
   import type { MediaItem } from './timelineTypes';
-  import { removeBg, pollMediaStatus } from '../supabase';
-  import { get } from 'svelte/store';
-  import { saveRequest } from '../filemanager/warehouse';
-  import { mainBookFileSystem } from '../filemanager/fileManagerStore';
-  import { analyticsEvent } from '../utils/analyticsEvent';
-
-  const dispatch = createEventDispatcher();
 
   import downloadIcon from '../assets/download.webp';
   import clipboardIcon from '../assets/clipboard.webp';
@@ -18,11 +8,17 @@
   import punchIcon from '../assets/filmlist/punch.webp';
 
   export let mediaItem: MediaItem;
+  export let isProcessing = false;
+
+  const dispatch = createEventDispatcher<{
+    download: void;
+    copy: void;
+    punch: void;
+  }>();
 
   let menuOpen = false;
   let triggerButton: HTMLButtonElement | null = null;
   let menuElement: HTMLDivElement | null = null;
-  let activeAction: 'copy' | 'download' | 'punch' | null = null;
 
   function toggleMenu(event: MouseEvent) {
     event.stopPropagation();
@@ -59,198 +55,29 @@
     document.removeEventListener('keydown', handleKeydown, true);
   });
 
-  async function handleDownload(event: MouseEvent) {
+  function handleDownload(event: MouseEvent) {
     event.stopPropagation();
-    await runWithAction('download', async () => {
-      const payload = await resolveMediaBlob(mediaItem);
-      if (!payload) {
-        toastStore.trigger({ message: 'ダウンロードできるデータが見つかりませんでした', timeout: 2000 });
-        return;
-      }
-
-      const { blob, filename } = payload;
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = filename;
-      document.body.append(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-    });
+    dispatch('download');
+    closeMenu();
   }
 
-  async function handleCopy(event: MouseEvent) {
+  function handleCopy(event: MouseEvent) {
     event.stopPropagation();
-    await runWithAction('copy', async () => {
-      if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
-        toastStore.trigger({ message: 'クリップボードへコピーできません', timeout: 2000 });
-        return;
-      }
-
-      const payload = await resolveMediaBlob(mediaItem, true);
-      if (!payload) {
-        toastStore.trigger({ message: 'コピーできるデータが見つかりませんでした', timeout: 2000 });
-        return;
-      }
-
-      const { blob } = payload;
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ [blob.type || 'application/octet-stream']: blob })]);
-        toastStore.trigger({ message: 'クリップボードにコピーしました', timeout: 1600 });
-      } catch (error) {
-        console.error('Failed to write clipboard', error);
-        toastStore.trigger({ message: 'クリップボードへのコピーに失敗しました', timeout: 2000 });
-      }
-    });
+    dispatch('copy');
+    closeMenu();
   }
 
-  async function handlePunch(event: MouseEvent) {
+  function handlePunch(event: MouseEvent) {
     event.stopPropagation();
-    await runWithAction('punch', async () => {
-      const media = mediaItem.media;
-      if (!media || !(media instanceof ImageMedia)) {
-        toastStore.trigger({ message: '画像のみ背景除去できます', timeout: 2000 });
-        return;
-      }
-
-      const dataUrl = media.drawSourceCanvas.toDataURL('image/png');
-      const { requestId, model } = await removeBg({ dataUrl });
-      await saveRequest(get(mainBookFileSystem)!, 'image', 'removebg', requestId, model);
-
-      const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'removebg', requestId, model });
-
-      mediaItem.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
-      analyticsEvent('punch');
-      toastStore.trigger({ message: '背景を除去しました', timeout: 1600 });
-      // 親コンポーネントに変更を通知
-      dispatch('mediaUpdated', { mediaItem });
-    });
-  }
-
-  async function runWithAction(action: 'copy' | 'download' | 'punch', work: () => Promise<void>) {
-    if (activeAction) return;
-    activeAction = action;
-    try {
-      await work();
-    } finally {
-      activeAction = null;
-      closeMenu();
-    }
-  }
-
-  async function resolveMediaBlob(item: MediaItem, preferPng = false): Promise<{ blob: Blob; filename: string } | null> {
-    const baseName = createBaseFileName(item);
-
-    if (item.file) {
-      const originalName = item.file.name?.trim();
-      return {
-        blob: item.file,
-        filename: originalName && originalName.length > 0
-          ? originalName
-          : ensureExtension(baseName, item.file.type || guessExtensionFromKind(item.kind)),
-      };
-    }
-
-    const media = item.media;
-    if (media) {
-      const result = await fromMedia(media, item, baseName, preferPng);
-      if (result) return result;
-    }
-
-    if (item.url) {
-      try {
-        const response = await fetch(item.url);
-        if (!response.ok) throw new Error(`Failed to fetch media: ${response.status}`);
-        const blob = await response.blob();
-        return {
-          blob,
-          filename: ensureExtension(baseName, blob.type || guessExtensionFromKind(item.kind)),
-        };
-      } catch (error) {
-        console.error('Failed to download media from URL', error);
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  async function fromMedia(media: Media, item: MediaItem, baseName: string, preferPng: boolean) {
-    if (media.type === 'image') {
-      try {
-        const blob = await canvasToBlob(media.drawSourceCanvas, preferPng ? 'image/png' : undefined);
-        return {
-          blob,
-          filename: ensureExtension(baseName, blob.type || 'image/png'),
-        };
-      } catch (error) {
-        console.error('Failed to convert image canvas', error);
-        return null;
-      }
-    }
-
-    if (media.type === 'video') {
-      const videoElement = getVideoElementFromMedia(media);
-      const src = videoElement?.src ?? item.url;
-      if (!src) {
-        return null;
-      }
-      try {
-        const response = await fetch(src);
-        if (!response.ok) throw new Error(`Failed to fetch video: ${response.status}`);
-        const blob = await response.blob();
-        return {
-          blob,
-          filename: ensureExtension(baseName, blob.type || 'video/mp4'),
-        };
-      } catch (error) {
-        console.error('Failed to retrieve video', error);
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  function createBaseFileName(item: MediaItem): string {
-    if (item.name?.trim()) return item.name.trim();
-    const timestamp = new Date(item.timestamp).toISOString().replace(/[:T]/g, '-').split('.')[0];
-    return `${item.kind}-${timestamp}`;
-  }
-
-  function ensureExtension(name: string, mimeOrKind: string): string {
-    const normalizedName = name.trim();
-    const extension = deriveExtension(mimeOrKind);
-    if (!extension) return normalizedName;
-    if (normalizedName.toLowerCase().endsWith(extension)) return normalizedName;
-    return `${normalizedName}${extension}`;
-  }
-
-  function deriveExtension(mimeOrKind: string): string {
-    const value = mimeOrKind.toLowerCase();
-    if (value.includes('png')) return '.png';
-    if (value.includes('jpeg') || value.includes('jpg')) return '.jpg';
-    if (value.includes('webp')) return '.webp';
-    if (value.includes('gif')) return '.gif';
-    if (value.includes('mp4')) return '.mp4';
-    if (value.includes('webm')) return '.webm';
-    if (value.includes('video')) return '.mp4';
-    if (value.includes('image')) return '.png';
-    if (value === 'image') return '.png';
-    if (value === 'video') return '.mp4';
-    return '';
-  }
-
-  function guessExtensionFromKind(kind: MediaItem['kind']): string {
-    return kind === 'video' ? 'video/mp4' : 'image/png';
+    dispatch('punch');
+    closeMenu();
   }
 </script>
 
 <button
   type="button"
   class="media-action-trigger"
-  class:loading={!!activeAction}
+  class:loading={isProcessing}
   bind:this={triggerButton}
   on:click={toggleMenu}
   aria-expanded={menuOpen}
@@ -271,32 +98,32 @@
       type="button"
       class="media-action-item"
       on:click={handleDownload}
-      disabled={!!activeAction && activeAction !== 'download'}
+      disabled={isProcessing}
       role="menuitem"
     >
       <img src={downloadIcon} alt="ダウンロード" />
-      <span>{activeAction === 'download' ? 'ダウンロード中…' : 'ダウンロード'}</span>
+      <span>ダウンロード</span>
     </button>
     <button
       type="button"
       class="media-action-item"
       on:click={handleCopy}
-      disabled={!!activeAction && activeAction !== 'copy'}
+      disabled={isProcessing}
       role="menuitem"
     >
       <img src={clipboardIcon} alt="クリップボードにコピー" />
-      <span>{activeAction === 'copy' ? 'コピー中…' : 'クリップボードにコピー'}</span>
+      <span>クリップボードにコピー</span>
     </button>
     {#if mediaItem.kind === 'image'}
       <button
         type="button"
         class="media-action-item"
         on:click={handlePunch}
-        disabled={!!activeAction && activeAction !== 'punch'}
+        disabled={isProcessing}
         role="menuitem"
       >
         <img src={punchIcon} alt="背景除去" />
-        <span>{activeAction === 'punch' ? '背景除去中…' : '背景除去'}</span>
+        <span>背景除去</span>
       </button>
     {/if}
   </div>

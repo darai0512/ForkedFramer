@@ -7,6 +7,7 @@
     type MediaItem,
     type MessageItem
   } from './timelineTypes';
+  import * as mediaActions from './mediaActions';
 
   import dropIcon from '../assets/drop.webp';
   import telescopeIcon from '../assets/telescope.webp';
@@ -34,10 +35,42 @@
     };
   }
 
-  function handleMediaUpdated(event: CustomEvent<{ mediaItem: MediaItem }>) {
-    // 強制的に再描画をトリガー
-    if (mediaItems) {
-      mediaItems = [...mediaItems];
+  let processingMediaIds = new Set<number>();
+
+  async function handleDownload(mediaItem: MediaItem) {
+    processingMediaIds.add(mediaItem.id);
+    processingMediaIds = processingMediaIds;
+    try {
+      await mediaActions.downloadMedia(mediaItem);
+    } finally {
+      processingMediaIds.delete(mediaItem.id);
+      processingMediaIds = processingMediaIds;
+    }
+  }
+
+  async function handleCopy(mediaItem: MediaItem) {
+    processingMediaIds.add(mediaItem.id);
+    processingMediaIds = processingMediaIds;
+    try {
+      await mediaActions.copyMediaToClipboard(mediaItem);
+    } finally {
+      processingMediaIds.delete(mediaItem.id);
+      processingMediaIds = processingMediaIds;
+    }
+  }
+
+  async function handlePunch(mediaItem: MediaItem) {
+    processingMediaIds.add(mediaItem.id);
+    processingMediaIds = processingMediaIds;
+    try {
+      await mediaActions.removeBackground(mediaItem);
+      // 強制的に再描画をトリガー
+      if (mediaItems) {
+        mediaItems = [...mediaItems];
+      }
+    } finally {
+      processingMediaIds.delete(mediaItem.id);
+      processingMediaIds = processingMediaIds;
     }
   }
 
@@ -111,6 +144,12 @@
                       showControls={mediaItem.kind === 'video'}
                       dragAsImage={mediaItem.kind === 'image'}
                     />
+                    {#if processingMediaIds.has(mediaItem.id)}
+                      <div class="processing-overlay" aria-live="polite">
+                        <div class="spinner" />
+                        <span>処理中…</span>
+                      </div>
+                    {/if}
                   </div>
                 {:else}
                   <div class="attachment-placeholder" aria-live="polite">
@@ -119,7 +158,13 @@
                   </div>
                 {/if}
               </button>
-              <MediaActionMenu {mediaItem} on:mediaUpdated={handleMediaUpdated} />
+              <MediaActionMenu
+                {mediaItem}
+                isProcessing={processingMediaIds.has(mediaItem.id)}
+                on:download={() => handleDownload(mediaItem)}
+                on:copy={() => handleCopy(mediaItem)}
+                on:punch={() => handlePunch(mediaItem)}
+              />
             </div>
             <button
               type="button"
@@ -194,6 +239,12 @@
                     showControls={mediaItem.kind === 'video'}
                     dragAsImage={mediaItem.kind === 'image'}
                   />
+                  {#if processingMediaIds.has(mediaItem.id)}
+                    <div class="processing-overlay" aria-live="polite">
+                      <div class="spinner" />
+                      <span>処理中…</span>
+                    </div>
+                  {/if}
                 </div>
               {:else}
                 <div class="attachment-placeholder" aria-live="polite">
@@ -202,7 +253,13 @@
                 </div>
               {/if}
             </button>
-            <MediaActionMenu {mediaItem} on:mediaUpdated={handleMediaUpdated} />
+            <MediaActionMenu
+              {mediaItem}
+              isProcessing={processingMediaIds.has(mediaItem.id)}
+              on:download={() => handleDownload(mediaItem)}
+              on:copy={() => handleCopy(mediaItem)}
+              on:punch={() => handlePunch(mediaItem)}
+            />
           </div>
           <button
             type="button"
@@ -448,6 +505,23 @@
     background: rgba(15, 23, 42, 0.05);
   }
 
+  .processing-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: rgba(15, 23, 42, 0.75);
+    font-size: 0.85rem;
+    z-index: 10;
+  }
+
   .delete-button {
     position: absolute;
     top: 6px;
@@ -518,7 +592,8 @@
     box-shadow: none;
   }
 
-  .attachment-placeholder .spinner {
+  .attachment-placeholder .spinner,
+  .processing-overlay .spinner {
     width: 32px;
     height: 32px;
     border-radius: 50%;
