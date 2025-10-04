@@ -7,10 +7,10 @@ import { getVideoElementFromMedia, buildMedia } from '../lib/layeredCanvas/dataM
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import { attachFileToDataTransfer } from '../lib/layeredCanvas/tools/dragUtil';
 import {
-  toTimelineBlocks,
+  toTimelineRows,
   type MediaItem,
   type MessageItem,
-  type TimelineBlock,
+  type TimelineRow,
   type TimelineItem,
   isMediaItem
 } from './timelineTypes';
@@ -31,7 +31,7 @@ const botReplies = [
 
 const dispatch = createEventDispatcher<{ dragstart: Media }>();
 
-let timelineItems: TimelineItem[] = [], timelineBlocks: TimelineBlock[] = [];
+let timelineItems: TimelineItem[] = [], timelineRows: TimelineRow[] = [];
 let draft = '', nextId = 0;
 let logElement: HTMLDivElement | null = null;
 const objectUrls: string[] = [], mediaElements = new Map<number, HTMLButtonElement>();
@@ -65,7 +65,7 @@ const { ensureMediaItemMedia } = createMediaLoaders({
 function refreshTimeline() {
   timelineItems = [...timelineItems];
 }
-$: timelineBlocks = toTimelineBlocks(timelineItems);
+$: timelineRows = toTimelineRows(timelineItems);
 function closeDrawer() {
   $dolphinRoomOpen = false;
 }
@@ -422,6 +422,33 @@ function deleteMediaItem(target: MediaItem) {
   timelineItems = timelineItems.filter((item) => item.id !== target.id);
 }
 
+function deleteMessageGroup(messageId: number) {
+  const remaining: TimelineItem[] = [];
+  const nextCapturing = new Set(capturingMediaIds);
+  for (const item of timelineItems) {
+    if (item.kind === 'message' && item.id === messageId) {
+      continue;
+    }
+    if (isMediaItem(item) && item.promptId === messageId) {
+      releaseObjectUrl(item.url);
+      if (item.kind === 'video') {
+        const video = item.media ? getVideoElementFromMedia(item.media) : null;
+        releaseObjectUrl(video?.src ?? null);
+      }
+      mediaElements.delete(item.id);
+      nextCapturing.delete(item.id);
+      continue;
+    }
+    remaining.push(item);
+  }
+  capturingMediaIds = nextCapturing;
+  timelineItems = remaining;
+}
+
+function handleDeleteGroup(event: CustomEvent<{ messageId: number }>) {
+  deleteMessageGroup(event.detail.messageId);
+}
+
 function handleMediaDragStart(event: DragEvent, item: MediaItem) {
   const dataTransfer = event.dataTransfer;
   if (!dataTransfer) return;
@@ -591,14 +618,14 @@ onDestroy(() => {
       </header>
 
       <div class="message-log" bind:this={logElement}>
-        {#each timelineBlocks as block ((block.kind === 'message-block'
+        {#each timelineRows as block ((block.kind === 'message-block'
           ? `message-${block.item.id}`
-          : block.kind === 'media-group'
+          : block.kind === 'media-grid'
             ? `media-${block.groupId}`
             : `message-media-${block.groupId}`))}
           <TimelineItemView
             messageItem={block.kind === 'message-block' ? block.item : block.kind === 'message-media' ? block.message : null}
-            mediaItems={block.kind === 'media-group' ? block.items : block.kind === 'message-media' ? block.items : null}
+            mediaItems={block.kind === 'media-grid' ? block.items : block.kind === 'message-media' ? block.items : null}
             combined={block.kind === 'message-media'}
             {capturingMediaIds}
             {toggleMediaSelection}
@@ -606,9 +633,10 @@ onDestroy(() => {
             handleMediaDragStartEvent={handleMediaDragStartEvent}
             registerMediaElement={registerMediaElement}
             deleteMediaItem={deleteMediaItem}
+            on:deleteGroup={handleDeleteGroup}
           />
         {/each}
-        {#if timelineBlocks.length === 0}
+        {#if timelineRows.length === 0}
           <div class="empty-state">
             <p>まだメッセージがありません。下のフォームから送信してみましょう！</p>
           </div>

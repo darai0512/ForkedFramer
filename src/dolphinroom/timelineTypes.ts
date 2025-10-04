@@ -42,8 +42,8 @@ export interface MessageBlock {
   item: MessageItem;
 }
 
-export interface MediaGroupBlock {
-  kind: 'media-group';
+export interface MediaGridRow {
+  kind: 'media-grid';
   items: MediaItem[];
   groupId: number;
 }
@@ -55,10 +55,10 @@ export interface MessageMediaBlock {
   groupId: number;
 }
 
-export type TimelineBlock = MessageBlock | MediaGroupBlock | MessageMediaBlock;
+export type TimelineRow = MessageBlock | MediaGridRow | MessageMediaBlock;
 
-export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
-  const blocks: TimelineBlock[] = [];
+export function toTimelineRows(items: TimelineItem[]): TimelineRow[] {
+  const rows: TimelineRow[] = [];
 
   let index = 0;
   while (index < items.length) {
@@ -80,12 +80,12 @@ export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
       }
 
       if (combined.length > 0) {
-        blocks.push({ kind: 'message-media', message, items: combined, groupId: combined[0].id });
+        rows.push({ kind: 'message-media', message, items: combined, groupId: combined[0].id });
         index = nextIndex;
         continue;
       }
 
-      blocks.push({ kind: 'message-block', item: message });
+      rows.push({ kind: 'message-block', item: message });
       index += 1;
       continue;
     }
@@ -102,7 +102,7 @@ export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
     }
 
     if (mediaGroup.length > 0) {
-      blocks.push({ kind: 'media-group', items: mediaGroup, groupId: mediaGroup[0].id });
+      rows.push({ kind: 'media-grid', items: mediaGroup, groupId: mediaGroup[0].id });
       index = nextIndex;
     } else {
       // Safety: skip items that didn't fit above conditions to avoid infinite loop
@@ -110,5 +110,5 @@ export function toTimelineBlocks(items: TimelineItem[]): TimelineBlock[] {
     }
   }
 
-  return blocks;
+  return rows;
 }
