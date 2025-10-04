@@ -43,6 +43,16 @@ export let handleDeleteGroup: (event: CustomEvent<{ messageId: number }>) => voi
 export let handleModeButtonClick: () => void = () => {};
 export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
+export let handlePaste: (event: ClipboardEvent) => void = () => {};
+
+function handleTextareaPaste(event: ClipboardEvent) {
+  handlePaste(event);
+  // 画像がペーストされた場合は既にpreventDefaultされているので
+  // 伝播を止めて親のペーストハンドラが実行されないようにする
+  if (event.defaultPrevented) {
+    event.stopPropagation();
+  }
+}
 </script>
 
 <Drawer
@@ -59,6 +69,8 @@ export let handleDrop: (event: DragEvent) => void = () => {};
       aria-label="ドルフィンルームのタイムライン"
       on:dragover|preventDefault
       on:drop={handleDrop}
+      on:paste={handlePaste}
+      tabindex="-1"
     >
       <header class="room-header">
         <div class="header-text">
@@ -134,6 +146,7 @@ export let handleDrop: (event: DragEvent) => void = () => {};
               id="dolphin-room-message"
               placeholder="メッセージを入力してください"
               bind:value={draft}
+              on:paste={handleTextareaPaste}
               aria-label="メッセージ入力"
               rows={5}
             />

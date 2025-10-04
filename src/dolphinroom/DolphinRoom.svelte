@@ -279,6 +279,44 @@ function handleDrop(event: DragEvent) {
   event.dataTransfer?.clearData();
 }
 
+async function handlePaste(event: ClipboardEvent) {
+  const clipboardData = event.clipboardData;
+  if (!clipboardData) return;
+
+  const mediaItems: MediaItem[] = [];
+
+  // クリップボードからファイルを取得
+  for (const item of Array.from(clipboardData.items)) {
+    if (item.kind === 'file') {
+      const file = item.getAsFile();
+      if (!file) continue;
+      const type = file.type;
+      if (!type.startsWith('image/') && !type.startsWith('video/')) continue;
+
+      const url = URL.createObjectURL(file);
+      objectUrls.register(url);
+
+      mediaItems.push({
+        id: allocateId(),
+        kind: type.startsWith('image/') ? 'image' : 'video',
+        url,
+        name: file.name || 'pasted-file',
+        selected: false,
+        file,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  // 画像/動画が見つかった場合のみpreventDefaultして追加
+  if (mediaItems.length > 0) {
+    event.preventDefault();
+    void appendMediaItems(mediaItems);
+  }
+
+  // テキストのみの場合はデフォルト動作を許可（何もしない）
+}
+
 function handleSubmit(event: Event) {
   event.preventDefault();
   const text = draft.trim();
@@ -325,4 +363,5 @@ onDestroy(() => {
   handleModeButtonClick={handleModeButtonClick}
   handleSubmit={handleSubmit}
   handleDrop={handleDrop}
+  handlePaste={handlePaste}
 />
