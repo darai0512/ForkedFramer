@@ -300,6 +300,7 @@
     "pleaseSignIn": "Please sign in",
     "proModeMultipleImagesNotSupported": "Multiple images not currently supported in Pro mode",
     "imageGenerated": "Image has been generated",
+    "videoGenerated": "Video has been generated",
     "copiedToClipboard": "Copied to clipboard",
     "createImageMask": "Create Image Mask",
     "brushSize": "Brush Size",

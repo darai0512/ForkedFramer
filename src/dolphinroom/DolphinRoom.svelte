@@ -1,5 +1,6 @@
 <script lang="ts">
 import { createEventDispatcher, onDestroy, tick } from 'svelte';
+import { get } from 'svelte/store';
 import Drawer from '../utils/Drawer.svelte';
 import TimelineItemView from './TimelineItemView.svelte';
 import { dolphinRoomOpen } from './dolphinRoomStore';
@@ -16,13 +17,23 @@ import {
 } from './timelineTypes';
 import { createMediaLoaders } from './mediaLoaders';
 import ImagingModes from '../generator/ImagingModes.svelte';
-import type { ImagingMode, ImageToVideoModel, ImagingBackground } from '$protocolTypes/imagingTypes';
+import type {
+  ImagingMode,
+  ImageToVideoModel,
+  ImagingBackground,
+  ImageToVideoRequest,
+  ImageToVideoResolution,
+} from '$protocolTypes/imagingTypes';
 import { createPreferenceStore } from '../preferences';
 import { developmentFlag } from '../utils/developmentFlagStore';
 import { executeProcessAndNotify } from '../utils/executeProcessAndNotify';
 import { generateImage, isContentsPolicyViolationError, supportsRefImages, getRefMaxForMode } from '../utils/feathralImaging';
-import { toastStore } from '@skeletonlabs/skeleton';
+import { toastStore, RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
 import { _ } from 'svelte-i18n';
+import { image2Video, pollMediaStatus } from '../supabase';
+import { mainBookFileSystem } from '../filemanager/fileManagerStore';
+import { saveRequest } from '../filemanager/warehouse';
+import { resizeCanvasIfNeeded } from '../lib/layeredCanvas/tools/imageUtil';
 
 const botReplies = [
   'うんうん、なるほど！', 'ちょっと考えてみますね。', 'それは面白いアイデアですね。',
@@ -37,16 +48,115 @@ let logElement: HTMLDivElement | null = null;
 const objectUrls: string[] = [], mediaElements = new Map<number, HTMLButtonElement>();
 let capturingMediaIds = new Set<number>();
 let imagingMode: ImagingMode = 'schnell';
-let hasSelectedMedia = false;
+let generationType: 'image' | 'video' = 'image';
+let selectedImageItems: MediaItem[] = [];
+let hasSelectedImages = false;
 let isGenerating = false;
-$: messageHeading = hasSelectedMedia ? '編集' : (isGenerating ? '生成中…' : '生成');
 let isDraftEmpty = true;
 $: isDraftEmpty = draft.trim().length === 0;
+$: {
+  selectedImageItems = timelineItems.filter(
+    (item): item is MediaItem => isMediaItem(item) && item.selected && item.kind === 'image'
+  );
+  hasSelectedImages = selectedImageItems.length > 0;
+}
+$: messageHeading = generationType === 'video'
+  ? (isGenerating ? '動画生成中…' : '動画生成')
+  : hasSelectedImages
+    ? (isGenerating ? '編集中…' : '編集')
+    : (isGenerating ? '生成中…' : '生成');
+$: generationDisableReason = (() => {
+  if (isGenerating) return '現在処理中です';
+  if (isDraftEmpty) return 'プロンプトを入力してください';
+  if (generationType === 'video' && !hasSelectedImages) return '動画生成には画像を選択してください';
+  return '';
+})();
 
 const DEFAULT_PROMPT_POSTFIX = 'masterpiece, best quality, high detail';
 const DEFAULT_IMAGE_SIZE: { width: number; height: number } = { width: 1024, height: 1024 };
 const DEFAULT_BACKGROUND: ImagingBackground = 'opaque';
 const DEFAULT_IMAGE_COUNT = 1;
+const DEFAULT_VIDEO_COUNT = 1;
+const DEFAULT_VIDEO_DURATION: ImageToVideoRequest['duration'] = '5';
+const DEFAULT_VIDEO_RESOLUTION: ImageToVideoResolution = '720p';
+const VIDEO_NOTIFICATION_THRESHOLD_MS = 10000;
+const DEFAULT_VIDEO_SOURCE_MAX = 1024;
+
+function inferVideoExtension(mimeType: string): string {
+  const normalized = mimeType.toLowerCase();
+  if (normalized.includes('webm')) return 'webm';
+  if (normalized.includes('ogg')) return 'ogv';
+  if (normalized.includes('quicktime')) return 'mov';
+  if (normalized.includes('x-msvideo')) return 'avi';
+  return 'mp4';
+}
+
+const VIDEO_MODEL_CAPABILITIES: Record<
+  ImageToVideoModel,
+  {
+    durations: ImageToVideoRequest['duration'][];
+    aspectRatios: ImageToVideoRequest['aspectRatio'][];
+    resolutions: ImageToVideoResolution[];
+  }
+> = {
+  FramePack: {
+    durations: ['1', '2', '3', '4', '5'],
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['480p', '720p'],
+  },
+  kling: {
+    durations: ['5'],
+    aspectRatios: ['16:9'],
+    resolutions: ['720p'],
+  },
+  'seedance/lite': {
+    durations: ['3', '4', '5'],
+    aspectRatios: ['16:9'],
+    resolutions: ['480p', '720p', '1080p'],
+  },
+  'seedance/pro': {
+    durations: ['3', '4', '5'],
+    aspectRatios: ['16:9'],
+    resolutions: ['480p', '1080p'],
+  },
+  'wan/v2.2-a14b/turbo': {
+    durations: ['5'],
+    aspectRatios: ['1:1', '16:9', '9:16'],
+    resolutions: ['480p', '720p'],
+  },
+  'wan-25-preview/image-to-video': {
+    durations: ['5'],
+    aspectRatios: ['1:1'],
+    resolutions: ['480p', '720p', '1080p'],
+  },
+  'decart/lucy-14b': {
+    durations: ['5'],
+    aspectRatios: ['16:9', '9:16'],
+    resolutions: ['720p'],
+  },
+  failure: {
+    durations: ['1'],
+    aspectRatios: ['1:1'],
+    resolutions: ['480p'],
+  },
+};
+
+function pickVideoDuration(model: ImageToVideoModel): ImageToVideoRequest['duration'] {
+  const options = VIDEO_MODEL_CAPABILITIES[model]?.durations ?? [DEFAULT_VIDEO_DURATION];
+  return options.includes(DEFAULT_VIDEO_DURATION) ? DEFAULT_VIDEO_DURATION : options[0];
+}
+
+function pickVideoResolution(model: ImageToVideoModel): ImageToVideoResolution {
+  const options = VIDEO_MODEL_CAPABILITIES[model]?.resolutions ?? [DEFAULT_VIDEO_RESOLUTION];
+  return options.includes(DEFAULT_VIDEO_RESOLUTION) ? DEFAULT_VIDEO_RESOLUTION : options[0];
+}
+
+function pickVideoAspectRatio(model: ImageToVideoModel, width: number, height: number): ImageToVideoRequest['aspectRatio'] {
+  const options = VIDEO_MODEL_CAPABILITIES[model]?.aspectRatios ?? ['16:9'];
+  const preferred = height > width ? '9:16' : '16:9';
+  if (options.includes(preferred)) return preferred;
+  return options[0];
+}
 
 const videoModelStore = createPreferenceStore<ImageToVideoModel>('tweakUi', 'dolphinRoomVideoModel', 'FramePack');
 const videoModelOptions: Array<{ value: ImageToVideoModel; label: string; devOnly?: boolean }> = [
@@ -73,8 +183,6 @@ function closeDrawer() {
 $: if ($dolphinRoomOpen && timelineItems.length === 0) {
   void enqueueBotMessage('イルカ室へようこそ！お気軽に話しかけてくださいね。');
 }
-
-$: hasSelectedMedia = timelineItems.some((item) => isMediaItem(item) && item.selected);
 
 function composeGenerationPrompt(text: string): string {
   const trimmed = text.trim();
@@ -111,14 +219,14 @@ async function buildMediaPayloadFromCanvas(canvas: HTMLCanvasElement, index: num
   };
 }
 
-function createPlaceholderMediaItems(count: number, promptId?: number): MediaItem[] {
+function createPlaceholderMediaItems(count: number, promptId?: number, kind: MediaItem['kind'] = 'image'): MediaItem[] {
   if (count <= 0) return [];
   const baseTimestamp = Date.now();
   const placeholders: MediaItem[] = [];
   for (let i = 0; i < count; i += 1) {
     placeholders.push({
       id: nextId++,
-      kind: 'image',
+      kind,
       name: '生成中',
       url: '',
       selected: false,
@@ -185,18 +293,108 @@ async function hydratePlaceholdersWithCanvases(placeholders: MediaItem[], canvas
   }
 }
 
+async function hydratePlaceholdersWithVideos(
+  placeholders: MediaItem[],
+  pollResult: Awaited<ReturnType<typeof pollMediaStatus>>,
+  promptId?: number
+) {
+  const extras: MediaItem[] = [];
+  const { mediaResources, urls } = pollResult;
+
+  for (let i = 0; i < mediaResources.length; i += 1) {
+    const resource = mediaResources[i];
+    if (!(resource instanceof HTMLVideoElement)) {
+      console.warn('Unexpected media type for video result', resource);
+      continue;
+    }
+
+    let blob: Blob | null = null;
+    const remoteUrl = urls?.[i];
+    try {
+      if (remoteUrl) {
+        const response = await fetch(remoteUrl);
+        blob = await response.blob();
+      }
+    } catch (error) {
+      console.warn('Failed to fetch remote video blob, falling back to local source', error);
+    }
+
+    if (!blob) {
+      try {
+        const response = await fetch(resource.src);
+        blob = await response.blob();
+      } catch (error) {
+        console.error('Failed to obtain video blob', error);
+        continue;
+      }
+    }
+
+    const mimeType = blob.type || 'video/mp4';
+    const extension = inferVideoExtension(mimeType);
+    const timestamp = Date.now() + i;
+    const fileName = `dolphin-video-${timestamp}.${extension}`;
+    const file = new File([blob], fileName, { type: mimeType });
+
+    if (resource.src) {
+      objectUrls.push(resource.src);
+    }
+
+    const media = buildMedia(resource);
+    const target = placeholders[i];
+    if (target) {
+      releaseObjectUrl(target.url);
+      target.name = fileName;
+      target.url = resource.src;
+      target.file = file;
+      target.media = media;
+      target.timestamp = timestamp;
+      target.placeholder = false;
+      target.selected = false;
+      if (promptId != null) {
+        target.promptId = promptId;
+      }
+    } else {
+      extras.push({
+        id: nextId++,
+        kind: 'video',
+        name: fileName,
+        url: resource.src,
+        selected: false,
+        file,
+        media,
+        timestamp,
+        promptId,
+      });
+    }
+  }
+
+  if (extras.length > 0) {
+    timelineItems = [...timelineItems, ...extras];
+  } else {
+    timelineItems = [...timelineItems];
+  }
+}
+
 async function handleModeButtonClick() {
   if (isGenerating || isDraftEmpty) return;
 
   const prompt = composeGenerationPrompt(draft);
   if (!prompt) return;
 
+  if (generationType === 'video' && !hasSelectedImages) {
+    toastStore.trigger({ message: '動画生成には画像を選択してください。', timeout: 2500 });
+    return;
+  }
+
+  const selection = [...selectedImageItems];
   const promptMessage = await appendMessage('user', prompt);
 
   if (!promptMessage) return;
 
-  if (hasSelectedMedia) {
-    await handleEditSelected(prompt, promptMessage.id);
+  if (generationType === 'video') {
+    await handleGenerateVideo(prompt, promptMessage.id, selection);
+  } else if (selection.length > 0) {
+    await handleEditSelected(prompt, promptMessage.id, selection);
   } else {
     await handleGenerateNew(prompt, promptMessage.id);
   }
@@ -226,8 +424,7 @@ async function handleGenerateNew(prompt: string, promptId: number) {
   }
 }
 
-async function handleEditSelected(prompt: string, promptId: number) {
-  const selectedItems = timelineItems.filter((item): item is MediaItem => isMediaItem(item) && item.selected && item.kind === 'image');
+async function handleEditSelected(prompt: string, promptId: number, selectedItems: MediaItem[]) {
   if (selectedItems.length === 0) {
     toastStore.trigger({ message: '編集には画像を選択してください。', timeout: 2500 });
     return;
@@ -278,6 +475,65 @@ async function handleEditSelected(prompt: string, promptId: number) {
     } else {
       console.error('画像編集に失敗しました', error);
       toastStore.trigger({ message: '画像編集に失敗しました。', timeout: 3000 });
+    }
+    removeMediaItems(placeholders);
+  } finally {
+    isGenerating = false;
+  }
+}
+
+async function handleGenerateVideo(prompt: string, promptId: number, selectedItems: MediaItem[]) {
+  if (selectedItems.length === 0) {
+    toastStore.trigger({ message: '動画生成には画像を選択してください。', timeout: 2500 });
+    return;
+  }
+
+  const baseItem = selectedItems[0];
+  isGenerating = true;
+  const placeholders = createPlaceholderMediaItems(DEFAULT_VIDEO_COUNT, promptId, 'video');
+  try {
+    const baseMedia = await ensureMediaItemMedia(baseItem).catch((error) => {
+      console.error('Failed to load base media for video generation', error);
+      return null;
+    });
+    if (!baseMedia || baseMedia.type !== 'image') {
+      toastStore.trigger({ message: '動画生成には画像メディアが必要です。', timeout: 2500 });
+      removeMediaItems(placeholders);
+      return;
+    }
+
+    const resizedCanvas = resizeCanvasIfNeeded(baseMedia.drawSourceCanvas, DEFAULT_VIDEO_SOURCE_MAX);
+    const model = $videoModelStore;
+    const request: ImageToVideoRequest = {
+      prompt,
+      imageUrl: resizedCanvas.toDataURL('image/png'),
+      duration: pickVideoDuration(model),
+      aspectRatio: pickVideoAspectRatio(model, resizedCanvas.width, resizedCanvas.height),
+      resolution: pickVideoResolution(model),
+      model,
+    };
+
+    const { requestId, model: resolvedModel } = await image2Video(request);
+    const fileSystem = get(mainBookFileSystem);
+    if (fileSystem) {
+      await saveRequest(fileSystem, 'video', request.model, requestId, resolvedModel);
+    }
+
+    toastStore.trigger({ message: '動画生成を開始しました。完了までしばらくお待ちください。', timeout: 3500 });
+
+    const pollResult = await executeProcessAndNotify(
+      VIDEO_NOTIFICATION_THRESHOLD_MS,
+      $_('generator.videoGenerated'),
+      async () => await pollMediaStatus({ mediaType: 'video', mode: request.model, requestId, model: resolvedModel })
+    );
+
+    await hydratePlaceholdersWithVideos(placeholders, pollResult, promptId);
+  } catch (error) {
+    if (isContentsPolicyViolationError(error)) {
+      // エラー通知は generateImage 側で行われる
+    } else {
+      console.error('動画生成に失敗しました', error);
+      toastStore.trigger({ message: '動画生成に失敗しました。', timeout: 3000 });
     }
     removeMediaItems(placeholders);
   } finally {
@@ -595,26 +851,6 @@ onDestroy(() => {
           <h2>ドルフィンルーム</h2>
           <p>チャットで気軽にアイデアを整理しましょう。</p>
         </div>
-        <div class="model-controls" role="group" aria-label="生成モデル設定">
-          <div class="model-control">
-            <span class="control-title">画像生成モデル</span>
-            <ImagingModes bind:mode={imagingMode} group="imaging" width={220} />
-          </div>
-          <div class="model-control">
-            <span class="control-title">動画生成モデル</span>
-            <select
-              class="selector"
-              bind:value={$videoModelStore}
-              aria-label="動画生成モデル"
-            >
-              {#each videoModelOptions as option (option.value)}
-                {#if !option.devOnly || $developmentFlag}
-                  <option value={option.value}>{option.label}</option>
-                {/if}
-              {/each}
-            </select>
-          </div>
-        </div>
       </header>
 
       <div class="message-log" bind:this={logElement}>
@@ -643,28 +879,77 @@ onDestroy(() => {
         {/if}
       </div>
 
-      <form class="input-row" on:submit={handleSubmit}>
-        <div class="input-wrapper">
-          <textarea
-            id="dolphin-room-message"
-            placeholder="メッセージを入力してください"
-            bind:value={draft}
-            aria-label="メッセージ入力"
-            rows={5}
-          />
+      <form class="generation-form" on:submit={handleSubmit}>
+        <div class="model-row" role="group" aria-label="生成モデル設定">
+          <div class="model-item">
+            <span class="model-label">画像</span>
+            <ImagingModes bind:mode={imagingMode} group="imaging" width={200} />
+          </div>
+          <label class="model-item" for="dolphin-video-model">
+            <span class="model-label">動画</span>
+            <select
+              id="dolphin-video-model"
+              class="selector"
+              bind:value={$videoModelStore}
+            >
+              {#each videoModelOptions as option (option.value)}
+                {#if !option.devOnly || $developmentFlag}
+                  <option value={option.value}>{option.label}</option>
+                {/if}
+              {/each}
+            </select>
+          </label>
         </div>
-        <button
-          type="button"
-          class="btn send-button mode-button"
-          class:editing={hasSelectedMedia}
-          title={hasSelectedMedia ? '選択中メディアを編集' : isGenerating ? '生成中です…' : '新規生成モード'}
-          disabled={isDraftEmpty || isGenerating}
-          on:click={handleModeButtonClick}
-          aria-busy={isGenerating}
-        >
-          {messageHeading}
-        </button>
-        <button type="submit" class="btn send-button speak-button" disabled={isDraftEmpty}>発言</button>
+        <div class="input-row">
+          <div class="input-wrapper">
+            <textarea
+              id="dolphin-room-message"
+              placeholder="メッセージを入力してください"
+              bind:value={draft}
+              aria-label="メッセージ入力"
+              rows={5}
+            />
+          </div>
+          <div class="action-panel">
+          <RadioGroup class="generation-toggle" regionLabel="生成タイプ">
+            <RadioItem
+              name="dolphin-generation-type"
+              value="image"
+              bind:group={generationType}
+              label="画像生成"
+            >
+              画像
+            </RadioItem>
+            <RadioItem
+              name="dolphin-generation-type"
+              value="video"
+              bind:group={generationType}
+              label="動画生成"
+            >
+              動画
+            </RadioItem>
+          </RadioGroup>
+          <button
+            type="button"
+            class="btn send-button mode-button"
+            class:editing={generationType === 'image' && hasSelectedImages}
+            title={generationType === 'video'
+              ? (hasSelectedImages ? (isGenerating ? '動画生成中です…' : '選択画像から動画を生成') : '動画生成には画像を選択してください')
+              : hasSelectedImages
+                ? (isGenerating ? '編集中です…' : '選択中メディアを編集')
+                : (isGenerating ? '生成中です…' : '新規生成モード')}
+            disabled={isDraftEmpty || isGenerating || (generationType === 'video' && !hasSelectedImages)}
+            on:click={handleModeButtonClick}
+            aria-busy={isGenerating}
+          >
+            {messageHeading}
+          </button>
+          <button type="submit" class="btn send-button speak-button" disabled={isDraftEmpty}>発言</button>
+          {#if generationDisableReason}
+            <p class="action-note" role="status">{generationDisableReason}</p>
+          {/if}
+        </div>
+        </div>
       </form>
     </div>
   {/if}
@@ -707,23 +992,40 @@ onDestroy(() => {
     font-size: 0.9rem;
   }
 
-  .model-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 0.75rem;
-    align-items: center;
-  }
-
-  .model-control {
+  .generation-form {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.75rem;
   }
 
-  .control-title {
+  .model-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: nowrap;
+  }
+
+  .model-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font-size: 0.85rem;
+    color: rgb(var(--color-surface-600));
+  }
+
+  .model-label {
+    white-space: nowrap;
     font-weight: 600;
-    color: rgb(var(--color-surface-500));
+  }
+
+  .model-item :global(.imaging-modes) {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .model-item select {
+    flex: 1;
+    min-width: 180px;
   }
 
   .selector {
@@ -769,6 +1071,38 @@ onDestroy(() => {
   .input-wrapper {
     flex: 1;
     display: flex;
+  }
+
+  .action-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    min-width: 180px;
+  }
+
+  .action-panel button {
+    width: 100%;
+  }
+
+  .action-panel :global(.generation-toggle) {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .action-panel :global(.generation-toggle .radio-label) {
+    flex: 1;
+  }
+
+  .action-panel :global(.generation-toggle .radio-item) {
+    width: 100%;
+  }
+
+  .action-note {
+    font-size: 0.8rem;
+    color: rgb(var(--color-secondary-500, 236 72 153));
+    margin: 0;
+    line-height: 1.35;
   }
 
   .input-row textarea {

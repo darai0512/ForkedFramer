@@ -300,6 +300,7 @@
     "pleaseSignIn": "サインインしてください",
     "proModeMultipleImagesNotSupported": "Proモードでは現在複数枚指定できません",
     "imageGenerated": "画像が生成されました",
+    "videoGenerated": "動画が生成されました",
     "copiedToClipboard": "クリップボードにコピーしました",
     "createImageMask": "画像マスク作成",
     "brushSize": "ブラシサイズ",
