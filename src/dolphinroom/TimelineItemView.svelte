@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import MediaFrame from '../gallery/MediaFrame.svelte';
+  import MediaActionMenu from './MediaActionMenu.svelte';
   import {
     formatTimestamp,
     type MediaItem,
@@ -83,33 +84,36 @@
       <div class="media-grid">
         {#each groupItems as mediaItem (mediaItem.id)}
           <div class="media-cell" class:expanded={expandedMediaIds.has(mediaItem.id)}>
-            <button
-              type="button"
-              class="attachment"
-              class:image={mediaItem.kind === 'image'}
-              class:video={mediaItem.kind === 'video'}
-              class:selected={mediaItem.selected}
-              class:expanded={expandedMediaIds.has(mediaItem.id)}
-              on:click={() => toggleMediaSelection(mediaItem.id)}
-              on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
-              aria-pressed={mediaItem.selected}
-              use:mediaElementAction={mediaItem.id}
-            >
-              {#if mediaItem.media}
-                <div class="attachment-media">
-                  <MediaFrame
-                    media={mediaItem.media}
-                    showControls={mediaItem.kind === 'video'}
-                    dragAsImage={mediaItem.kind === 'image'}
-                  />
-                </div>
-              {:else}
-                <div class="attachment-placeholder" aria-live="polite">
-                  <div class="spinner" />
-                  <span>{mediaItem.placeholder ? '生成中…' : '読み込み中…'}</span>
-                </div>
-              {/if}
-            </button>
+            <div class="media-preview">
+              <button
+                type="button"
+                class="attachment"
+                class:image={mediaItem.kind === 'image'}
+                class:video={mediaItem.kind === 'video'}
+                class:selected={mediaItem.selected}
+                class:expanded={expandedMediaIds.has(mediaItem.id)}
+                on:click={() => toggleMediaSelection(mediaItem.id)}
+                on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
+                aria-pressed={mediaItem.selected}
+                use:mediaElementAction={mediaItem.id}
+              >
+                {#if mediaItem.media}
+                  <div class="attachment-media">
+                    <MediaFrame
+                      media={mediaItem.media}
+                      showControls={mediaItem.kind === 'video'}
+                      dragAsImage={mediaItem.kind === 'image'}
+                    />
+                  </div>
+                {:else}
+                  <div class="attachment-placeholder" aria-live="polite">
+                    <div class="spinner" />
+                    <span>{mediaItem.placeholder ? '生成中…' : '読み込み中…'}</span>
+                  </div>
+                {/if}
+              </button>
+              <MediaActionMenu {mediaItem} />
+            </div>
             <button
               type="button"
               class="expand-button"
@@ -163,33 +167,36 @@
     <div class="media-grid standalone-grid">
       {#each groupItems as mediaItem (mediaItem.id)}
         <div class="media-cell" class:expanded={expandedMediaIds.has(mediaItem.id)}>
-          <button
-            type="button"
-            class="attachment"
-            class:image={mediaItem.kind === 'image'}
-            class:video={mediaItem.kind === 'video'}
-            class:selected={mediaItem.selected}
-            class:expanded={expandedMediaIds.has(mediaItem.id)}
-            on:click={() => toggleMediaSelection(mediaItem.id)}
-            on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
-            aria-pressed={mediaItem.selected}
-            use:mediaElementAction={mediaItem.id}
-          >
-            {#if mediaItem.media}
-              <div class="attachment-media">
-                <MediaFrame
-                  media={mediaItem.media}
-                  showControls={mediaItem.kind === 'video'}
-                  dragAsImage={mediaItem.kind === 'image'}
-                />
-              </div>
-            {:else}
-              <div class="attachment-placeholder" aria-live="polite">
-                <div class="spinner" />
-                <span>{mediaItem.placeholder ? '生成中…' : '読み込み中…'}</span>
-              </div>
-            {/if}
-          </button>
+          <div class="media-preview">
+            <button
+              type="button"
+              class="attachment"
+              class:image={mediaItem.kind === 'image'}
+              class:video={mediaItem.kind === 'video'}
+              class:selected={mediaItem.selected}
+              class:expanded={expandedMediaIds.has(mediaItem.id)}
+              on:click={() => toggleMediaSelection(mediaItem.id)}
+              on:dragstart={(event) => handleMediaDragStartEvent(event, mediaItem)}
+              aria-pressed={mediaItem.selected}
+              use:mediaElementAction={mediaItem.id}
+            >
+              {#if mediaItem.media}
+                <div class="attachment-media">
+                  <MediaFrame
+                    media={mediaItem.media}
+                    showControls={mediaItem.kind === 'video'}
+                    dragAsImage={mediaItem.kind === 'image'}
+                  />
+                </div>
+              {:else}
+                <div class="attachment-placeholder" aria-live="polite">
+                  <div class="spinner" />
+                  <span>{mediaItem.placeholder ? '生成中…' : '読み込み中…'}</span>
+                </div>
+              {/if}
+            </button>
+            <MediaActionMenu {mediaItem} />
+          </div>
           <button
             type="button"
             class="expand-button"
@@ -355,6 +362,10 @@
   .media-cell.expanded {
     flex: 1 1 100%;
     max-width: 100%;
+  }
+
+  .media-preview {
+    position: relative;
   }
 
   .attachment {
