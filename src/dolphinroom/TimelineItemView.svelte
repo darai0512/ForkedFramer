@@ -34,6 +34,13 @@
     };
   }
 
+  function handleMediaUpdated(event: CustomEvent<{ mediaItem: MediaItem }>) {
+    // 強制的に再描画をトリガー
+    if (mediaItems) {
+      mediaItems = [...mediaItems];
+    }
+  }
+
   $: groupItems = mediaItems ?? [];
   $: hasMessage = messageItem != null;
   $: hasMediaGroup = groupItems.length > 0;
@@ -112,7 +119,7 @@
                   </div>
                 {/if}
               </button>
-              <MediaActionMenu {mediaItem} />
+              <MediaActionMenu {mediaItem} on:mediaUpdated={handleMediaUpdated} />
             </div>
             <button
               type="button"
@@ -195,7 +202,7 @@
                 </div>
               {/if}
             </button>
-            <MediaActionMenu {mediaItem} />
+            <MediaActionMenu {mediaItem} on:mediaUpdated={handleMediaUpdated} />
           </div>
           <button
             type="button"
@@ -371,7 +378,14 @@
   .attachment {
     border-radius: 14px;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.7);
+    background-image:
+      linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+      linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+      linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    background-color: #f3f4f6;
     border: 1px solid rgba(15, 23, 42, 0.08);
     cursor: pointer;
     position: relative;

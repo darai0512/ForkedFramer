@@ -1,20 +1,28 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount, onDestroy, createEventDispatcher } from 'svelte';
   import { toastStore } from '@skeletonlabs/skeleton';
   import { canvasToBlob } from '../lib/layeredCanvas/tools/imageUtil';
-  import { getVideoElementFromMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
+  import { getVideoElementFromMedia, type Media, ImageMedia } from '../lib/layeredCanvas/dataModels/media';
   import type { MediaItem } from './timelineTypes';
+  import { removeBg, pollMediaStatus } from '../supabase';
+  import { get } from 'svelte/store';
+  import { saveRequest } from '../filemanager/warehouse';
+  import { mainBookFileSystem } from '../filemanager/fileManagerStore';
+  import { analyticsEvent } from '../utils/analyticsEvent';
+
+  const dispatch = createEventDispatcher();
 
   import downloadIcon from '../assets/download.webp';
   import clipboardIcon from '../assets/clipboard.webp';
   import popupIcon from '../assets/filmlist/popup.webp';
+  import punchIcon from '../assets/filmlist/punch.webp';
 
   export let mediaItem: MediaItem;
 
   let menuOpen = false;
   let triggerButton: HTMLButtonElement | null = null;
   let menuElement: HTMLDivElement | null = null;
-  let activeAction: 'copy' | 'download' | null = null;
+  let activeAction: 'copy' | 'download' | 'punch' | null = null;
 
   function toggleMenu(event: MouseEvent) {
     event.stopPropagation();
@@ -97,7 +105,30 @@
     });
   }
 
-  async function runWithAction(action: 'copy' | 'download', work: () => Promise<void>) {
+  async function handlePunch(event: MouseEvent) {
+    event.stopPropagation();
+    await runWithAction('punch', async () => {
+      const media = mediaItem.media;
+      if (!media || !(media instanceof ImageMedia)) {
+        toastStore.trigger({ message: '画像のみ背景除去できます', timeout: 2000 });
+        return;
+      }
+
+      const dataUrl = media.drawSourceCanvas.toDataURL('image/png');
+      const { requestId, model } = await removeBg({ dataUrl });
+      await saveRequest(get(mainBookFileSystem)!, 'image', 'removebg', requestId, model);
+
+      const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'removebg', requestId, model });
+
+      mediaItem.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
+      analyticsEvent('punch');
+      toastStore.trigger({ message: '背景を除去しました', timeout: 1600 });
+      // 親コンポーネントに変更を通知
+      dispatch('mediaUpdated', { mediaItem });
+    });
+  }
+
+  async function runWithAction(action: 'copy' | 'download' | 'punch', work: () => Promise<void>) {
     if (activeAction) return;
     activeAction = action;
     try {
@@ -240,7 +271,7 @@
       type="button"
       class="media-action-item"
       on:click={handleDownload}
-      disabled={activeAction === 'copy'}
+      disabled={!!activeAction && activeAction !== 'download'}
       role="menuitem"
     >
       <img src={downloadIcon} alt="ダウンロード" />
@@ -250,12 +281,24 @@
       type="button"
       class="media-action-item"
       on:click={handleCopy}
-      disabled={activeAction === 'download'}
+      disabled={!!activeAction && activeAction !== 'copy'}
       role="menuitem"
     >
       <img src={clipboardIcon} alt="クリップボードにコピー" />
       <span>{activeAction === 'copy' ? 'コピー中…' : 'クリップボードにコピー'}</span>
     </button>
+    {#if mediaItem.kind === 'image'}
+      <button
+        type="button"
+        class="media-action-item"
+        on:click={handlePunch}
+        disabled={!!activeAction && activeAction !== 'punch'}
+        role="menuitem"
+      >
+        <img src={punchIcon} alt="背景除去" />
+        <span>{activeAction === 'punch' ? '背景除去中…' : '背景除去'}</span>
+      </button>
+    {/if}
   </div>
 {/if}
 
