@@ -6,6 +6,7 @@ import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
 import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
 import type { TimelineRow, MediaItem } from './timelineTypes';
+import { promptHistory as promptHistoryAction, type PromptHistoryActionOptions } from '../utils/promptHistoryAction';
 import type {
   ImagingMode,
   ImageToVideoModel,
@@ -47,7 +48,16 @@ export let handleModeButtonClick: () => void = () => {};
 export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
-export let handleKeyDown: (event: KeyboardEvent) => void = () => {};
+
+// プロンプト履歴用のバインディング
+let draftBinding = {
+  get value() {
+    return draft;
+  },
+  set value(newValue: string) {
+    draft = newValue;
+  }
+};
 
 function handleTextareaPaste(event: ClipboardEvent) {
   handlePaste(event);
@@ -182,7 +192,7 @@ async function handleAddCollection() {
               placeholder="メッセージを入力してください"
               bind:value={draft}
               on:paste={handleTextareaPaste}
-              on:keydown={handleKeyDown}
+              use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding }}
               aria-label="メッセージ入力"
               rows={5}
             />

@@ -17,6 +17,7 @@
   export let minHeight = 60;
   export let placeholder = '';
   export let cost: number = 0;
+  export let historyStoreKey: string | undefined = undefined;
 
   function copyToClipboard() {
     navigator.clipboard.writeText(value);
@@ -34,7 +35,13 @@
       <ProgressRadial stroke={100} width="w-10"/>
     </div>
   {:else}
-    <AutoSizeTextarea minHeight={minHeight} bind:value={value} placeholder={placeholder} on:keydown/>
+    <AutoSizeTextarea
+      minHeight={minHeight}
+      bind:value={value}
+      placeholder={placeholder}
+      historyStoreKey={historyStoreKey}
+      on:keydown
+    />
     <div class="icon-container flex flex-row-reverse gap-2">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->

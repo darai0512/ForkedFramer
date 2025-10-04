@@ -26,25 +26,11 @@
   let promptWaiting: boolean;
   let cost: number = 50;
 
-  const MAX_HISTORY_SIZE = 50;
-  const videoPromptHistoryStore = createPreferenceStore<string[]>("tweakUi", "videoGeneratorPromptHistory", []);
-  let promptHistory: string[] = [];
-  let historyIndex = -1;
-  let temporaryPrompt = '';
-
   let capability: VideoModelCapability | undefined;
   let durationOptions: Option[] = [];
   let aspectRatioOptions: Option[] = [];
   let resolutionOptions: Option[] = [];
   const noOptionText = '利用可能なオプションがありません';
-
-  const unsubscribeHistory = videoPromptHistoryStore.subscribe(value => {
-    promptHistory = value;
-  });
-
-  onDestroy(() => {
-    unsubscribeHistory();
-  });
 
   $: capability = getVideoModelCapability(model);
   $: durationOptions = buildDurationOptions(capability);
@@ -132,7 +118,6 @@
   }
 
   async function onSubmit() {
-    addToHistory(prompt);
     const resizedCanvas = resizeCanvasIfNeeded(sourceMedia.drawSourceCanvas, 1024);
     const resizedImageUrl = resizedCanvas.toDataURL();
     const request: ImageToVideoRequest = {
@@ -171,57 +156,6 @@
     }
   }
 
-  function addToHistory(newPrompt: string) {
-    if (!newPrompt.trim()) return;
-
-    const filteredHistory = promptHistory.filter(item => item !== newPrompt);
-    const newHistory = [newPrompt, ...filteredHistory];
-
-    if (newHistory.length > MAX_HISTORY_SIZE) {
-      newHistory.splice(MAX_HISTORY_SIZE);
-    }
-
-    videoPromptHistoryStore.set(newHistory);
-    historyIndex = -1;
-    temporaryPrompt = '';
-  }
-
-  function handleKeyDown(event: KeyboardEvent) {
-    if (!event.ctrlKey) return;
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      navigateHistory('up');
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      navigateHistory('down');
-    }
-  }
-
-  function navigateHistory(direction: 'up' | 'down') {
-    if (promptHistory.length === 0) return;
-
-    if (historyIndex === -1 && prompt.trim()) {
-      temporaryPrompt = prompt;
-    }
-
-    if (direction === 'up') {
-      if (historyIndex < promptHistory.length - 1) {
-        historyIndex++;
-        prompt = promptHistory[historyIndex];
-      }
-    } else {
-      if (historyIndex > -1) {
-        historyIndex--;
-        if (historyIndex === -1) {
-          prompt = temporaryPrompt;
-        } else {
-          prompt = promptHistory[historyIndex];
-        }
-      }
-    }
-  }
-
   onMount(() => {
     sourceMedia = $modalStore[0].meta.media;
   });
@@ -252,7 +186,7 @@
             cost={2}
             bind:waiting={promptWaiting}
             on:advise={onAskPrompt}
-            on:keydown={handleKeyDown}
+            historyStoreKey="videoGeneratorPromptHistory"
           />
           <div class="history-hint">{$_('generator.historyHint')}</div>
         </div>

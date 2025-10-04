@@ -3,10 +3,12 @@
   // 中で編集しても変わらない
 
   import { tick } from "svelte";
+  import { promptHistory as promptHistoryAction, type PromptHistoryActionOptions } from '../utils/promptHistoryAction';
 
   export let value = '';
   export let minHeight = 24;
   export let placeholder ='';
+  export let historyStoreKey: string | undefined = undefined;
 
   let textarea: HTMLTextAreaElement;
 
@@ -23,15 +25,32 @@
     value = internalValue;
   }
 
+  // プロンプト履歴オプション
+  let valueBinding = {
+    get value() {
+      return internalValue || '';
+    },
+    set value(newValue: string) {
+      internalValue = newValue;
+    }
+  };
+
+  let historyOptions: PromptHistoryActionOptions | undefined;
+  $: historyOptions = historyStoreKey ? {
+    storeKey: historyStoreKey,
+    valueBinding
+  } : undefined;
+
 </script>
 
-<textarea 
-  class="rounded-corner-token textarea" 
-  style="min-height: {minHeight}px" 
-  bind:value={internalValue} 
-  bind:this={textarea} 
+<textarea
+  class="rounded-corner-token textarea"
+  style="min-height: {minHeight}px"
+  bind:value={internalValue}
+  bind:this={textarea}
   placeholder={placeholder}
   on:keydown
+  use:promptHistoryAction={historyOptions}
 ></textarea>
 
 <style>

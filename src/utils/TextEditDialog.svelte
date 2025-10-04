@@ -25,13 +25,6 @@
 
   let selectedModel: ImagingMode = 'kontext/inscene';
   
-  // プロンプト履歴
-  const MAX_HISTORY_SIZE = 50;
-  const promptHistoryStore = createPreferenceStore<string[]>("tweakUi", "textEditPromptHistory", []);
-  let promptHistory: string[] = [];
-  let historyIndex = -1;
-  let temporaryPrompt = '';
-  
   // 参考画像用のデータ
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
@@ -52,11 +45,6 @@
   onMount(async () => {
     const args = $modalStore[0]?.meta;
     console.log('TextEdit Dialog mounted, modal store:', args);
-    
-    // 履歴を購読
-    promptHistoryStore.subscribe(value => {
-      promptHistory = value;
-    });
 
     if (args) {
       title = args.title;
@@ -112,9 +100,6 @@
   function onSubmit() {
     if (!imageSource || !prompt.trim()) return;
 
-    // 履歴に追加
-    addToHistory(prompt);
-
     $modalStore[0].response?.({
       image: imageSource,
       prompt: prompt,
@@ -123,60 +108,6 @@
     });
 
     modalStore.close();
-  }
-  
-  function addToHistory(newPrompt: string) {
-    if (!newPrompt.trim()) return;
-    
-    // 重複を削除
-    const filteredHistory = promptHistory.filter(item => item !== newPrompt);
-    
-    // 新しいプロンプトを先頭に追加
-    const newHistory = [newPrompt, ...filteredHistory];
-    
-    // 最大履歴数を超えた場合は古いものを削除
-    if (newHistory.length > MAX_HISTORY_SIZE) {
-      newHistory.splice(MAX_HISTORY_SIZE);
-    }
-    
-    promptHistoryStore.set(newHistory);
-  }
-  
-  function handleKeyDown(event: KeyboardEvent) {
-    if (!event.ctrlKey) return;
-    
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      navigateHistory('up');
-    } else if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      navigateHistory('down');
-    }
-  }
-  
-  function navigateHistory(direction: 'up' | 'down') {
-    if (promptHistory.length === 0) return;
-    
-    // 初めて履歴をナビゲートする場合、現在のプロンプトを保存
-    if (historyIndex === -1 && prompt.trim()) {
-      temporaryPrompt = prompt;
-    }
-    
-    if (direction === 'up') {
-      if (historyIndex < promptHistory.length - 1) {
-        historyIndex++;
-        prompt = promptHistory[historyIndex];
-      }
-    } else {
-      if (historyIndex > -1) {
-        historyIndex--;
-        if (historyIndex === -1) {
-          prompt = temporaryPrompt;
-        } else {
-          prompt = promptHistory[historyIndex];
-        }
-      }
-    }
   }
 </script>
 
@@ -226,7 +157,12 @@
     <div class="footer-content">
       <div class="history-hint">{$_('dialogs.textEdit.historyHint')}</div>
       <div class="flex gap-2 items-end">
-        <AutoSizeTextarea minHeight={minHeight} bind:value={prompt} placeholder={placeholder} on:keydown={handleKeyDown}/>
+        <AutoSizeTextarea
+          minHeight={minHeight}
+          bind:value={prompt}
+          placeholder={placeholder}
+          historyStoreKey="textEditPromptHistory"
+        />
         <div class="flex gap-2">
           <button class="btn variant-ghost-surface" on:click={onCancel}>{$_('dialogs.cancel')}</button>
           <button class="btn variant-filled-primary" on:click={onSubmit} disabled={!prompt.trim()}>{$_('dialogs.execute')}</button>
