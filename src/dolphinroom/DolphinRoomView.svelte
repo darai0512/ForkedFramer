@@ -153,50 +153,48 @@ async function handleAddCollection() {
 
       <form class="generation-form" on:submit={handleSubmit}>
         <div class="model-row" role="group" aria-label="生成モデル設定">
-          <div
-            class="model-item"
-            class:inactive={generationType !== 'image'}
-            aria-disabled={generationType !== 'image'}
-          >
-            <span class="model-label">画像</span>
-            <ImagingModes
-              bind:mode={imagingMode}
-              group="imaging"
-              width={240}
-              disabled={generationType !== 'image'}
-              {imageSize}
+          {#if generationType === 'image'}
+            <div class="model-item">
+              <span class="model-label">画像</span>
+              <ImagingModes
+                bind:mode={imagingMode}
+                group="imaging"
+                width={240}
+                disabled={false}
+                {imageSize}
+              />
+            </div>
+          {/if}
+          {#if generationType === 'video'}
+            <div class="model-item">
+              <span class="model-label">動画</span>
+              <VideoGenerationModes
+                model={videoModel}
+                options={videoModelOptions}
+                width={240}
+                disabled={false}
+                duration={videoDuration}
+                resolution={videoResolution}
+                aspectRatio={videoAspectRatio}
+                sourceSize={videoSourceSize}
+                on:change={(event) => onVideoModelChange(event.detail)}
+              />
+            </div>
+          {/if}
+        </div>
+        {#if generationType === 'image'}
+          <div class="style-row">
+            <span class="style-label">スタイル</span>
+            <input
+              type="text"
+              class="style-input"
+              bind:value={style}
+              use:persistentText={{store:'imaging', key:'style', onLoad: (v) => style = v}}
+              placeholder="例: Japanese anime style"
+              aria-label="スタイル入力"
             />
           </div>
-          <div
-            class="model-item"
-            class:inactive={generationType !== 'video'}
-            aria-disabled={generationType !== 'video'}
-          >
-            <span class="model-label">動画</span>
-            <VideoGenerationModes
-              model={videoModel}
-              options={videoModelOptions}
-              width={240}
-              disabled={generationType !== 'video'}
-              duration={videoDuration}
-              resolution={videoResolution}
-              aspectRatio={videoAspectRatio}
-              sourceSize={videoSourceSize}
-              on:change={(event) => onVideoModelChange(event.detail)}
-            />
-          </div>
-        </div>
-        <div class="style-row">
-          <span class="style-label">スタイル</span>
-          <input
-            type="text"
-            class="style-input"
-            bind:value={style}
-            use:persistentText={{store:'imaging', key:'style', onLoad: (v) => style = v}}
-            placeholder="例: Japanese anime style"
-            aria-label="スタイル入力"
-          />
-        </div>
+        {/if}
         <div class="input-row">
           <div class="input-wrapper">
             <div class="history-hint">Ctrl + ↑/↓ で履歴を移動</div>
@@ -333,10 +331,6 @@ async function handleAddCollection() {
     gap: 0.5rem;
     font-size: 0.85rem;
     color: rgb(var(--color-surface-600));
-  }
-
-  .model-item.inactive {
-    opacity: 0.55;
   }
 
   .model-label {
