@@ -50,6 +50,16 @@ export function promptHistory(node: HTMLTextAreaElement | HTMLInputElement, opti
 
 	function handleKeyDown(event: Event) {
 		const keyEvent = event as KeyboardEvent;
+
+		// Escapeキーで消去
+		if (keyEvent.key === 'Escape') {
+			keyEvent.preventDefault();
+			valueBinding.value = '';
+			historyIndex = -1;
+			temporaryPrompt = '';
+			return;
+		}
+
 		if (!keyEvent.ctrlKey) return;
 
 		if (keyEvent.key === 'ArrowUp') {
