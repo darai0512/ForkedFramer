@@ -411,43 +411,46 @@ $: if (selectedTemplate) {
             />
           </div>
           <div class="action-panel">
-            <RadioGroup class="generation-toggle" regionLabel="生成タイプ">
-              <RadioItem
-                name="dolphin-generation-type"
-                value="image"
-                bind:group={generationType}
-                label="画像生成"
+            <div class="action-panel-main">
+              <RadioGroup class="generation-toggle" regionLabel="生成タイプ">
+                <RadioItem
+                  name="dolphin-generation-type"
+                  value="image"
+                  bind:group={generationType}
+                  label="画像生成"
+                >
+                  画像
+                </RadioItem>
+                <RadioItem
+                  name="dolphin-generation-type"
+                  value="video"
+                  bind:group={generationType}
+                  label="動画生成"
+                >
+                  動画
+                </RadioItem>
+              </RadioGroup>
+              <button
+                type="button"
+                class="btn send-button mode-button"
+                class:editing={generationType === 'image' && hasSelectedImages}
+                title={generationType === 'video'
+                  ? (hasSelectedImages ? (isGenerating ? '動画生成中です…' : '選択画像から動画を生成') : '動画生成には画像を選択してください')
+                  : hasSelectedImages
+                    ? (isGenerating ? '加工中です…' : '選択中メディアを加工')
+                    : (isGenerating ? '生成中です…' : '新規生成モード')}
+                disabled={!!generationDisableReason}
+                on:click={handleModeButtonClick}
+                aria-busy={isGenerating}
               >
-                画像
-              </RadioItem>
-              <RadioItem
-                name="dolphin-generation-type"
-                value="video"
-                bind:group={generationType}
-                label="動画生成"
-              >
-                動画
-              </RadioItem>
-            </RadioGroup>
-            <button
-              type="button"
-              class="btn send-button mode-button"
-              class:editing={generationType === 'image' && hasSelectedImages}
-              title={generationType === 'video'
-                ? (hasSelectedImages ? (isGenerating ? '動画生成中です…' : '選択画像から動画を生成') : '動画生成には画像を選択してください')
-                : hasSelectedImages
-                  ? (isGenerating ? '加工中です…' : '選択中メディアを加工')
-                  : (isGenerating ? '生成中です…' : '新規生成モード')}
-              disabled={!!generationDisableReason}
-              on:click={handleModeButtonClick}
-              aria-busy={isGenerating}
-            >
-              {messageHeading}
-            </button>
-            <button type="submit" class="btn send-button speak-button" disabled={isDraftEmpty}>発言</button>
-            {#if generationDisableReason}
-              <p class="action-note" role="status">{generationDisableReason}</p>
-            {/if}
+                {messageHeading}
+              </button>
+              {#if generationDisableReason}
+                <p class="action-note" role="status">{generationDisableReason}</p>
+              {/if}
+            </div>
+            <!-- 発言ボタン: 一旦非表示 -->
+            <!-- <button type="submit" class="btn send-button speak-button" disabled={isDraftEmpty}>発言</button> -->
           </div>
         </div>
       </form>
@@ -699,11 +702,17 @@ $: if (selectedTemplate) {
   .action-panel {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    justify-content: center;
     min-width: 180px;
   }
 
-  .action-panel button {
+  .action-panel-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .action-panel-main button {
     width: 100%;
   }
 
@@ -799,6 +808,8 @@ $: if (selectedTemplate) {
     box-shadow: 0 8px 18px rgb(var(--color-secondary-500, 236 72 153) / 0.28);
   }
 
+  /* 発言ボタンのスタイル（現在非表示） */
+  /*
   .speak-button {
     background-color: rgb(var(--color-tertiary-500, 16 185 129));
     box-shadow: 0 6px 14px rgb(var(--color-tertiary-500, 16 185 129) / 0.22);
@@ -808,6 +819,7 @@ $: if (selectedTemplate) {
   .speak-button:focus-visible {
     box-shadow: 0 8px 18px rgb(var(--color-tertiary-500, 16 185 129) / 0.28);
   }
+  */
 
   .style-row {
     display: flex;
