@@ -62,8 +62,7 @@ const imageTemplateOptions = [
 ];
 const videoTemplateOptions = [
   { value: '', label: 'テンプレートを選択' },
-  { value: 'さしすせそ', label: 'さしすせそ' },
-  { value: 'たちつてと', label: 'たちつてと' },
+  { value: 'turntable', label: 'ターンテーブル' },
 ];
 
 $: templateOptions = generationType === 'image' ? imageTemplateOptions : videoTemplateOptions;
@@ -95,6 +94,17 @@ async function handleAddCollection() {
   if (materialBucketContentRef) {
     await materialBucketContentRef.addCollection();
   }
+}
+
+// テンプレート選択時の処理
+$: if (selectedTemplate) {
+  if (selectedTemplate === 'turntable') {
+    videoModel = 'seedance/lite';
+    onVideoModelChange('seedance/lite');
+    draft = 'A perfectly still character, rotating back front to front, the camera rotes around the subject';
+  }
+  // テンプレートを適用後、選択をリセット
+  selectedTemplate = '';
 }
 </script>
 
