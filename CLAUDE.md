@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 応答は日本語で。
 コミットメッセージは英語で。
+A11y警告はsvelte-ignoreでOK
 
 ## Project Overview
 
