@@ -303,6 +303,7 @@ function handleDrop(event: DragEvent) {
       selected: false,
       file,
       timestamp: Date.now(),
+      userAdded: true,
     });
   }
   if (mediaItems.length === 0) return;
@@ -327,6 +328,7 @@ async function loadTemplateImage(url: string) {
       selected: true, // テンプレート画像は選択状態にする
       file,
       timestamp: Date.now(),
+      userAdded: true,
     };
 
     await appendMediaItems([mediaItem]);
@@ -360,6 +362,7 @@ async function handlePaste(event: ClipboardEvent) {
         selected: false,
         file,
         timestamp: Date.now(),
+        userAdded: true,
       });
     }
   }

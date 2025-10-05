@@ -87,8 +87,8 @@
     } else {
       const validIds = new Set(mediaItems.map((item) => item.id));
       expandedMediaIds = new Set([...expandedMediaIds].filter((id) => validIds.has(id)));
-      // 生成完了した画像（プレースホルダーではなくmediaを持つ）を自動的に展開する
-      const completedImages = mediaItems.filter((item) => item.media && !item.placeholder);
+      // 生成完了した画像（プレースホルダーではなくmediaを持つ、かつユーザーが追加したものでない）を自動的に展開する
+      const completedImages = mediaItems.filter((item) => item.media && !item.placeholder && !item.userAdded);
       for (const item of completedImages) {
         if (!expandedMediaIds.has(item.id)) {
           expandedMediaIds.add(item.id);

@@ -21,6 +21,7 @@ export interface MediaItem extends BaseTimelineItem {
   mediaPromise?: Promise<Media>;
   placeholder?: boolean;
   promptId?: number;
+  userAdded?: boolean; // ドロップ/ペーストでユーザーが追加した画像
 }
 
 export type TimelineItem = MessageItem | MediaItem;
