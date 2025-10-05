@@ -297,6 +297,31 @@ function handleDrop(event: DragEvent) {
   event.dataTransfer?.clearData();
 }
 
+async function loadTemplateImage(url: string) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const file = new File([blob], 'template.webp', { type: blob.type });
+
+    const objectUrl = URL.createObjectURL(blob);
+    objectUrls.register(objectUrl);
+
+    const mediaItem: MediaItem = {
+      id: allocateId(),
+      kind: 'image',
+      url: objectUrl,
+      name: 'template.webp',
+      selected: true, // テンプレート画像は選択状態にする
+      file,
+      timestamp: Date.now(),
+    };
+
+    await appendMediaItems([mediaItem]);
+  } catch (error) {
+    console.error('Failed to load template image:', error);
+  }
+}
+
 async function handlePaste(event: ClipboardEvent) {
   const clipboardData = event.clipboardData;
   if (!clipboardData) return;
@@ -386,4 +411,5 @@ onDestroy(() => {
   handleSubmit={handleSubmit}
   handleDrop={handleDrop}
   handlePaste={handlePaste}
+  loadTemplateImage={loadTemplateImage}
 />

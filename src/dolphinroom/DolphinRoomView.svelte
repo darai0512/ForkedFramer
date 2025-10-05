@@ -50,6 +50,7 @@ export let handleModeButtonClick: () => void = () => {};
 export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
+export let loadTemplateImage: (url: string) => Promise<void> = async () => {};
 export let style: string = '';
 export let applyStyle: boolean = true;
 export let promptSubmitTrigger: number = 0;
@@ -61,6 +62,7 @@ type ImageTemplate = {
   imagingMode?: ImagingMode;
   prompt: string;
   applyStyle?: boolean;
+  templateImageUrl?: string;
 };
 
 type VideoTemplate = {
@@ -79,14 +81,11 @@ const imageTemplates: ImageTemplate[] = [
     applyStyle: false,
   },
   {
-    id: 'あいうえお',
-    label: 'あいうえお',
-    prompt: '',
-  },
-  {
-    id: 'かきくけこ',
-    label: 'かきくけこ',
-    prompt: '',
+    id: 'キャラクターシート',
+    label: 'キャラクターシート',
+    imagingMode: 'nano-banana',
+    prompt: '◯◯のキャラクターシート。3方向からみた姿と、表情',
+    templateImageUrl: '/assets/charactersheet.webp',
   },
 ];
 
@@ -142,7 +141,7 @@ async function handleAddCollection() {
 }
 
 // テンプレート選択時の処理
-function applyTemplate(templateId: string) {
+async function applyTemplate(templateId: string) {
   if (!templateId) return;
 
   if (generationType === 'image') {
@@ -154,6 +153,11 @@ function applyTemplate(templateId: string) {
       draft = template.prompt;
       if (template.applyStyle !== undefined) {
         applyStyle = template.applyStyle;
+      }
+
+      // テンプレート画像がある場合、画像を読み込む
+      if (template.templateImageUrl) {
+        await loadTemplateImage(template.templateImageUrl);
       }
     }
   } else if (generationType === 'video') {
