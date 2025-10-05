@@ -402,11 +402,11 @@ $: if (selectedTemplate) {
             <div class="history-hint">Ctrl + ↑/↓ で履歴を移動</div>
             <textarea
               id="dolphin-room-message"
-              placeholder="メッセージを入力してください"
+              placeholder="プロンプトを入力してください"
               bind:value={draft}
               on:paste={handleTextareaPaste}
               use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding, submitTrigger: promptSubmitTrigger }}
-              aria-label="メッセージ入力"
+              aria-label="プロンプト入力"
               rows={5}
             />
           </div>
