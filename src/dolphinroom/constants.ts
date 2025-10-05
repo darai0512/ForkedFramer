@@ -12,7 +12,7 @@ export const botReplies = [
   'いいですね、その調子です！',
 ];
 
-export const DEFAULT_PROMPT_POSTFIX = 'masterpiece, best quality, high detail';
+export const DEFAULT_PROMPT_POSTFIX = '';
 export const DEFAULT_IMAGE_SIZE: { width: number; height: number } = { width: 1024, height: 1024 };
 export const DEFAULT_BACKGROUND: ImagingBackground = 'opaque';
 export const DEFAULT_IMAGE_COUNT = 1;

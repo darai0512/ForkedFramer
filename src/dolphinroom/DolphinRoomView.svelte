@@ -7,7 +7,7 @@ import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelt
 import PlainDropdown from '../utils/PlainDropdown.svelte';
 import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
 import type { TimelineRow, MediaItem } from './timelineTypes';
-import { promptHistory as promptHistoryAction, type PromptHistoryActionOptions } from '../utils/promptHistoryAction';
+import { promptHistory as promptHistoryAction } from '../utils/promptHistoryAction';
 import { persistentText } from '../utils/persistentText';
 import type {
   ImagingMode,
@@ -51,6 +51,7 @@ export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
 export let style: string = '';
+export let promptSubmitTrigger: number = 0;
 
 // テンプレート選択
 let selectedTemplate = '';
@@ -228,7 +229,7 @@ async function handleAddCollection() {
               placeholder="メッセージを入力してください"
               bind:value={draft}
               on:paste={handleTextareaPaste}
-              use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding }}
+              use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding, submitTrigger: promptSubmitTrigger }}
               aria-label="メッセージ入力"
               rows={5}
             />

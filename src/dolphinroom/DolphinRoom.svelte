@@ -53,6 +53,7 @@ let draft = '';
 let style = '';
 let nextId = 0;
 let logElement: HTMLDivElement | null = null;
+let promptSubmitTrigger = 0;
 
 
 const objectUrls = createObjectUrlManager();
@@ -171,6 +172,7 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
 });
 
 async function handleModeButtonClick() {
+  promptSubmitTrigger++;
   await originalHandleModeButtonClick();
   // 生成処理が完了した後にdraftをクリア
   draft = '';
@@ -335,6 +337,7 @@ function handleSubmit(event: Event) {
   event.preventDefault();
   const text = draft.trim();
   if (!text) return;
+  promptSubmitTrigger++;
   draft = '';
   void enqueueUserMessage(text, true);
 }
@@ -367,6 +370,7 @@ onDestroy(() => {
   videoDuration={videoDurationForCost}
   videoResolution={videoResolutionForCost}
   videoAspectRatio={videoAspectRatioForCost}
+  promptSubmitTrigger={promptSubmitTrigger}
   onVideoModelChange={handleVideoModelChange}
   onClose={closeDrawer}
   toggleMediaSelection={toggleMediaSelection}

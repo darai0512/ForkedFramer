@@ -8,12 +8,19 @@ export interface PromptHistoryActionOptions {
 	storeKey: string;
 	/** テキストエリアのvalue binding */
 	valueBinding: { value: string };
+	/** 送信トリガー（値が変わると履歴に追加される） */
+	submitTrigger?: number;
 }
 
 const MAX_HISTORY_SIZE = 50;
 
 export function promptHistory(node: HTMLTextAreaElement | HTMLInputElement, options?: PromptHistoryActionOptions) {
-	if (!options) return { destroy: () => {} };
+	if (!options) {
+		return {
+			destroy: () => {},
+			addToHistory: () => {}
+		};
+	}
 
 	const { storeKey, valueBinding } = options;
 	const historyStore = createPreferenceStore<string[]>('tweakUi', storeKey, []);
@@ -81,23 +88,22 @@ export function promptHistory(node: HTMLTextAreaElement | HTMLInputElement, opti
 
 	node.addEventListener('keydown', handleKeyDown);
 
-	// Enterキーでの送信時に履歴に追加
-	function handleSubmit(event: Event) {
-		const keyEvent = event as KeyboardEvent;
-		if (keyEvent.key === 'Enter' && !keyEvent.shiftKey && !keyEvent.ctrlKey && !keyEvent.altKey && !keyEvent.metaKey) {
-			const value = valueBinding.value.trim();
-			if (value) {
-				addToHistory(value);
-			}
-		}
-	}
-
-	node.addEventListener('keydown', handleSubmit);
+	let lastSubmitTrigger = options.submitTrigger;
 
 	return {
+		update(newOptions?: PromptHistoryActionOptions) {
+			if (!newOptions) return;
+
+			// submitTriggerが変わったら履歴に追加
+			if (newOptions.submitTrigger !== lastSubmitTrigger) {
+				lastSubmitTrigger = newOptions.submitTrigger;
+				if (newOptions.valueBinding.value.trim()) {
+					addToHistory(newOptions.valueBinding.value);
+				}
+			}
+		},
 		destroy() {
 			node.removeEventListener('keydown', handleKeyDown);
-			node.removeEventListener('keydown', handleSubmit);
 			unsubscribe();
 		},
 		// 外部から履歴に追加できるメソッドを公開
