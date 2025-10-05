@@ -4,6 +4,7 @@ import TimelineItemView from './TimelineItemView.svelte';
 import ImagingModes from '../generator/ImagingModes.svelte';
 import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
+import PlainDropdown from '../utils/PlainDropdown.svelte';
 import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
 import type { TimelineRow, MediaItem } from './timelineTypes';
 import { promptHistory as promptHistoryAction, type PromptHistoryActionOptions } from '../utils/promptHistoryAction';
@@ -50,6 +51,21 @@ export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
 export let style: string = '';
+
+// テンプレート選択
+let selectedTemplate = '';
+const imageTemplateOptions = [
+  { value: '', label: 'テンプレートを選択' },
+  { value: 'あいうえお', label: 'あいうえお' },
+  { value: 'かきくけこ', label: 'かきくけこ' },
+];
+const videoTemplateOptions = [
+  { value: '', label: 'テンプレートを選択' },
+  { value: 'さしすせそ', label: 'さしすせそ' },
+  { value: 'たちつてと', label: 'たちつてと' },
+];
+
+$: templateOptions = generationType === 'image' ? imageTemplateOptions : videoTemplateOptions;
 
 // プロンプト履歴用のバインディング
 let draftBinding = {
@@ -181,6 +197,15 @@ async function handleAddCollection() {
               />
             </div>
           {/if}
+          <div class="model-item">
+            <span class="model-label">テンプレート</span>
+            <PlainDropdown
+              options={templateOptions}
+              bind:selectedValue={selectedTemplate}
+              placeholder="選択してください"
+              width={180}
+            />
+          </div>
         </div>
         {#if generationType === 'image'}
           <div class="style-row">
