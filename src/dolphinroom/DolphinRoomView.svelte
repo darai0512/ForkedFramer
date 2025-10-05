@@ -207,8 +207,7 @@ $: if (selectedTemplate) {
       >
         <header class="room-header">
           <div class="header-text">
-            <h2>ドルフィンルーム</h2>
-            <p>チャットで気軽にアイデアを整理しましょう。</p>
+            <h2>スタジオ</h2>
           </div>
           <div class="header-actions">
             <SlideToggle
@@ -348,7 +347,7 @@ $: if (selectedTemplate) {
               title={generationType === 'video'
                 ? (hasSelectedImages ? (isGenerating ? '動画生成中です…' : '選択画像から動画を生成') : '動画生成には画像を選択してください')
                 : hasSelectedImages
-                  ? (isGenerating ? '編集中です…' : '選択中メディアを編集')
+                  ? (isGenerating ? '加工中です…' : '選択中メディアを加工')
                   : (isGenerating ? '生成中です…' : '新規生成モード')}
               disabled={!!generationDisableReason}
               on:click={handleModeButtonClick}
@@ -418,12 +417,6 @@ $: if (selectedTemplate) {
     font-size: 1.4rem;
     font-weight: 600;
     margin: 0;
-  }
-
-  .room-header p {
-    margin: 0;
-    color: rgb(var(--color-tertiary-500));
-    font-size: 0.9rem;
   }
 
   .generation-form {
@@ -656,5 +649,10 @@ $: if (selectedTemplate) {
 
   .style-input::placeholder {
     color: rgb(var(--color-surface-400));
+  }
+  h2 {
+    font-family: '源暎エムゴ';
+    font-size: 24px;
+    margin-top: 16px;
   }
 </style>

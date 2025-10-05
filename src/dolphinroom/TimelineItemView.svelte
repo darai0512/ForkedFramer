@@ -650,4 +650,9 @@
     height: 16px;
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
   }
+  
+  p {
+    font-family: '源暎アンチック';
+    margin-left: 32px;
+  }
 </style>

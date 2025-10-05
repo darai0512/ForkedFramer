@@ -1,5 +1,5 @@
 <script lang="ts">
-import { createEventDispatcher, onDestroy, tick } from 'svelte';
+import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
 import { get } from 'svelte/store';
 import { dolphinRoomOpen } from './dolphinRoomStore';
 import { createMediaLoaders } from './mediaLoaders';
@@ -210,7 +210,7 @@ $: timelineRows = toTimelineRows(timelineItems);
 $: messageHeading = generationType === 'video'
   ? (isGenerating ? '動画生成中…' : '動画生成')
   : hasSelectedImages
-    ? (isGenerating ? '編集中…' : '編集')
+    ? (isGenerating ? '加工中…' : '加工')
     : (isGenerating ? '生成中…' : '生成');
 $: generationDisableReason = (() => {
   if (isGenerating) return '現在処理中です';
@@ -226,9 +226,14 @@ function closeDrawer() {
   $dolphinRoomOpen = false;
 }
 
-$: if ($dolphinRoomOpen && timelineItems.length === 0) {
-  void enqueueBotMessage('イルカ室へようこそ！お気軽に話しかけてくださいね。');
-}
+let hasShownWelcome = false;
+
+onMount(() => {
+  if (!hasShownWelcome) {
+    void enqueueBotMessage('スタジオへようこそ！　ここでは画像を生成したり、加工したりできます。加工をしたい場合は、生成した画像やドロップした画像を選択してください。');
+    hasShownWelcome = true;
+  }
+});
 
 function toggleMediaSelection(itemId: number) {
   timelineItems = toggleSelectionMutation({ timelineItems, itemId });
