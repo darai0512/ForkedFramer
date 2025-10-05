@@ -97,8 +97,7 @@
   function handleChange(event: CustomEvent<unknown>) {
     const next = event.detail as ImageToVideoModel;
     if (model !== next) {
-      model = next;
-      dispatch('change', model);
+      dispatch('change', next);
     }
   }
 
@@ -113,7 +112,7 @@
       listClass="video-mode-dropdown__list"
       optionClass="video-mode-dropdown__option"
       options={filteredOptions}
-      bind:selectedValue={model}
+      selectedValue={model}
       on:change={handleChange}
       width={width}
       placeholder="選択できるモデルがありません"

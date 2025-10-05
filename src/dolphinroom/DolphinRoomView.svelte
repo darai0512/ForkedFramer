@@ -54,17 +54,60 @@ export let style: string = '';
 export let applyStyle: boolean = true;
 export let promptSubmitTrigger: number = 0;
 
-// テンプレート選択
+// テンプレート定義
+type ImageTemplate = {
+  id: string;
+  label: string;
+  imagingMode?: ImagingMode;
+  prompt: string;
+  applyStyle?: boolean;
+};
+
+type VideoTemplate = {
+  id: string;
+  label: string;
+  videoModel?: ImageToVideoModel;
+  prompt: string;
+};
+
+const imageTemplates: ImageTemplate[] = [
+  {
+    id: '線画化',
+    label: '線画化',
+    imagingMode: 'nano-banana',
+    prompt: '線画にしてください',
+    applyStyle: false,
+  },
+  {
+    id: 'あいうえお',
+    label: 'あいうえお',
+    prompt: '',
+  },
+  {
+    id: 'かきくけこ',
+    label: 'かきくけこ',
+    prompt: '',
+  },
+];
+
+const videoTemplates: VideoTemplate[] = [
+  {
+    id: 'turntable',
+    label: 'ターンテーブル',
+    videoModel: 'seedance/lite',
+    prompt: 'A perfectly still character, rotating back front to front, the camera rotes around the subject',
+  },
+];
+
+// テンプレート選択用のオプション
 let selectedTemplate = '';
 const imageTemplateOptions = [
   { value: '', label: 'テンプレートを選択' },
-  { value: '線画化', label: '線画化' },
-  { value: 'あいうえお', label: 'あいうえお' },
-  { value: 'かきくけこ', label: 'かきくけこ' },
+  ...imageTemplates.map(t => ({ value: t.id, label: t.label })),
 ];
 const videoTemplateOptions = [
   { value: '', label: 'テンプレートを選択' },
-  { value: 'turntable', label: 'ターンテーブル' },
+  ...videoTemplates.map(t => ({ value: t.id, label: t.label })),
 ];
 
 $: templateOptions = generationType === 'image' ? imageTemplateOptions : videoTemplateOptions;
@@ -99,17 +142,33 @@ async function handleAddCollection() {
 }
 
 // テンプレート選択時の処理
-$: if (selectedTemplate) {
-  if (selectedTemplate === '線画化') {
-    imagingMode = 'nano-banana';
-    draft = '線画にしてください';
-    applyStyle = false;
-  } else if (selectedTemplate === 'turntable') {
-    videoModel = 'seedance/lite';
-    onVideoModelChange('seedance/lite');
-    draft = 'A perfectly still character, rotating back front to front, the camera rotes around the subject';
+function applyTemplate(templateId: string) {
+  if (!templateId) return;
+
+  if (generationType === 'image') {
+    const template = imageTemplates.find(t => t.id === templateId);
+    if (template) {
+      if (template.imagingMode !== undefined) {
+        imagingMode = template.imagingMode;
+      }
+      draft = template.prompt;
+      if (template.applyStyle !== undefined) {
+        applyStyle = template.applyStyle;
+      }
+    }
+  } else if (generationType === 'video') {
+    const template = videoTemplates.find(t => t.id === templateId);
+    if (template) {
+      if (template.videoModel !== undefined) {
+        onVideoModelChange(template.videoModel);
+      }
+      draft = template.prompt;
+    }
   }
-  // テンプレートを適用後、選択をリセット
+}
+
+$: if (selectedTemplate) {
+  applyTemplate(selectedTemplate);
   selectedTemplate = '';
 }
 </script>
