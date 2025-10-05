@@ -76,6 +76,11 @@ let videoDurationForCost: ImageToVideoRequest['duration'];
 let videoResolutionForCost: ImageToVideoResolution;
 let videoAspectRatioForCost: ImageToVideoRequest['aspectRatio'];
 
+// 画像生成オプション
+let imageWidth = DEFAULT_IMAGE_SIZE.width;
+let imageHeight = DEFAULT_IMAGE_SIZE.height;
+let batchCount = 1;
+
 const allocateId: AllocateId = () => nextId++;
 
 const getTimelineItems = () => timelineItems;
@@ -166,6 +171,9 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
   setIsGenerating: (value) => {
     isGenerating = value;
   },
+  getImageWidth: () => imageWidth,
+  getImageHeight: () => imageHeight,
+  getBatchCount: () => batchCount,
   objectUrls,
   allocateId,
   ensureMediaItemMedia,
@@ -404,6 +412,9 @@ onDestroy(() => {
   videoResolution={videoResolutionForCost}
   videoAspectRatio={videoAspectRatioForCost}
   promptSubmitTrigger={promptSubmitTrigger}
+  bind:imageWidth={imageWidth}
+  bind:imageHeight={imageHeight}
+  bind:batchCount={batchCount}
   onVideoModelChange={handleVideoModelChange}
   onClose={closeDrawer}
   toggleMediaSelection={toggleMediaSelection}

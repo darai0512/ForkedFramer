@@ -5,7 +5,9 @@ import ImagingModes from '../generator/ImagingModes.svelte';
 import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
 import PlainDropdown from '../utils/PlainDropdown.svelte';
+import SliderEdit from '../utils/SliderEdit.svelte';
 import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
+import { slide } from 'svelte/transition';
 import type { TimelineRow, MediaItem } from './timelineTypes';
 import { promptHistory as promptHistoryAction } from '../utils/promptHistoryAction';
 import { persistentText } from '../utils/persistentText';
@@ -54,6 +56,12 @@ export let loadTemplateImage: (url: string) => Promise<void> = async () => {};
 export let style: string = '';
 export let applyStyle: boolean = true;
 export let promptSubmitTrigger: number = 0;
+export let imageWidth: number = 1024;
+export let imageHeight: number = 1024;
+export let batchCount: number = 1;
+
+// More options
+let showMoreOptions = false;
 
 // テンプレート定義
 type ImageTemplate = {
@@ -285,7 +293,32 @@ $: if (selectedTemplate) {
               width={180}
             />
           </div>
+          <button
+            type="button"
+            class="more-button"
+            on:click={() => showMoreOptions = !showMoreOptions}
+            aria-label="詳細オプション"
+            aria-expanded={showMoreOptions}
+          >
+            <span class="more-icon">{showMoreOptions ? '▲' : '▼'}</span>
+            <span>More</span>
+          </button>
         </div>
+        {#if showMoreOptions}
+          <div class="more-options-panel" transition:slide={{ duration: 200 }}>
+            {#if generationType === 'image'}
+              <div class="sliders-wrapper">
+                <div class="size-sliders">
+                  <SliderEdit label="width" bind:value={imageWidth} min={512} max={1536} step={128}/>
+                  <SliderEdit label="height" bind:value={imageHeight} min={512} max={1536} step={128}/>
+                </div>
+                <div class="count-slider">
+                  <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
+                </div>
+              </div>
+            {/if}
+          </div>
+        {/if}
         {#if generationType === 'image'}
           <div class="style-row">
             <div class="style-label-wrapper">
@@ -654,5 +687,58 @@ $: if (selectedTemplate) {
     font-family: '源暎エムゴ';
     font-size: 24px;
     margin-top: 16px;
+  }
+
+  .more-button {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.3rem 0.5rem;
+    border: none;
+    background-color: transparent;
+    color: rgb(var(--color-surface-500));
+    font-size: 0.75rem;
+    font-weight: 400;
+    cursor: pointer;
+    transition: color 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .more-button:hover {
+    color: rgb(var(--color-surface-700));
+  }
+
+  .more-button:focus {
+    outline: none;
+  }
+
+  .more-icon {
+    font-size: 0.6rem;
+    transition: transform 0.2s ease;
+  }
+
+  .more-options-panel {
+    padding: 0.75rem;
+    background-color: rgb(var(--color-surface-100));
+    border-radius: 0.5rem;
+    border: 1px solid rgb(var(--color-surface-300));
+  }
+
+  .sliders-wrapper {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .size-sliders {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 400px;
+  }
+
+  .count-slider {
+    display: flex;
+    flex-direction: column;
   }
 </style>

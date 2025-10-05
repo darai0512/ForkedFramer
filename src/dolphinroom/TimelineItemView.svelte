@@ -87,11 +87,14 @@
     } else {
       const validIds = new Set(mediaItems.map((item) => item.id));
       expandedMediaIds = new Set([...expandedMediaIds].filter((id) => validIds.has(id)));
-      // 生成画像が1枚だけの場合は自動的に展開する
-      const generatedImages = mediaItems.filter((item) => item.placeholder);
-      if (generatedImages.length === 1 && expandedMediaIds.size === 0) {
-        expandedMediaIds = new Set([generatedImages[0].id]);
+      // 生成完了した画像（プレースホルダーではなくmediaを持つ）を自動的に展開する
+      const completedImages = mediaItems.filter((item) => item.media && !item.placeholder);
+      for (const item of completedImages) {
+        if (!expandedMediaIds.has(item.id)) {
+          expandedMediaIds.add(item.id);
+        }
       }
+      expandedMediaIds = expandedMediaIds;
     }
   }
 
@@ -458,10 +461,12 @@
     padding: 0;
     outline: none;
     background-clip: padding-box;
-    min-height: 180px;
+    aspect-ratio: 1 / 1;
+    width: 100%;
   }
 
   .attachment.expanded {
+    aspect-ratio: auto;
     min-height: 320px;
   }
 
@@ -503,7 +508,7 @@
     justify-content: center;
     gap: 0.75rem;
     width: 100%;
-    min-height: 140px;
+    height: 100%;
     padding: 1.9rem 1rem;
     color: rgba(15, 23, 42, 0.65);
     font-size: 0.85rem;

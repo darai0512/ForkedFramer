@@ -43,6 +43,9 @@ interface GenerationDeps {
   getImagingMode(): ImagingMode;
   getIsGenerating(): boolean;
   setIsGenerating(value: boolean): void;
+  getImageWidth(): number;
+  getImageHeight(): number;
+  getBatchCount(): number;
   objectUrls: ObjectUrlHandle;
   allocateId: AllocateId;
   ensureMediaItemMedia: (item: MediaItem) => Promise<Media>;
@@ -78,9 +81,10 @@ export function createGenerationActions(deps: GenerationDeps) {
 
   async function handleGenerateNew(prompt: string, promptId: number) {
     deps.setIsGenerating(true);
+    const batchCount = deps.getBatchCount();
     const { placeholders, timelineItems } = createPlaceholderMediaItems({
       timelineItems: deps.getTimelineItems(),
-      count: DEFAULT_IMAGE_COUNT,
+      count: batchCount,
       allocateId: deps.allocateId,
       promptId,
     });
@@ -88,10 +92,11 @@ export function createGenerationActions(deps: GenerationDeps) {
     try {
       const style = deps.getApplyStyle() ? deps.getStyle() : '';
       const fullPrompt = style ? `${style}\n${prompt}` : prompt;
+      const imageSize = { width: deps.getImageWidth(), height: deps.getImageHeight() };
       const canvases = await executeProcessAndNotify(
         5000,
         get(_)("generator.imageGenerated"),
-        async () => await generateImage(fullPrompt, DEFAULT_IMAGE_SIZE, deps.getImagingMode(), DEFAULT_IMAGE_COUNT, DEFAULT_BACKGROUND, []),
+        async () => await generateImage(fullPrompt, imageSize, deps.getImagingMode(), batchCount, DEFAULT_BACKGROUND, []),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({
@@ -138,9 +143,10 @@ export function createGenerationActions(deps: GenerationDeps) {
 
     const limitedItems = selectedItems.slice(0, refMax);
     deps.setIsGenerating(true);
+    const batchCount = deps.getBatchCount();
     const { placeholders, timelineItems } = createPlaceholderMediaItems({
       timelineItems: deps.getTimelineItems(),
-      count: DEFAULT_IMAGE_COUNT,
+      count: batchCount,
       allocateId: deps.allocateId,
       promptId,
     });
@@ -173,7 +179,7 @@ export function createGenerationActions(deps: GenerationDeps) {
         5000,
         get(_)("generator.imageGenerated"),
         async () =>
-          await generateImage(fullPrompt, imageSize, deps.getImagingMode(), DEFAULT_IMAGE_COUNT, 'auto', referenceUrls),
+          await generateImage(fullPrompt, imageSize, deps.getImagingMode(), batchCount, 'auto', referenceUrls),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({
