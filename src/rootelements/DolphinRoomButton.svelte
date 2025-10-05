@@ -1,6 +1,6 @@
 <script lang="ts">
   import BaseRootButton from './BaseRootButton.svelte';
-  import bellIcon from '../assets/bell.webp';
+  import bellIcon from '../assets/studio.webp';
   import { dolphinRoomOpen } from '../dolphinroom/dolphinRoomStore';
 
   function toggle() {
@@ -10,8 +10,8 @@
 
 <BaseRootButton
   icon={bellIcon}
-  alt={"dolphin room"}
-  hint={'ドルフィンルーム'}
+  alt={"studio"}
+  hint={'スタジオ'}
   origin={"bottomright"}
   location={[1, 0]}
   on:click={toggle}
