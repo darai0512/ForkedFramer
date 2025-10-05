@@ -27,8 +27,9 @@
 
     for (const character of characters) {
       if (character.portrait && character.portrait !== 'loading') {
+        const portrait = character.portrait;
         const loader = async () => {
-          const media = buildMedia(character.portrait!.persistentSource);
+          const media = buildMedia(portrait.persistentSource);
           newCharacterIds.set(media, character.ulid);
           return [media];
         };

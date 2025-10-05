@@ -87,11 +87,15 @@
 </button>
 
 {#if menuOpen}
+  <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
   <div
     class="media-action-menu"
     bind:this={menuElement}
     role="menu"
     aria-label="メディア操作"
+    tabindex="-1"
     on:click|stopPropagation
   >
     <button
