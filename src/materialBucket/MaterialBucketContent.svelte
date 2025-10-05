@@ -2,6 +2,7 @@
   import MaterialGallery from './MaterialGallery.svelte';
   import WarehouseGallery from './WarehouseGallery.svelte';
   import PublicMaterialsGallery from './PublicMaterialsGallery.svelte';
+  import RosterGallery from './RosterGallery.svelte';
   import { Accordion, AccordionItem, SlideToggle } from '@skeletonlabs/skeleton';
   import { _ } from 'svelte-i18n';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
@@ -36,6 +37,7 @@
 
   let warehouseOpen = false;
   let publicMaterialsOpen = false;
+  let rosterOpen = false;
 
   // MaterialCollectionState オブジェクトを作成
   $: state = {
@@ -161,6 +163,17 @@
       <svelte:fragment slot="content">
         <div class="accordion-content">
           <PublicMaterialsGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
+        </div>
+      </svelte:fragment>
+    </AccordionItem>
+
+    <AccordionItem bind:open={rosterOpen}>
+      <svelte:fragment slot="summary">
+        <h2>役者</h2>
+      </svelte:fragment>
+      <svelte:fragment slot="content">
+        <div class="accordion-content">
+          <RosterGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
         </div>
       </svelte:fragment>
     </AccordionItem>
