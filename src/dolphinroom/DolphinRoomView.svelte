@@ -51,12 +51,14 @@ export let handleSubmit: (event: Event) => void = () => {};
 export let handleDrop: (event: DragEvent) => void = () => {};
 export let handlePaste: (event: ClipboardEvent) => void = () => {};
 export let style: string = '';
+export let applyStyle: boolean = true;
 export let promptSubmitTrigger: number = 0;
 
 // テンプレート選択
 let selectedTemplate = '';
 const imageTemplateOptions = [
   { value: '', label: 'テンプレートを選択' },
+  { value: '線画化', label: '線画化' },
   { value: 'あいうえお', label: 'あいうえお' },
   { value: 'かきくけこ', label: 'かきくけこ' },
 ];
@@ -98,7 +100,11 @@ async function handleAddCollection() {
 
 // テンプレート選択時の処理
 $: if (selectedTemplate) {
-  if (selectedTemplate === 'turntable') {
+  if (selectedTemplate === '線画化') {
+    imagingMode = 'nano-banana';
+    draft = '線画にしてください';
+    applyStyle = false;
+  } else if (selectedTemplate === 'turntable') {
     videoModel = 'seedance/lite';
     onVideoModelChange('seedance/lite');
     draft = 'A perfectly still character, rotating back front to front, the camera rotes around the subject';
@@ -220,7 +226,15 @@ $: if (selectedTemplate) {
         </div>
         {#if generationType === 'image'}
           <div class="style-row">
-            <span class="style-label">スタイル</span>
+            <div class="style-label-wrapper">
+              <span class="style-label">スタイル</span>
+              <input
+                type="checkbox"
+                class="style-checkbox"
+                bind:checked={applyStyle}
+                aria-label="スタイルを適用"
+              />
+            </div>
             <input
               type="text"
               class="style-input"
@@ -228,6 +242,7 @@ $: if (selectedTemplate) {
               use:persistentText={{store:'imaging', key:'style', onLoad: (v) => style = v}}
               placeholder="例: Japanese anime style"
               aria-label="スタイル入力"
+              disabled={!applyStyle}
             />
           </div>
         {/if}
@@ -535,11 +550,23 @@ $: if (selectedTemplate) {
     gap: 0.75rem;
   }
 
+  .style-label-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
   .style-label {
     white-space: nowrap;
     font-weight: 600;
     font-size: 0.85rem;
     color: rgb(var(--color-surface-600));
+  }
+
+  .style-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
   }
 
   .style-input {
@@ -550,6 +577,12 @@ $: if (selectedTemplate) {
     background-color: white;
     font-size: 0.9rem;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .style-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgb(var(--color-surface-200));
   }
 
   .style-input:focus {

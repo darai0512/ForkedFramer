@@ -39,6 +39,7 @@ interface GenerationDeps {
   isDraftEmpty(): boolean;
   getDraft(): string;
   getStyle(): string;
+  getApplyStyle(): boolean;
   getImagingMode(): ImagingMode;
   getIsGenerating(): boolean;
   setIsGenerating(value: boolean): void;
@@ -85,7 +86,7 @@ export function createGenerationActions(deps: GenerationDeps) {
     });
     deps.setTimelineItems(timelineItems);
     try {
-      const style = deps.getStyle();
+      const style = deps.getApplyStyle() ? deps.getStyle() : '';
       const fullPrompt = style ? `${style}\n${prompt}` : prompt;
       const canvases = await executeProcessAndNotify(
         5000,
@@ -166,7 +167,7 @@ export function createGenerationActions(deps: GenerationDeps) {
         ? { width: baseCanvas.width || DEFAULT_IMAGE_SIZE.width, height: baseCanvas.height || DEFAULT_IMAGE_SIZE.height }
         : DEFAULT_IMAGE_SIZE;
 
-      const style = deps.getStyle();
+      const style = deps.getApplyStyle() ? deps.getStyle() : '';
       const fullPrompt = style ? `${style}\n${prompt}` : prompt;
       const canvases = await executeProcessAndNotify(
         5000,
@@ -233,7 +234,7 @@ export function createGenerationActions(deps: GenerationDeps) {
 
       const resizedCanvas = resizeCanvasIfNeeded(baseMedia.drawSourceCanvas, DEFAULT_VIDEO_SOURCE_MAX);
       const model = get(deps.videoModelStore);
-      const style = deps.getStyle();
+      const style = deps.getApplyStyle() ? deps.getStyle() : '';
       const fullPrompt = style ? `${style}\n${prompt}` : prompt;
       const request: ImageToVideoRequest = {
         prompt: fullPrompt,
