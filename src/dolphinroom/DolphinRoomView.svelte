@@ -1,6 +1,7 @@
 <script lang="ts">
 import Drawer from '../utils/Drawer.svelte';
 import TimelineItemView from './TimelineItemView.svelte';
+import MediaFrame from '../gallery/MediaFrame.svelte';
 import ImagingModes from '../generator/ImagingModes.svelte';
 import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
@@ -59,6 +60,19 @@ export let promptSubmitTrigger: number = 0;
 export let imageWidth: number = 1024;
 export let imageHeight: number = 1024;
 export let batchCount: number = 1;
+
+function clearAllSelections() {
+  const selectedItems: MediaItem[] = [];
+  for (const block of timelineRows) {
+    if (block.kind === 'media-grid' || block.kind === 'message-media') {
+      const items = block.kind === 'media-grid' ? block.items : block.items;
+      selectedItems.push(...items.filter(item => item.selected));
+    }
+  }
+  for (const item of selectedItems) {
+    toggleMediaSelection(item.id);
+  }
+}
 
 // More options
 let showMoreOptions = false;
@@ -228,28 +242,70 @@ $: if (selectedTemplate) {
           </div>
         </header>
 
-      <div class="message-log" bind:this={logElement}>
-        {#each timelineRows as block ((block.kind === 'message-block'
-          ? `message-${block.item.id}`
-          : block.kind === 'media-grid'
-            ? `media-${block.groupId}`
-            : `message-media-${block.groupId}`))}
-          <TimelineItemView
-            messageItem={block.kind === 'message-block' ? block.item : block.kind === 'message-media' ? block.message : null}
-            mediaItems={block.kind === 'media-grid' ? block.items : block.kind === 'message-media' ? block.items : null}
-            combined={block.kind === 'message-media'}
-            {capturingMediaIds}
-            {toggleMediaSelection}
-            {captureCurrentFrame}
-            {handleMediaDragStartEvent}
-            {registerMediaElement}
-            {deleteMediaItem}
-            on:deleteGroup={handleDeleteGroup}
-          />
-        {/each}
-        {#if timelineRows.length === 0}
-          <div class="empty-state">
-            <p>まだメッセージがありません。下のフォームから送信してみましょう！</p>
+      <div class="timeline-wrapper">
+        <div class="message-log" bind:this={logElement}>
+          {#each timelineRows as block ((block.kind === 'message-block'
+            ? `message-${block.item.id}`
+            : block.kind === 'media-grid'
+              ? `media-${block.groupId}`
+              : `message-media-${block.groupId}`))}
+            <TimelineItemView
+              messageItem={block.kind === 'message-block' ? block.item : block.kind === 'message-media' ? block.message : null}
+              mediaItems={block.kind === 'media-grid' ? block.items : block.kind === 'message-media' ? block.items : null}
+              combined={block.kind === 'message-media'}
+              {capturingMediaIds}
+              {toggleMediaSelection}
+              {captureCurrentFrame}
+              {handleMediaDragStartEvent}
+              {registerMediaElement}
+              {deleteMediaItem}
+              on:deleteGroup={handleDeleteGroup}
+            />
+          {/each}
+          {#if timelineRows.length === 0}
+            <div class="empty-state">
+              <p>まだメッセージがありません。下のフォームから送信してみましょう！</p>
+            </div>
+          {/if}
+        </div>
+        {#if hasSelectedImages}
+          <div class="selected-images-panel">
+            <div class="selected-images-header">選択中</div>
+            <div class="selected-images-list">
+              {#each timelineRows as block}
+                {#if block.kind === 'media-grid' || block.kind === 'message-media'}
+                  {@const items = block.kind === 'media-grid' ? block.items : block.items}
+                  {#each items.filter(item => item.selected && item.kind === 'image') as selectedItem (selectedItem.id)}
+                    <button
+                      type="button"
+                      class="selected-thumbnail"
+                      on:click={() => toggleMediaSelection(selectedItem.id)}
+                      title="クリックで選択解除"
+                    >
+                      {#if selectedItem.media}
+                        <MediaFrame
+                          media={selectedItem.media}
+                          showControls={false}
+                          dragAsImage={false}
+                        />
+                      {:else}
+                        <div class="thumbnail-placeholder">
+                          <div class="spinner-small" />
+                        </div>
+                      {/if}
+                    </button>
+                  {/each}
+                {/if}
+              {/each}
+            </div>
+            <button
+              type="button"
+              class="clear-all-button"
+              on:click={clearAllSelections}
+              title="全ての選択を解除"
+            >
+              全て解除
+            </button>
           </div>
         {/if}
       </div>
@@ -483,6 +539,13 @@ $: if (selectedTemplate) {
     min-width: 180px;
   }
 
+  .timeline-wrapper {
+    flex: 1;
+    display: flex;
+    gap: 0.75rem;
+    overflow: hidden;
+  }
+
   .message-log {
     flex: 1;
     overflow-y: auto;
@@ -492,6 +555,119 @@ $: if (selectedTemplate) {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  .selected-images-panel {
+    width: 120px;
+    flex-shrink: 0;
+    background-color: rgb(var(--color-surface-100));
+    border-radius: 12px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow-y: auto;
+  }
+
+  .selected-images-header {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgb(var(--color-surface-600));
+    text-align: center;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid rgb(var(--color-surface-300));
+  }
+
+  .selected-images-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .selected-thumbnail {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid rgba(37, 99, 235, 0.5);
+    background-image:
+      linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+      linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+      linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+    background-size: 10px 10px;
+    background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+    background-color: #f3f4f6;
+    cursor: pointer;
+    padding: 0;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+
+  .selected-thumbnail:hover {
+    transform: scale(0.95);
+    border-color: rgba(220, 38, 38, 0.7);
+  }
+
+  .selected-thumbnail :global(.media-frame) {
+    width: 100%;
+    height: 100%;
+  }
+
+  .selected-thumbnail :global(.media-element) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .thumbnail-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.05);
+  }
+
+  .spinner-small {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(148, 163, 184, 0.3);
+    border-top-color: rgba(59, 130, 246, 0.8);
+    animation: attachment-spin 1s linear infinite;
+  }
+
+  @keyframes attachment-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .clear-all-button {
+    width: 100%;
+    padding: 0.5rem;
+    border: none;
+    border-radius: 6px;
+    background-color: rgb(var(--color-surface-200));
+    color: rgb(var(--color-surface-700));
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+    margin-top: 0.25rem;
+  }
+
+  .clear-all-button:hover {
+    background-color: rgb(var(--color-error-200));
+    color: rgb(var(--color-error-700));
+    transform: translateY(-1px);
+  }
+
+  .clear-all-button:active {
+    transform: translateY(0);
   }
 
   .empty-state {

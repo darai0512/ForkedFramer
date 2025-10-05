@@ -427,7 +427,7 @@
     gap: 0.4rem;
     flex: 0 0 calc((100% - 1.2rem) / 3);
     max-width: calc((100% - 1.2rem) / 3);
-    min-width: 140px;
+    min-width: 120px;
     position: relative;
   }
 
