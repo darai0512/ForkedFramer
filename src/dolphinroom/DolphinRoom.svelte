@@ -1,7 +1,7 @@
 <script lang="ts">
-import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
+import { createEventDispatcher, onDestroy, tick } from 'svelte';
 import { get } from 'svelte/store';
-import { _, locale } from 'svelte-i18n';
+import { _, locale, isLoading } from 'svelte-i18n';
 import { dolphinRoomOpen } from './dolphinRoomStore';
 import { createMediaLoaders } from './mediaLoaders';
 import {
@@ -86,7 +86,9 @@ const allocateId: AllocateId = () => nextId++;
 
 const getTimelineItems = () => timelineItems;
 const setTimelineItems = (items: TimelineItem[]) => {
-  timelineItems = items;
+  queueMicrotask(() => {
+    timelineItems = items;
+  });
 };
 const getLogElement = () => logElement;
 
@@ -237,12 +239,14 @@ function closeDrawer() {
 
 let hasShownWelcome = false;
 
-onMount(() => {
-  if (!hasShownWelcome) {
-    void enqueueBotMessage(get(_)('dolphinRoom.welcome'));
+// Show welcome message when dialog opens for the first time
+$: if ($dolphinRoomOpen && !hasShownWelcome && !$isLoading && timelineItems.length === 0) {
+  const welcomeMessage = $_('dolphinRoom.welcome');
+  if (welcomeMessage && welcomeMessage !== 'dolphinRoom.welcome') {
     hasShownWelcome = true;
+    void enqueueBotMessage(welcomeMessage);
   }
-});
+}
 
 function toggleMediaSelection(itemId: number) {
   timelineItems = toggleSelectionMutation({ timelineItems, itemId });
