@@ -76,6 +76,7 @@ export function createFrameCapture(deps: FrameCaptureDeps) {
         selected: false,
         file,
         timestamp: Date.now(),
+        userAdded: true,
       };
 
       await appendMediaItems([frameItem]);
