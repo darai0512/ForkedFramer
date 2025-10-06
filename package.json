@@ -18,7 +18,8 @@
     "merged": "git branch --merged",
     "merged:delete": "git branch --merged | grep -v '^\\*' | xargs -n 1 git branch -d",
     "released-version": "curl https://frameplanner.manga-farm.online/stamp.txt",
-    "webp": "sh convert_to_webp.sh"
+    "webp": "sh convert_to_webp.sh",
+    "add-embed": "node scripts/add-embed.js"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241205.0",
