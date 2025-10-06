@@ -505,5 +505,74 @@
         "sizeJitter": "サイズジッター"
       }
     }
+  },
+  "dolphinRoom": {
+    "title": "スタジオ",
+    "button": {
+      "hint": "スタジオ",
+      "alt": "studio"
+    },
+    "welcome": "スタジオへようこそ！　ここでは画像を生成したり、加工したりできます。加工をしたい場合は、生成した画像やドロップした画像を選択してください。",
+    "header": {
+      "materialBucket": "素材集"
+    },
+    "timeline": {
+      "emptyState": "まだメッセージがありません。下のフォームから送信してみましょう！",
+      "selected": "選択中",
+      "clearAll": "全て解除",
+      "clickToDeselect": "クリックで選択解除"
+    },
+    "generation": {
+      "image": "画像",
+      "video": "動画",
+      "template": "テンプレート",
+      "selectTemplate": "テンプレートを選択",
+      "more": "More",
+      "style": "スタイル",
+      "applyStyle": "スタイルを適用",
+      "stylePlaceholder": "例: Japanese anime style",
+      "promptPlaceholder": "プロンプトを入力してください",
+      "historyHint": "Ctrl + ↑/↓ で履歴を移動",
+      "imageType": "画像",
+      "videoType": "動画",
+      "typeLabel": {
+        "image": "画像生成",
+        "video": "動画生成"
+      }
+    },
+    "heading": {
+      "videoGenerating": "動画生成中…",
+      "videoGenerate": "動画生成",
+      "processing": "加工中…",
+      "process": "加工",
+      "generating": "生成中…",
+      "generate": "生成"
+    },
+    "disable": {
+      "inProgress": "現在処理中です",
+      "emptyPrompt": "プロンプトを入力してください",
+      "needImageForVideo": "動画生成には画像を選択してください",
+      "noRefImageSupport": "このモードは参照画像に対応していません"
+    },
+    "tooltip": {
+      "videoWithImage": "選択画像から動画を生成",
+      "videoNoImage": "動画生成には画像を選択してください",
+      "imageWithSelection": "選択中メディアを加工",
+      "imageNoSelection": "新規生成モード",
+      "generating": "処理中です…"
+    },
+    "templates": {
+      "lineArt": "線画化",
+      "lineArtPrompt": "線画にしてください",
+      "characterSheet": "キャラクターシート",
+      "characterSheetPrompt": "◯◯のキャラクターシート。3方向からみた姿と、表情",
+      "turntable": "ターンテーブル",
+      "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject"
+    },
+    "options": {
+      "width": "width",
+      "height": "height",
+      "imageCount": "image count"
+    }
   }
 }

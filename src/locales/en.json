@@ -508,5 +508,74 @@
         "sizeJitter": "Size Jitter"
       }
     }
+  },
+  "dolphinRoom": {
+    "title": "Studio",
+    "button": {
+      "hint": "Studio",
+      "alt": "studio"
+    },
+    "welcome": "Welcome to the Studio! Here you can generate and edit images. To edit, select generated images or dropped images.",
+    "header": {
+      "materialBucket": "Material Collection"
+    },
+    "timeline": {
+      "emptyState": "No messages yet. Try sending one from the form below!",
+      "selected": "Selected",
+      "clearAll": "Clear All",
+      "clickToDeselect": "Click to deselect"
+    },
+    "generation": {
+      "image": "Image",
+      "video": "Video",
+      "template": "Template",
+      "selectTemplate": "Select Template",
+      "more": "More",
+      "style": "Style",
+      "applyStyle": "Apply Style",
+      "stylePlaceholder": "e.g., Japanese anime style",
+      "promptPlaceholder": "Enter prompt",
+      "historyHint": "Ctrl + ↑/↓ to browse history",
+      "imageType": "Image",
+      "videoType": "Video",
+      "typeLabel": {
+        "image": "Image Generation",
+        "video": "Video Generation"
+      }
+    },
+    "heading": {
+      "videoGenerating": "Generating Video…",
+      "videoGenerate": "Generate Video",
+      "processing": "Processing…",
+      "process": "Process",
+      "generating": "Generating…",
+      "generate": "Generate"
+    },
+    "disable": {
+      "inProgress": "Currently processing",
+      "emptyPrompt": "Please enter a prompt",
+      "needImageForVideo": "Please select an image for video generation",
+      "noRefImageSupport": "This mode does not support reference images"
+    },
+    "tooltip": {
+      "videoWithImage": "Generate video from selected image",
+      "videoNoImage": "Please select an image for video generation",
+      "imageWithSelection": "Process selected media",
+      "imageNoSelection": "New generation mode",
+      "generating": "Processing…"
+    },
+    "templates": {
+      "lineArt": "Line Art",
+      "lineArtPrompt": "Convert to line art",
+      "characterSheet": "Character Sheet",
+      "characterSheetPrompt": "Character sheet of ◯◯. Three-directional view and expressions",
+      "turntable": "Turntable",
+      "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject"
+    },
+    "options": {
+      "width": "width",
+      "height": "height",
+      "imageCount": "image count"
+    }
   }
 }

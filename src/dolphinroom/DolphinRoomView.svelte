@@ -1,4 +1,5 @@
 <script lang="ts">
+import { _ } from 'svelte-i18n';
 import Drawer from '../utils/Drawer.svelte';
 import TimelineItemView from './TimelineItemView.svelte';
 import MediaFrame from '../gallery/MediaFrame.svelte';
@@ -77,57 +78,40 @@ function clearAllSelections() {
 // More options
 let showMoreOptions = false;
 
-// テンプレート定義
-type ImageTemplate = {
-  id: string;
-  label: string;
-  imagingMode?: ImagingMode;
-  prompt: string;
-  applyStyle?: boolean;
-  templateImageUrl?: string;
-};
-
-type VideoTemplate = {
-  id: string;
-  label: string;
-  videoModel?: ImageToVideoModel;
-  prompt: string;
-};
-
-const imageTemplates: ImageTemplate[] = [
+$: imageTemplates = [
   {
-    id: '線画化',
-    label: '線画化',
-    imagingMode: 'nano-banana',
-    prompt: '線画にしてください',
+    id: 'lineArt',
+    label: $_('dolphinRoom.templates.lineArt'),
+    imagingMode: 'nano-banana' as ImagingMode,
+    prompt: $_('dolphinRoom.templates.lineArtPrompt'),
     applyStyle: false,
   },
   {
-    id: 'キャラクターシート',
-    label: 'キャラクターシート',
-    imagingMode: 'nano-banana',
-    prompt: '◯◯のキャラクターシート。3方向からみた姿と、表情',
+    id: 'characterSheet',
+    label: $_('dolphinRoom.templates.characterSheet'),
+    imagingMode: 'nano-banana' as ImagingMode,
+    prompt: $_('dolphinRoom.templates.characterSheetPrompt'),
     templateImageUrl: '/assets/charactersheet.webp',
   },
 ];
 
-const videoTemplates: VideoTemplate[] = [
+$: videoTemplates = [
   {
     id: 'turntable',
-    label: 'ターンテーブル',
-    videoModel: 'seedance/lite',
-    prompt: 'A perfectly still character, rotating back front to front, the camera rotes around the subject',
+    label: $_('dolphinRoom.templates.turntable'),
+    videoModel: 'seedance/lite' as ImageToVideoModel,
+    prompt: $_('dolphinRoom.templates.turntablePrompt'),
   },
 ];
 
 // テンプレート選択用のオプション
 let selectedTemplate = '';
-const imageTemplateOptions = [
-  { value: '', label: 'テンプレートを選択' },
+$: imageTemplateOptions = [
+  { value: '', label: $_('dolphinRoom.generation.selectTemplate') },
   ...imageTemplates.map(t => ({ value: t.id, label: t.label })),
 ];
-const videoTemplateOptions = [
-  { value: '', label: 'テンプレートを選択' },
+$: videoTemplateOptions = [
+  { value: '', label: $_('dolphinRoom.generation.selectTemplate') },
   ...videoTemplates.map(t => ({ value: t.id, label: t.label })),
 ];
 
@@ -221,7 +205,7 @@ $: if (selectedTemplate) {
       <div
         class="dolphin-room-container"
         role="region"
-        aria-label="ドルフィンルームのタイムライン"
+        aria-label={$_('dolphinRoom.title')}
         on:dragover|preventDefault
         on:drop={handleDrop}
         on:paste={handlePaste}
@@ -229,7 +213,7 @@ $: if (selectedTemplate) {
       >
         <header class="room-header">
           <div class="header-text">
-            <h2>スタジオ</h2>
+            <h2>{$_('dolphinRoom.title')}</h2>
           </div>
           <div class="header-actions">
             <SlideToggle
@@ -237,7 +221,7 @@ $: if (selectedTemplate) {
               bind:checked={materialBucketOpen}
               size="sm"
             >
-              素材集
+              {$_('dolphinRoom.header.materialBucket')}
             </SlideToggle>
           </div>
         </header>
@@ -264,13 +248,13 @@ $: if (selectedTemplate) {
           {/each}
           {#if timelineRows.length === 0}
             <div class="empty-state">
-              <p>まだメッセージがありません。下のフォームから送信してみましょう！</p>
+              <p>{$_('dolphinRoom.timeline.emptyState')}</p>
             </div>
           {/if}
         </div>
         {#if hasSelectedImages}
           <div class="selected-images-panel">
-            <div class="selected-images-header">選択中</div>
+            <div class="selected-images-header">{$_('dolphinRoom.timeline.selected')}</div>
             <div class="selected-images-list">
               {#each timelineRows as block}
                 {#if block.kind === 'media-grid' || block.kind === 'message-media'}
@@ -280,7 +264,7 @@ $: if (selectedTemplate) {
                       type="button"
                       class="selected-thumbnail"
                       on:click={() => toggleMediaSelection(selectedItem.id)}
-                      title="クリックで選択解除"
+                      title={$_('dolphinRoom.timeline.clickToDeselect')}
                     >
                       {#if selectedItem.media}
                         <MediaFrame
@@ -302,19 +286,19 @@ $: if (selectedTemplate) {
               type="button"
               class="clear-all-button"
               on:click={clearAllSelections}
-              title="全ての選択を解除"
+              title={$_('dolphinRoom.timeline.clearAll')}
             >
-              全て解除
+              {$_('dolphinRoom.timeline.clearAll')}
             </button>
           </div>
         {/if}
       </div>
 
       <form class="generation-form" on:submit={handleSubmit}>
-        <div class="model-row" role="group" aria-label="生成モデル設定">
+        <div class="model-row" role="group" aria-label={$_('dolphinRoom.generation.template')}>
           {#if generationType === 'image'}
             <div class="model-item">
-              <span class="model-label">画像</span>
+              <span class="model-label">{$_('dolphinRoom.generation.image')}</span>
               <ImagingModes
                 bind:mode={imagingMode}
                 group="imaging"
@@ -326,7 +310,7 @@ $: if (selectedTemplate) {
           {/if}
           {#if generationType === 'video'}
             <div class="model-item">
-              <span class="model-label">動画</span>
+              <span class="model-label">{$_('dolphinRoom.generation.video')}</span>
               <VideoGenerationModes
                 model={videoModel}
                 options={videoModelOptions}
@@ -341,11 +325,11 @@ $: if (selectedTemplate) {
             </div>
           {/if}
           <div class="model-item">
-            <span class="model-label">テンプレート</span>
+            <span class="model-label">{$_('dolphinRoom.generation.template')}</span>
             <PlainDropdown
               options={templateOptions}
               bind:selectedValue={selectedTemplate}
-              placeholder="選択してください"
+              placeholder={$_('dolphinRoom.generation.selectTemplate')}
               width={180}
             />
           </div>
@@ -353,81 +337,79 @@ $: if (selectedTemplate) {
             type="button"
             class="more-button"
             on:click={() => showMoreOptions = !showMoreOptions}
-            aria-label="詳細オプション"
+            aria-label={$_('dolphinRoom.generation.more')}
             aria-expanded={showMoreOptions}
           >
             <span class="more-icon">{showMoreOptions ? '▲' : '▼'}</span>
-            <span>More</span>
+            <span>{$_('dolphinRoom.generation.more')}</span>
           </button>
         </div>
         {#if showMoreOptions}
           <div class="more-options-panel" transition:slide={{ duration: 200 }}>
             {#if generationType === 'image'}
+              <div class="style-row">
+                <div class="style-label-wrapper">
+                  <span class="style-label">{$_('dolphinRoom.generation.style')}</span>
+                  <input
+                    type="checkbox"
+                    class="style-checkbox"
+                    bind:checked={applyStyle}
+                    aria-label={$_('dolphinRoom.generation.applyStyle')}
+                  />
+                </div>
+                <input
+                  type="text"
+                  class="style-input"
+                  bind:value={style}
+                  use:persistentText={{store:'imaging', key:'style', onLoad: (v) => style = v}}
+                  placeholder={$_('dolphinRoom.generation.stylePlaceholder')}
+                  aria-label={$_('dolphinRoom.generation.style')}
+                  disabled={!applyStyle}
+                />
+              </div>
               <div class="sliders-wrapper">
                 <div class="size-sliders">
-                  <SliderEdit label="width" bind:value={imageWidth} min={512} max={1536} step={128}/>
-                  <SliderEdit label="height" bind:value={imageHeight} min={512} max={1536} step={128}/>
+                  <SliderEdit label={$_('dolphinRoom.options.width')} bind:value={imageWidth} min={512} max={1536} step={128}/>
+                  <SliderEdit label={$_('dolphinRoom.options.height')} bind:value={imageHeight} min={512} max={1536} step={128}/>
                 </div>
                 <div class="count-slider">
-                  <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
+                  <SliderEdit label={$_('dolphinRoom.options.imageCount')} bind:value={batchCount} min={1} max={4} step={1}/>
                 </div>
               </div>
             {/if}
           </div>
         {/if}
-        {#if generationType === 'image'}
-          <div class="style-row">
-            <div class="style-label-wrapper">
-              <span class="style-label">スタイル</span>
-              <input
-                type="checkbox"
-                class="style-checkbox"
-                bind:checked={applyStyle}
-                aria-label="スタイルを適用"
-              />
-            </div>
-            <input
-              type="text"
-              class="style-input"
-              bind:value={style}
-              use:persistentText={{store:'imaging', key:'style', onLoad: (v) => style = v}}
-              placeholder="例: Japanese anime style"
-              aria-label="スタイル入力"
-              disabled={!applyStyle}
-            />
-          </div>
-        {/if}
         <div class="input-row">
           <div class="input-wrapper">
-            <div class="history-hint">Ctrl + ↑/↓ で履歴を移動</div>
+            <div class="history-hint">{$_('dolphinRoom.generation.historyHint')}</div>
             <textarea
               id="dolphin-room-message"
-              placeholder="プロンプトを入力してください"
+              placeholder={$_('dolphinRoom.generation.promptPlaceholder')}
               bind:value={draft}
               on:paste={handleTextareaPaste}
               use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding, submitTrigger: promptSubmitTrigger }}
-              aria-label="プロンプト入力"
+              aria-label={$_('dolphinRoom.generation.promptPlaceholder')}
               rows={5}
             />
           </div>
           <div class="action-panel">
             <div class="action-panel-main">
-              <RadioGroup class="generation-toggle" regionLabel="生成タイプ">
+              <RadioGroup class="generation-toggle" regionLabel={$_('dolphinRoom.generation.imageType')}>
                 <RadioItem
                   name="dolphin-generation-type"
                   value="image"
                   bind:group={generationType}
-                  label="画像生成"
+                  label={$_('dolphinRoom.generation.typeLabel.image')}
                 >
-                  画像
+                  {$_('dolphinRoom.generation.imageType')}
                 </RadioItem>
                 <RadioItem
                   name="dolphin-generation-type"
                   value="video"
                   bind:group={generationType}
-                  label="動画生成"
+                  label={$_('dolphinRoom.generation.typeLabel.video')}
                 >
-                  動画
+                  {$_('dolphinRoom.generation.videoType')}
                 </RadioItem>
               </RadioGroup>
               <button
@@ -435,10 +417,10 @@ $: if (selectedTemplate) {
                 class="btn send-button mode-button"
                 class:editing={generationType === 'image' && hasSelectedImages}
                 title={generationType === 'video'
-                  ? (hasSelectedImages ? (isGenerating ? '動画生成中です…' : '選択画像から動画を生成') : '動画生成には画像を選択してください')
+                  ? (hasSelectedImages ? (isGenerating ? $_('dolphinRoom.tooltip.generating') : $_('dolphinRoom.tooltip.videoWithImage')) : $_('dolphinRoom.tooltip.videoNoImage'))
                   : hasSelectedImages
-                    ? (isGenerating ? '加工中です…' : '選択中メディアを加工')
-                    : (isGenerating ? '生成中です…' : '新規生成モード')}
+                    ? (isGenerating ? $_('dolphinRoom.tooltip.generating') : $_('dolphinRoom.tooltip.imageWithSelection'))
+                    : (isGenerating ? $_('dolphinRoom.tooltip.generating') : $_('dolphinRoom.tooltip.imageNoSelection'))}
                 disabled={!!generationDisableReason}
                 on:click={handleModeButtonClick}
                 aria-busy={isGenerating}

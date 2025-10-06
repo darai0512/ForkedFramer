@@ -1,6 +1,7 @@
 <script lang="ts">
 import { createEventDispatcher, onDestroy, onMount, tick } from 'svelte';
 import { get } from 'svelte/store';
+import { _, locale } from 'svelte-i18n';
 import { dolphinRoomOpen } from './dolphinRoomStore';
 import { createMediaLoaders } from './mediaLoaders';
 import {
@@ -216,16 +217,16 @@ $: {
 }
 $: timelineRows = toTimelineRows(timelineItems);
 $: messageHeading = generationType === 'video'
-  ? (isGenerating ? '動画生成中…' : '動画生成')
+  ? (isGenerating ? $_('dolphinRoom.heading.videoGenerating') : $_('dolphinRoom.heading.videoGenerate'))
   : hasSelectedImages
-    ? (isGenerating ? '加工中…' : '加工')
-    : (isGenerating ? '生成中…' : '生成');
+    ? (isGenerating ? $_('dolphinRoom.heading.processing') : $_('dolphinRoom.heading.process'))
+    : (isGenerating ? $_('dolphinRoom.heading.generating') : $_('dolphinRoom.heading.generate'));
 $: generationDisableReason = (() => {
-  if (isGenerating) return '現在処理中です';
-  if (isDraftEmpty) return 'プロンプトを入力してください';
-  if (generationType === 'video' && !hasSelectedImages) return '動画生成には画像を選択してください';
+  if (isGenerating) return $_('dolphinRoom.disable.inProgress');
+  if (isDraftEmpty) return $_('dolphinRoom.disable.emptyPrompt');
+  if (generationType === 'video' && !hasSelectedImages) return $_('dolphinRoom.disable.needImageForVideo');
   if (generationType === 'image' && hasSelectedImages && !supportsRefImages(imagingMode)) {
-    return 'このモードは参照画像に対応していません';
+    return $_('dolphinRoom.disable.noRefImageSupport');
   }
   return '';
 })();
@@ -238,7 +239,7 @@ let hasShownWelcome = false;
 
 onMount(() => {
   if (!hasShownWelcome) {
-    void enqueueBotMessage('スタジオへようこそ！　ここでは画像を生成したり、加工したりできます。加工をしたい場合は、生成した画像やドロップした画像を選択してください。');
+    void enqueueBotMessage(get(_)('dolphinRoom.welcome'));
     hasShownWelcome = true;
   }
 });
