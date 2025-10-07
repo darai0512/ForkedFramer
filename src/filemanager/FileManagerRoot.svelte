@@ -9,6 +9,7 @@
   import { bookOperators, mainBook, mainBookTitle, redrawToken, mainBookExceptionHandler } from '../bookeditor/workspaceStore';
   import type { Revision } from "../lib/book/book";
   import { recordCurrentFileInfo, fetchCurrentFileInfo, type CurrentFileInfo, clearCurrentFileInfo } from './currentFile';
+  import { readEnvelope } from '../lib/book/envelope';
   import { type ModalSettings, modalStore } from '@skeletonlabs/skeleton';
   import type { Bubble } from "../lib/layeredCanvas/dataModels/bubble";
   import { buildCloudFileSystem } from './shareFileSystem';
@@ -275,74 +276,78 @@
   }
 
   async function loadSharedBook(): Promise<boolean> {
-    // TODO: いま使ってない
-/*    
+
     console.log(localFileSystem);
     const localRoot = await localFileSystem.getRoot();
     const localDesktop = (await localRoot.getNodeByName("デスクトップ"))!.asFolder()!;
 
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('box') && urlParams.get('file')) {
-      analyticsEvent('shared');
-      const box = urlParams.get('box')!;
-      const file = urlParams.get('file')!;
-      console.log("box:file = ", box, file);
+    if (urlParams.has('envelope')) {
+      // https://example.com/?envelope=https://api004.backblazeb2.com/file/FramePlannerPublished/published/01K6VQTM3RKA13400ZH196TBCM.envelope
+      const envelopeUrl = urlParams.get('envelope')!;
 
-      if (await localFileSystem.getNode(file as NodeId) == null) {
-        // 読んだことがなければ読み込んでローカルに保存
-        console.log("shared page load from server", window.location.href);
-        const remoteFileSystem = await buildShareFileSystem(box);
-        const remoteFile = (await remoteFileSystem.getNode(file as NodeId))!.asFile()!;
-        const book = await loadBookFrom(remoteFileSystem, remoteFile);
-        book.revision.id = file as NodeId;
+      try {
+        $loading = true;
+        $progress = 0;
 
-        const localFile = await localFileSystem.createFileWithId(file as NodeId);
-        await saveBookTo(book, localFileSystem, localFile);
-        await localDesktop.link("シェア " + getCurrentDateTime(), localFile.id);
+        // URLからenvelopeファイルを取得
+        const response = await fetch(envelopeUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch envelope: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const file = new File([blob], 'shared.envelope');
+
+        // envelopeを読み込んでbookに変換
+        const book = await readEnvelope(file, n => $progress = n);
+
+        // 新しいファイルを作成してlocalFileSystemに保存
+        const newFile = await localFileSystem.createFile();
+        book.revision.id = newFile.id;
+        $progress = null;
+
+        await saveBookTo(book, localFileSystem, newFile);
+
+        // デスクトップにリンク
+        const title = getCurrentDateTime();
+        await localDesktop.link(title, newFile.id);
+
+        // currentFileInfoに記録
+        await recordCurrentFileInfo({ id: book.revision.id as NodeId, fileSystem: 'local', title });
+
+        // mainBookに代入
+        currentRevision = {...book.revision};
+        $mainBookFileSystem = localFileSystem;
+        $mainBook = book;
+        $mainBookTitle = title;
+        $frameInspectorTarget = null;
+
+        toastStore.trigger({ message: $_('fileManager.sharedBookLoaded'), timeout: 2000});
+        analyticsEvent('load_shared_book');
       }
-      await recordCurrentFileInfo({id: file as NodeId, fileSystem: 'local'});
-    } else if (urlParams.has('build')) {
-      console.log("loadSharedBook: build");
-      analyticsEvent('layover');
-      const build = urlParams.get('build');
-      if (!build) { return false; }
-      const storyboard = await getLayover(build);
-      console.log(storyboard);
-
-      const page = createPage(storyboard.pages[0], '');
-
-      const localFile = await localFileSystem.createFile();
-      const book: Book = {
-        revision: { id: localFile.id, revision:1, prefix: 'hiruma-' },
-        pages: [page],
-        history: { entries: [], cursor: 0 },
-        direction: 'right-to-left',
-        wrapMode: 'none',
-        chatLogs: [],
-        notebook: emptyNotebook(),
-        attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
-        newPageProperty: {...trivialNewPageProperty}
+      catch (error) {
+        console.error('共有bookの読み込み中にエラーが発生しました:', error);
+        toastStore.trigger({ message: $_('fileManager.sharedBookLoadFailed'), timeout: 3000});
+        await clearCurrentFileInfo();
       }
-      commitBook(book, null);
-      await saveBookTo(book, localFileSystem, localFile);
-      await localDesktop.link(getCurrentDateTime(), localFile.id);
-      await recordCurrentFileInfo({id: localFile.id as NodeId, fileSystem: 'local'});
+      finally {
+        $progress = null;
+        $loading = false;
+      }
     } else if (urlParams.has('reset')) {
+      // https://api004.backblazeb2.com/file/FramePlannerPublished/published/01K6VQTM3RKA13400ZH196TBCM.envelope
       await clearCurrentFileInfo();
+
+      let currentUrl = new URL(window.location.href);
+      let urlWithoutQuery = currentUrl.origin + currentUrl.pathname;
+
+      window.history.replaceState(null, '', urlWithoutQuery);
+      window.location.href = urlWithoutQuery;
+      return true;
     } else {
       return false;
     }
-
-    // いずれにせよリダイレクト
-    let currentUrl = new URL(window.location.href);
-    let urlWithoutQuery = currentUrl.origin + currentUrl.pathname;      
-
-    window.history.replaceState(null, '', urlWithoutQuery);
-    window.location.href = urlWithoutQuery;
-    return true;
-*/
-      return false;
-    }
+  }
 
   $:onNewBookRequest($newBookToken);
   async function onNewBookRequest(book: Book | null) {
