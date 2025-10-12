@@ -27,7 +27,7 @@
   import { waitDialog } from "../utils/waitDialog";
   import { createPreference, type FileSystemPreference, type GadgetStorePreference } from '../preferences';
   import { buildFileSystem as buildLocalFileSystem } from './localFileSystem';
-  import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
+  import { RadioGroup, RadioItem, Accordion, AccordionItem } from '@skeletonlabs/skeleton';
   import { createCoalescingWork } from '../utils/coalescingWork';
   import { saveStatusStore } from './saveStatusStore';
 
@@ -545,8 +545,20 @@
   >
     <div class="drawer-content">
       <h2>{$_('storage.browserStorage')}</h2>
-      <p>{$_('messages.dataLossWarning')}</p>
-      <div class="mb-4"></div>
+      <Accordion class="my-2 px-4">
+        <AccordionItem>
+          <svelte:fragment slot="summary">
+            <span class="caution">
+              {$_('messages.browserStorageImportantNotice')}
+            </span>
+          </svelte:fragment>
+          <div slot="content" class="mt-2 space-y-3">
+            {#each $_('messages.dataLossWarning').split(/\n\s*\n|\r\n\s*\r\n/) as paragraph}
+              <p>{paragraph}</p>
+            {/each}
+          </div>
+        </AccordionItem>
+      </Accordion>
       <div class="cabinet variant-ghost-tertiary rounded-container-token">
         {#if $localState == 'linked'}
           <FileManagerFolder
@@ -733,5 +745,10 @@
     margin-left: 12px;
     margin-right: 12px;
     margin-bottom: 12px;
+  }
+  .caution {
+    font-family: '源暎アンチック';
+    font-size: 16px;
+    font-weight: bold;
   }
 </style>

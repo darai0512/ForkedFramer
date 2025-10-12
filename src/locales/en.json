@@ -123,7 +123,8 @@
   },
   "messages": {
     "copiedToClipboard": "Copied to clipboard",
-    "dataLossWarning": "This area may be lost due to browser \"Clear Site Data\" operations. Please backup important files to \"Local Storage\" or \"Cloud Storage\".",
+    "browserStorageImportantNotice": "※Important notice about browser storage",
+    "dataLossWarning": "This area may be lost if the browser performs a \"Clear Site Data\" operation or when your local machine runs out of disk space.\n\nBrowsers often delete data they deem unnecessary when they anticipate insufficient disk space, so there is usually no prior warning, and the amount of storage FramePlanner uses is not the deciding factor—making the situation easy to misunderstand.\n\nPlease operate with ample free disk capacity. We also recommend moving important files to \"Local Storage\" or \"Cloud Storage\", and making a habit of backing up via \"Dump\".",
     "localStorageNotAvailable": "Local storage is not available in this environment",
     "aiSignInRequired": "Sign-in required to use AI features",
     "videoNotSupported": "Not available in this environment",
