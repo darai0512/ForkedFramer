@@ -64,7 +64,7 @@ export async function deleteEntry(fileSystem: FileSystem, requestId: string) {
     return;
   }
   await warehouse.unlink(e[0]);
-  fileSystem.destroyNode(e[2]);
+  await fileSystem.destroyNode(e[2]);
 }
 
 export async function getEntries(fileSystem: FileSystem): Promise<RemoteEntry[]> {
@@ -80,7 +80,7 @@ export async function getEntries(fileSystem: FileSystem): Promise<RemoteEntry[]>
     // 3ヶ月以上前ならスキップ
     if (new Date(entry.createdAt) < expireLimit) {
       await warehouse.unlink(file[0]);
-      fileSystem.destroyNode(file[2].id);
+      await fileSystem.destroyNode(file[2].id);
       continue;
     }
     entries.push(entry);
