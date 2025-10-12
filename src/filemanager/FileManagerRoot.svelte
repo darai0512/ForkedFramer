@@ -548,9 +548,14 @@
       <Accordion class="my-2 px-4">
         <AccordionItem>
           <svelte:fragment slot="summary">
-            <span class="caution">
-              {$_('messages.browserStorageImportantNotice')}
-            </span>
+            <div class="warning-summary">
+              <svg xmlns="http://www.w3.org/2000/svg" class="warning-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span class="caution">
+                {$_('messages.browserStorageImportantNotice')}
+              </span>
+            </div>
           </svelte:fragment>
           <div slot="content" class="mt-2 space-y-3">
             {#each $_('messages.dataLossWarning').split(/\n\s*\n|\r\n\s*\r\n/) as paragraph}
@@ -746,9 +751,38 @@
     margin-right: 12px;
     margin-bottom: 12px;
   }
+  .warning-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(234, 179, 8, 0.35) 0%, rgba(234, 179, 8, 0.25) 100%);
+    border-left: 4px solid rgb(234, 179, 8);
+    padding: 12px 16px;
+    margin: -8px -12px;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.25);
+  }
+  .warning-icon {
+    width: 24px;
+    height: 24px;
+    color: rgb(120, 53, 15);
+    flex-shrink: 0;
+    animation: pulse-warning 2s ease-in-out infinite;
+  }
+  @keyframes pulse-warning {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
   .caution {
     font-family: '源暎アンチック';
     font-size: 16px;
     font-weight: bold;
+    color: rgb(161, 98, 7);
   }
 </style>
