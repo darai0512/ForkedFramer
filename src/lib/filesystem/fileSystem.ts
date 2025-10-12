@@ -204,14 +204,23 @@ export async function makeFolders(fs: FileSystem, folders: string[]): Promise<vo
       const children = await current.list();
       // console.log(`Checking folder: ${p}, ${children}`);
       const found = children.find((c) => c[1] === p);
-      if (!found) {
+      let nextFolder: Folder | null = null;
+      if (found) {
+        const node = await fs.getNode(found[2]);
+        nextFolder = node?.asFolder() ?? null;
+        if (!nextFolder) {
+          // 壊れたリンクを解消する
+          await current.unlink(found[0]);
+        }
+      }
+      if (!nextFolder) {
         // console.log(`Creating folder: ${p}`);
         const folder = await fs.createFolder();
         await current.link(p, folder.id);
         current = folder;
       } else {
         // console.log(`Folder already exists: ${p}`);
-        current = (await fs.getNode(found[2]))?.asFolder()!;
+        current = nextFolder;
       }
     }
   }

@@ -20,11 +20,16 @@ export async function makeSpecialFolders(fs: FileSystem) {
   await makeFolders(fs, specialFolders);
   const root = await fs.getRoot();
 
-  const sozai = (await root.getNodeByName('素材'))!;
-  const sozaisyu = (await root.getNodeByName('素材集'))!.asFolder()!;
-  const yoku = await sozaisyu.getNodeByName('よく使うもの');
+  const sozaiFolder = (await root.getNodeByName('素材'))?.asFolder();
+  const sozaisyuFolder = (await root.getNodeByName('素材集'))?.asFolder();
+  if (!sozaiFolder) {
+    throw new Error('素材フォルダが見つかりません(unexpected)');
+  }
+  if (!sozaisyuFolder) {
+    throw new Error('素材集フォルダが見つかりません(unexpected)');
+  }
+  const yoku = await sozaisyuFolder.getNodeByName('よく使うもの');
   if (!yoku) {
-    await sozaisyu.link('よく使うもの', sozai.id);
+    await sozaisyuFolder.link('よく使うもの', sozaiFolder.id);
   } 
 }
-

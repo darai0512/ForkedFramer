@@ -334,6 +334,7 @@
         $progress = null;
         $loading = false;
       }
+      return true;
     } else if (urlParams.has('reset')) {
       // https://api004.backblazeb2.com/file/FramePlannerPublished/published/01K6VQTM3RKA13400ZH196TBCM.envelope
       await clearCurrentFileInfo();
