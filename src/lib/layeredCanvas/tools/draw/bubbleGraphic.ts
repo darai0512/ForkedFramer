@@ -146,6 +146,10 @@ function drawConcentrationBubble(context: CanvasRenderingContext2D, method: stri
     context.translate(0, 0);
     context.scale(w / 2, h / 2);
 
+    context.beginPath();
+    context.ellipse(0, 0, 1, 1, 0, 0, 2 * Math.PI);
+    context.fill();
+
     context.lineWidth = 1 / Math.min(w, h);
     // draw n radial line
     const n = opts.lineCount;
