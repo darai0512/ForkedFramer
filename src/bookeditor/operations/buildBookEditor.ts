@@ -14,6 +14,8 @@ import type { FrameElement, Layout, Border } from '../../lib/layeredCanvas/dataM
 import { Bubble } from '../../lib/layeredCanvas/dataModels/bubble';
 import { trapezoidCenter } from '../../lib/layeredCanvas/tools/geometry/trapezoid';
 import { FocusKeeper } from '../../lib/layeredCanvas/tools/focusKeeper';
+import { get } from 'svelte/store';
+import { undoToken } from '../workspaceStore';
 
 export function buildBookEditor(
   viewport: Viewport,
@@ -33,7 +35,13 @@ export function buildBookEditor(
   );
   layeredCanvas.rootPaper.addLayer(floorLayer);
 
-  const undoLayer = new UndoLayer(() => editor.undo(), () => editor.redo());
+  const undoLayer = new UndoLayer(
+    () => {
+      undoToken.set('undo');
+    }, 
+    () => {
+      undoToken.set('redo');
+    });
   layeredCanvas.rootPaper.addLayer(undoLayer);
 
   let papers: Paper[] = [];
