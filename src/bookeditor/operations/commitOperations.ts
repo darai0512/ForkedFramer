@@ -1,5 +1,5 @@
 import type { HistoryTag } from '../../lib/book/book';
-import { commitBook, revertBook, undoBookHistory, redoBookHistory } from '../../lib/book/book';
+import { commitBook, revertBook, undoBookHistory, redoBookHistory, collectAllFilms, type Book } from '../../lib/book/book';
 import { mainBook } from '../workspaceStore';
 import type { ArrayLayer } from '../../lib/layeredCanvas/layers/arrayLayer';
 import { PaperRendererLayer } from '../../lib/layeredCanvas/layers/paperRendererLayer';
@@ -8,6 +8,7 @@ import { frameInspectorTarget } from '../frameinspector/frameInspectorStore';
 import { DelayedCommiterGroup } from '../../utils/delayedCommiter';
 import type { LayeredCanvas } from '../../lib/layeredCanvas/system/layeredCanvas';
 import type { FocusKeeper } from '../../lib/layeredCanvas/tools/focusKeeper';
+import { filmProcessorQueue } from '../../utils/filmprocessor/filmProcessorStore';
 
 // レイヤードキャンバスの参照
 let _layeredCanvas: LayeredCanvas | null = null;
@@ -72,6 +73,15 @@ function resetBubbleCache() {
   })();  // subscribe結果を即座に実行して解除
 }
 
+// book内のすべてのfilmを再処理
+function refreshFilms(book: Book) {
+  // book内のfilmをすべてpublishする
+  const films = collectAllFilms(book);
+  for (const film of films) {
+    filmProcessorQueue.publish(film);
+  }
+}
+
 // 外部向けコミット関数
 export function commit(tag: HistoryTag) {
   delayedCommiter.schedule(tag ?? "standard", tag ? 2000 : 0);
@@ -87,6 +97,7 @@ export function revert() {
   mainBook.update(book => {
     if (book) {
       revertBook(book);
+      refreshFilms(book);
     }
     return book;
   });
@@ -105,6 +116,7 @@ export function undoBookState(focusKeeper: FocusKeeper) {
     if (book) {
       undoBookHistory(book);
       revertBook(book);
+      refreshFilms(book);
     }
     return book;
   });
@@ -123,6 +135,7 @@ export function redoBookState(focusKeeper: FocusKeeper) {
     if (book) {
       redoBookHistory(book);
       revertBook(book);
+      refreshFilms(book);
     }
     return book;
   });
