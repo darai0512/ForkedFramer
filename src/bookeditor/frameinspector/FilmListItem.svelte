@@ -196,6 +196,7 @@
       switch (tag) {
         case "OutlineEffect":
           film!.effects.push(new OutlineEffect("#000000", 0.01, 0.8));
+          dispatch('commit', true);
           break;
       }
       film!.effects = film!.effects;
