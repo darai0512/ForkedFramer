@@ -5,16 +5,25 @@ import parseColor from 'color-parse';
 
 const isTestEnvironment = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST);
 
-let jfa: JFACompute;
-async function init() {
-  const c = new Computron();
-  await c.init();
+let jfaPromise: Promise<JFACompute> | null = null;
+async function ensureJFA(): Promise<JFACompute> {
+  if (!jfaPromise) {
+    jfaPromise = (async () => {
+      const c = new Computron();
+      await c.init();
 
-  jfa = new JFACompute(c);
-  await jfa.init();
+      const jfa = new JFACompute(c);
+      await jfa.init();
+      return jfa;
+    })();
+  }
+
+  return jfaPromise;
 }
 if (!isTestEnvironment) {
-  init();
+  ensureJFA().catch((error) => {
+    console.error("Failed to initialize JFA compute", error);
+  });
 }
 
 export class Effect {
@@ -81,6 +90,7 @@ export class OutlineEffect extends Effect {
 
       const plainImage = FloatField.createFromImageOrCanvas(inputCanvas);
       const seedMap = JFACompute.createJFASeedMap(plainImage, 0.5, false);
+      const jfa = await ensureJFA();
       this.rawDistanceField = await jfa.compute(seedMap);
       this.inputMedia = inputMedia;
     } else {
@@ -119,4 +129,3 @@ export class OutlineEffect extends Effect {
     };
   }
 }
-
