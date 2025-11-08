@@ -97,6 +97,7 @@
   function handleChange(event: CustomEvent<unknown>) {
     const next = event.detail as ImageToVideoModel;
     if (model !== next) {
+      model = next;
       dispatch('change', next);
     }
   }

@@ -17,8 +17,8 @@
   type Option = { value: string; label: string };
   
   let prompt = '';
-  let duration: "1" | "2" | "3" | "4" | "5" | "10" = "5";
-  let aspectRatio: "1:1" | "16:9" | "9:16" = "1:1";
+  let duration: ImageToVideoRequest['duration'] = "5";
+  let aspectRatio: ImageToVideoRequest['aspectRatio'] = "1:1";
   let resolution: ImageToVideoResolution = "720p";
   let model: ImageToVideoModel = "FramePack";
   let sourceMedia: Media;

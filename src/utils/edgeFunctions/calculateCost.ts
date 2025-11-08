@@ -92,6 +92,13 @@ export function calculateI2VCost(
         }
         case 'decart/lucy-14b':
             return duration * 11;
+        case 'minimax/hailuo-2.3-fast/standard/image-to-video': {
+            switch (duration) {
+                case 6: return 30;
+                case 10: return 50;
+                default: return 0; // 未対応
+            }
+        }
         case 'failure':
         default:
             return 0;

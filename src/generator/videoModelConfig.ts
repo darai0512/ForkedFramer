@@ -13,6 +13,7 @@ export const videoModelOptions: Array<{ value: ImageToVideoModel; label: string;
   { value: 'seedance/lite', label: 'Seedance Lite' },
   { value: 'seedance/pro', label: 'Seedance Pro' },
   { value: 'wan/v2.2-a14b/turbo', label: 'Wan v2.2 Turbo' },
+  { value: 'minimax/hailuo-2.3-fast/standard/image-to-video', label: 'Hailuo 2.3 Fast' },
   { value: 'failure', label: 'failure', devOnly: true },
 ];
 
@@ -58,6 +59,11 @@ const VIDEO_MODEL_CAPABILITIES: Record<ImageToVideoModel, VideoModelCapability> 
     aspectRatios: ['16:9', '9:16'],
     resolutions: ['720p'],
   },
+  'minimax/hailuo-2.3-fast/standard/image-to-video': {
+    durations: ['6', '10'],
+    aspectRatios: ['16:9'],
+    resolutions: ['720p'],
+  },
   failure: {
     durations: ['1'],
     aspectRatios: ['1:1'],
@@ -70,12 +76,14 @@ export function getVideoModelCapability(model: ImageToVideoModel): VideoModelCap
 }
 
 export function pickVideoDuration(model: ImageToVideoModel): ImageToVideoRequest['duration'] {
-  const options = VIDEO_MODEL_CAPABILITIES[model]?.durations ?? [DEFAULT_VIDEO_DURATION];
+  const options = VIDEO_MODEL_CAPABILITIES[model]?.durations;
+  if (!options || options.length === 0) return DEFAULT_VIDEO_DURATION;
   return options.includes(DEFAULT_VIDEO_DURATION) ? DEFAULT_VIDEO_DURATION : options[0];
 }
 
 export function pickVideoResolution(model: ImageToVideoModel): ImageToVideoResolution {
-  const options = VIDEO_MODEL_CAPABILITIES[model]?.resolutions ?? [DEFAULT_VIDEO_RESOLUTION];
+  const options = VIDEO_MODEL_CAPABILITIES[model]?.resolutions;
+  if (!options || options.length === 0) return DEFAULT_VIDEO_RESOLUTION;
   return options.includes(DEFAULT_VIDEO_RESOLUTION) ? DEFAULT_VIDEO_RESOLUTION : options[0];
 }
 

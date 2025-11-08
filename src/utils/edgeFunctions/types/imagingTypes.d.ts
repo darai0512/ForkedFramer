@@ -105,6 +105,7 @@ export const ImageToVideoModelSchema = z.enum([
   "wan/v2.2-a14b/turbo",
   "wan-25-preview/image-to-video",
   "decart/lucy-14b",
+  "minimax/hailuo-2.3-fast/standard/image-to-video",
   "failure"
 ]);
 export type ImageToVideoModel = z.infer<typeof ImageToVideoModelSchema>;
@@ -115,7 +116,7 @@ export type ImageToVideoResolution = z.infer<typeof ImageToVideoResolutionSchema
 export const ImageToVideoRequestSchema = z.object({
   prompt: z.string(),
   imageUrl: z.string(),
-  duration: z.enum(["1", "2", "3", "4", "5", "10"]),
+  duration: z.enum(["1", "2", "3", "4", "5", "6", "10"]),
   aspectRatio: z.enum(["1:1", "16:9", "9:16"]),
   resolution: ImageToVideoResolutionSchema,
   model: ImageToVideoModelSchema,
