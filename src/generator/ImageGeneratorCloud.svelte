@@ -117,6 +117,7 @@
         "kontext/max": 12,
         "kontext/inscene": 12,
         "nano-banana": 12,
+        "chrono-edit": 12,
         "seedream/v4": 12,
       }
       // 参照画像の枚数で推定時間を増やす: 0枚=1x, 1枚=2x, 2枚以上=3x

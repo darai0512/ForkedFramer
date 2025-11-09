@@ -35,6 +35,7 @@ const COST_SPEC: Record<ImagingMode, CostSpec> = {
     "kontext/max": { kind: 'fixed', value: 13 },
     "kontext/inscene": { kind: 'perMP', value: 7 },
     "nano-banana": { kind: 'fixed', value: 6 },
+    "chrono-edit": { kind: 'fixed', value: 3 },
     "seedream/v4": { kind: 'fixed', value: 5 },
 };
 
