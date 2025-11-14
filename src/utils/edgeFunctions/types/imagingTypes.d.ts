@@ -21,6 +21,7 @@ export const ImagingModeSchema = z.enum([
   "nano-banana",
   "chrono-edit",
   "seedream/v4",
+  "qwen-image-edit/multiple-angles",
 ]);
 export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 
@@ -29,7 +30,24 @@ export type ImagingProvider = z.infer<typeof ImagingProviderSchema>;
 
 // TextEditMode は ImagingMode に統合したため削除
 
-export const TextToImageRequestSchema = z.object({
+const AngleSchema = z.object({
+  rotate_right_left: z.number(),
+  move_forward: z.number(),
+  vertical_angle: z.number(),
+  wide_angle_lens: z.boolean(),
+});
+const TextToImageOptionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("none"),
+  }),
+  z.object({
+    kind: z.literal("angle"),
+    angle: AngleSchema,
+  }),
+]);
+export type TextToImageOption = z.infer<typeof TextToImageOptionSchema>;
+
+const BaseTextToImageRequestSchema = z.object({
   provider: ImagingProviderSchema,
   prompt: z.string(),
   imageSize: z.object({
@@ -39,9 +57,13 @@ export const TextToImageRequestSchema = z.object({
   numImages: z.number(),
   mode: ImagingModeSchema,
   background: ImagingBackgroundSchema,
+  option: TextToImageOptionSchema,
   // TextEdit 用の参照画像を Imaging にも許容
   imageDataUrls: z.array(z.string()).optional(),
 });
+
+export const TextToImageRequestSchema = BaseTextToImageRequestSchema;
+
 export type TextToImageRequest = z.infer<typeof TextToImageRequestSchema>;
 
 export const TextToImageResponseSchema = z.object({

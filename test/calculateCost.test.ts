@@ -13,6 +13,7 @@ const legacyPerMp: Record<ImagingMode, number> = {
   'gpt-image-1/medium': 7,
   'gpt-image-1/high': 30,
   'qwen-image': 4,
+  'qwen-image-edit/multiple-angles': 5,
   'kontext/inscene': 7,
   // 固定値モードはダミー（使用しない）
   'kontext/pro': 0,
@@ -65,6 +66,7 @@ describe('calculateImagingCost unified equals legacy behavior', () => {
 
 describe('calculateRequestCost ignores reference images', () => {
   const reqBase: Omit<TextToImageRequest, 'imageDataUrls'> = {
+    option: { kind: 'none' },
     provider: 'flux',
     prompt: 'test',
     imageSize: { width: 1024, height: 1024 },

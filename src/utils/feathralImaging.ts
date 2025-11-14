@@ -89,7 +89,7 @@ export function buildImageDataUrlsForPrompt(
 
 export function inferProvider(m: ImagingMode): ImagingProvider {
   if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
-  if (m === 'qwen-image') return 'qwen';
+  if (m.startsWith('qwen-image')) return 'qwen';
   if (m === 'seedream/v4') return 'seedream';
   return 'flux';
 }
@@ -124,6 +124,7 @@ export async function generateImage(prompt: string, image_size: {width: number, 
     mode,
     background,
     imageDataUrls,
+    option: { kind: "none" },
   };
   return submitImagingRequest(req);
 }
@@ -246,6 +247,7 @@ export type ModeOption = { value: ImagingMode; name: string; uiType: ImagingProv
 export const modeOptions: ModeOption[] = [
   // Imaging-oriented
   { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
+  { value: 'qwen-image-edit/multiple-angles', name: 'Qwen Image Edit [Multiple Angles]', uiType: 'flux', imaging: false, textedit: false, refImaging: true, refRange: { min: 1, max: 1 } },
   { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
   { value: 'pro', name: 'FLUX Pro', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
   { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },

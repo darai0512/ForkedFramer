@@ -1,13 +1,19 @@
 import { supabase } from "../../supabase";
-import { z, ZodSchema, ZodObject, type ZodRawShape } from "zod";
+import { z, ZodSchema, ZodObject, type ZodRawShape, type ZodTypeAny } from "zod";
+
+function isZodObject(schema: ZodTypeAny): schema is ZodObject<ZodRawShape> {
+  return schema instanceof ZodObject;
+}
 
 export async function invoke<ResSchema extends ZodSchema>(
   functionName: string,
   req: any,
-  requestSchema: ZodObject<ZodRawShape>, // ここを限定
+  requestSchema: ZodTypeAny,
   responseSchema: ResSchema,
 ): Promise<z.infer<ResSchema>> {
-  const parsedReq = requestSchema.strip().parse(req);
+  const parsedReq = isZodObject(requestSchema)
+    ? requestSchema.strip().parse(req)
+    : requestSchema.parse(req);
   const startTime = performance.now();
   
   try {
