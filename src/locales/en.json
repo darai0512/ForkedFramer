@@ -254,6 +254,7 @@
       "upscale": "Upscale",
       "inpaint": "Inpaint",
       "textEdit": "Text Edit",
+      "angleEdit": "Angle Edit",
       "duplicate": "Duplicate",
       "movieCreation": "Movie Creation",
       "sendToMaterialCollection": "Send to Material Collection",
@@ -464,6 +465,18 @@
       "dropReferenceImages": "Drop reference images here",
       "referenceImageCount": "Reference images",
       "historyHint": "Ctrl + ↑↓ to browse history"
+    },
+    "angleEdit": {
+      "model": "Model",
+      "cameraSettings": "Camera controls",
+      "rotate": "Rotate left/right (°)",
+      "rotateDescription": "Pan left ↔ right",
+      "moveForward": "Move forward",
+      "moveForwardDescription": "Wide → close-up",
+      "verticalAngle": "Vertical angle",
+      "verticalAngleDescription": "Bird's-eye → worm's-eye",
+      "wideAngleLens": "Wide-angle lens",
+      "wideAngleLensDescription": "Enable the wide-angle lens effect"
     },
     "inpaint": {
       "placeholder": "Enter what to replace the masked area with"

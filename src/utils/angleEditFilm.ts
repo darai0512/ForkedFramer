@@ -10,14 +10,16 @@ import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
 import { loading } from './loadingStore';
 import type { ImagingMode, TextToImageRequest } from '$protocolTypes/imagingTypes';
-import type { Media } from '../lib/layeredCanvas/dataModels/media';
-import { modeOptions, inferProvider } from './feathralImaging';
+import { inferProvider } from './feathralImaging';
 
 type AngleEditDialogResult = {
   image: HTMLCanvasElement;
-  prompt: string;
-  model: ImagingMode;
-  referenceImages: Media[];
+  angle: {
+    rotate_right_left: number;
+    move_forward: number;
+    vertical_angle: number;
+    wide_angle_lens: boolean;
+  };
 }
 
 export async function angleEditFilm(film: Film) {
@@ -42,32 +44,26 @@ export async function angleEditFilm(film: Film) {
   
   const imageDataUrl = request.image.toDataURL("image/png");
   const imageDataUrls = [imageDataUrl];
-  
-  const refMax = modeOptions.find(o => o.value === request.model)?.refRange?.max ?? 0;
-  for (const media of request.referenceImages.slice(0, Math.max(0, refMax))) {
-    if (media instanceof ImageMedia) {
-      const refImageDataUrl = media.drawSource.toDataURL("image/png");
-      imageDataUrls.push(refImageDataUrl);
-    }
-  }
-  console.log(`Added ${request.referenceImages.length} reference images to angle edit request`);
+  const model: ImagingMode = 'qwen-image-edit/multiple-angles';
   
   const req: TextToImageRequest = {
-    option: { kind: 'none' },
-    provider: inferProvider(request.model),
-    prompt: request.prompt,
+    option: {
+      kind: 'angle',
+      angle: request.angle,
+    },
+    provider: inferProvider(model),
+    prompt: '',
     imageSize: { width: request.image.width, height: request.image.height },
     numImages: 1,
-    mode: request.model,
+    mode: model,
     background: 'auto',
     imageDataUrls,
   };
 
-  const { requestId, model } = await textEdit(req);
-  const mode = request.model;
-  await saveRequest(get(mainBookFileSystem)!, "image", mode, requestId, model);
+  const { requestId, model: responseModel } = await textEdit(req);
+  await saveRequest(get(mainBookFileSystem)!, "image", req.mode, requestId, responseModel);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode, requestId, model});
+  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: req.mode, requestId, model: responseModel});
   loading.set(false);
 
   const newFilm = film.clone();
