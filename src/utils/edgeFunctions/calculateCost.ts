@@ -30,6 +30,7 @@ const COST_SPEC: Record<ImagingMode, CostSpec> = {
     "gpt-image-1/high": { kind: 'perMP', value: 30 },
     // Qwen
     "qwen-image": { kind: 'perMP', value: 4 },
+    "qwen-image-edit/multiple-angles": { kind: 'perMP', value: 5 },
     // Kontext/Nano 系（固定 or 面積比例）
     "kontext/pro": { kind: 'fixed', value: 6 },
     "kontext/max": { kind: 'fixed', value: 13 },

@@ -14,6 +14,7 @@ import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
 import { eraserFilm } from "../../utils/eraserFilm";
 import { inpaintFilm } from "../../utils/inpaintFilm";
 import { textEditFilm } from "../../utils/textEditFilm";
+import { angleEditFilm } from "../../utils/angleEditFilm";
 import { mainBook } from '../workspaceStore'; // デバッグ用
 import { textLiftFilm } from "../../utils/textLiftFilm";
 import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
@@ -196,6 +197,18 @@ export async function handleTextEditCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
   const newFilm = await textEditFilm(target.commandTargetFilm!);
+  if (newFilm) {
+    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
+    target.filmStack.films.splice(index + 1, 0, newFilm);
+  }
+  commit(null);
+  loading.set(false);
+}
+
+export async function handleAngleEditCommand<T extends FilmOperationTarget>(
+  target: T
+): Promise<void> {
+  const newFilm = await angleEditFilm(target.commandTargetFilm!);
   if (newFilm) {
     const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
     target.filmStack.films.splice(index + 1, 0, newFilm);

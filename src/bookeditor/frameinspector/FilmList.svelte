@@ -8,7 +8,7 @@
   import { buildMedia } from '../../lib/layeredCanvas/dataModels/media';
   import { mergeSelectedFilms } from '../operations/filmMergeOperations';
   import { _ } from 'svelte-i18n';
-    import { redrawToken } from '../workspaceStore';
+  import { redrawToken } from '../workspaceStore';
 
   export let showsBarrier: boolean;
   export let filmStack: FilmStack;

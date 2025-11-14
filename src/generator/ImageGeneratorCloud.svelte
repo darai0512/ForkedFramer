@@ -112,6 +112,7 @@
         "gpt-image-1/medium": 30,
         "gpt-image-1/high": 30,
         "qwen-image": 12,
+        "qwen-image-edit/multiple-angles": 12,
         // 追加統合分（実際にはここでは選べないが型合わせ）
         "kontext/pro": 12,
         "kontext/max": 12,

@@ -289,6 +289,11 @@
     $bubbleInspectorTarget!.command = "textedit";
   }
 
+  function onAngleEdit(e: CustomEvent<Film>) {
+    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
+    $bubbleInspectorTarget!.command = "angleedit";
+  }
+
   function onSendToMaterialCollection(film: Film) {
     $bubbleInspectorTarget!.commandTargetFilm = film;
     $bubbleInspectorTarget!.command = "sendToMaterialCollection";
@@ -314,6 +319,9 @@
         break;
       case "textedit":
         onTextEdit({ detail: film } as CustomEvent<Film>);
+        break;
+      case "angleedit":
+        onAngleEdit({ detail: film } as CustomEvent<Film>);
         break;
       case "scribble":
         onScribble({ detail: film } as CustomEvent<Film>);

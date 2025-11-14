@@ -78,6 +78,9 @@
       case "textedit":
         onTextEdit(film);
         break;
+      case "angleedit":
+        onAngleEdit(film);
+        break;
       case "textlift":
         onTextLift({ detail: film } as CustomEvent<Film>);
         break;
@@ -134,6 +137,11 @@
   function onTextEdit(film: Film) {
     $frameInspectorTarget!.commandTargetFilm = film;
     $frameInspectorTarget!.command = "textedit";
+  }
+  
+  function onAngleEdit(film: Film) {
+    $frameInspectorTarget!.commandTargetFilm = film;
+    $frameInspectorTarget!.command = "angleedit";
   }
 
   function onSendToMaterialCollection(film: Film) {

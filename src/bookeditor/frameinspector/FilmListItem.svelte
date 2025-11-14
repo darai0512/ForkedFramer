@@ -30,6 +30,7 @@
   import eraserIcon from '../../assets/filmlist/eraser.webp';
   import inpaintIcon from '../../assets/filmlist/inpaint.webp';
   import texteditIcon from '../../assets/filmlist/textedit.webp';
+  import angleeditIcon from '../../assets/filmlist/angleedit.webp';
   import downloadIcon from '../../assets/download.webp';
   import stampIcon from '../../assets/stamp.webp';
   import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
@@ -143,6 +144,10 @@
 
   function onTextEdit(ev: MouseEvent) {
     dispatchFilmTool('textedit');
+  }
+
+  function onAngleEdit(ev: MouseEvent) {
+    dispatchFilmTool('angleedit');
   }
 
   function onSendToMaterialCollection(ev: MouseEvent) {
@@ -440,6 +445,9 @@
           </button>
           <button class="transformix-item" use:toolTip={`${$_('frame.actions.textEdit')}[6]`} on:click={onTextEdit}>
             <img draggable={false} src={texteditIcon} alt={$_('frame.actions.textEdit')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.angleEdit')}[5]`} on:click={onAngleEdit}>
+            <img draggable={false} src={angleeditIcon} alt={$_('frame.actions.angleEdit')}/>
           </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.duplicate')} on:click={onDuplicate}>
             <img draggable={false} src={dupliateIcon} alt={$_('frame.actions.duplicate')}/>
