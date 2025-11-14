@@ -72,7 +72,7 @@
     $modalStore[0].response?.({
       image: imageSource,
       angle: {
-        rotate_right_left: rotateRightLeft,
+        rotate_right_left: -rotateRightLeft, // Invert direction
         move_forward: moveForward,
         vertical_angle: verticalAngle,
         wide_angle_lens: wideAngleLens,
