@@ -5,6 +5,7 @@
   import { dolphinRoomOpen } from '../dolphinroom/dolphinRoomStore';
   import { onlineStatus } from '../utils/accountStore';
   import { toastStore } from '@skeletonlabs/skeleton';
+  import { analyticsEvent } from "../utils/analyticsEvent";
 
   function toggle() {
     if ($onlineStatus !== "signed-in") {
@@ -13,6 +14,9 @@
     }
 
     $dolphinRoomOpen = !$dolphinRoomOpen;
+    if ($dolphinRoomOpen) {
+      analyticsEvent('dolphin_room');
+    }
   }
 </script>
 
