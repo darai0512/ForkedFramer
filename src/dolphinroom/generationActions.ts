@@ -1,6 +1,6 @@
 import { get } from 'svelte/store';
 import { executeProcessAndNotify } from '../utils/executeProcessAndNotify';
-import { generateImage, isContentsPolicyViolationError, supportsRefImages, getRefMaxForMode } from '../utils/feathralImaging';
+import { generateImage, isContentsPolicyViolationError, supportsRefImages, getRefMaxForMode, getRefRangeForMode } from '../utils/feathralImaging';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { _ } from 'svelte-i18n';
 import { image2Video, pollMediaStatus } from '../supabase';
@@ -37,6 +37,7 @@ interface GenerationDeps {
   getHasSelectedImages(): boolean;
   getGenerationType(): 'image' | 'video';
   isDraftEmpty(): boolean;
+  isPromptRequired(): boolean;
   getDraft(): string;
   getStyle(): string;
   getApplyStyle(): boolean;
@@ -46,6 +47,7 @@ interface GenerationDeps {
   getImageWidth(): number;
   getImageHeight(): number;
   getBatchCount(): number;
+  getAngleEditValues(): AngleEditValues;
   objectUrls: ObjectUrlHandle;
   allocateId: AllocateId;
   ensureMediaItemMedia: (item: MediaItem) => Promise<Media>;
@@ -53,29 +55,50 @@ interface GenerationDeps {
   videoModelStore: Writable<ImageToVideoModel>;
 }
 
+type AngleEditValues = {
+  rotateRightLeft: number;
+  moveForward: number;
+  verticalAngle: number;
+  wideAngleLens: boolean;
+};
+
+const ANGLE_EDIT_MODE: ImagingMode = 'qwen-image-edit/multiple-angles';
+
 export function createGenerationActions(deps: GenerationDeps) {
   async function handleModeButtonClick() {
     if (deps.getIsGenerating() || deps.isDraftEmpty()) return;
 
-    const prompt = composeGenerationPrompt(deps.getDraft());
-    if (!prompt) return;
+    const promptRequired = deps.isPromptRequired();
+    const generationPrompt = composeGenerationPrompt(deps.getDraft());
+    if (promptRequired && !generationPrompt) return;
+
+    const currentMode = deps.getImagingMode();
+    const requiresReference = getRefRangeForMode(currentMode).min > 0;
+    const timelinePrompt = (!promptRequired && currentMode === ANGLE_EDIT_MODE)
+      ? get(_)('frame.actions.angleEdit')
+      : generationPrompt;
 
     if (deps.getGenerationType() === 'video' && !deps.getHasSelectedImages()) {
       toastStore.trigger({ message: '動画生成には画像を選択してください。', timeout: 2500 });
       return;
     }
 
+    if (requiresReference && !deps.getHasSelectedImages()) {
+      toastStore.trigger({ message: get(_)('dolphinRoom.disable.needImageForMode'), timeout: 2500 });
+      return;
+    }
+
     const selection = [...deps.getSelectedImageItems()];
-    const promptMessage = await deps.appendMessage('user', prompt);
+    const promptMessage = await deps.appendMessage('user', timelinePrompt);
 
     if (!promptMessage) return;
 
     if (deps.getGenerationType() === 'video') {
-      await handleGenerateVideo(prompt, promptMessage.id, selection);
+      await handleGenerateVideo(generationPrompt, promptMessage.id, selection);
     } else if (selection.length > 0) {
-      await handleEditSelected(prompt, promptMessage.id, selection);
+      await handleEditSelected(generationPrompt, promptMessage.id, selection);
     } else {
-      await handleGenerateNew(prompt, promptMessage.id);
+      await handleGenerateNew(generationPrompt, promptMessage.id);
     }
   }
 
@@ -91,7 +114,7 @@ export function createGenerationActions(deps: GenerationDeps) {
     deps.setTimelineItems(timelineItems);
     try {
       const style = deps.getApplyStyle() ? deps.getStyle() : '';
-      const fullPrompt = style ? `${style}\n${prompt}` : prompt;
+      const fullPrompt = style ? `${style}${'\n'}${prompt}` : prompt;
       const imageSize = { width: deps.getImageWidth(), height: deps.getImageHeight() };
       const canvases = await executeProcessAndNotify(
         5000,
@@ -130,12 +153,14 @@ export function createGenerationActions(deps: GenerationDeps) {
       return;
     }
 
-    if (!supportsRefImages(deps.getImagingMode())) {
+    const imagingMode = deps.getImagingMode();
+
+    if (!supportsRefImages(imagingMode)) {
       toastStore.trigger({ message: 'このモードは参照画像に対応していません。', timeout: 2500 });
       return;
     }
 
-    const refMax = Math.max(0, getRefMaxForMode(deps.getImagingMode()));
+    const refMax = Math.max(0, getRefMaxForMode(imagingMode));
     if (refMax === 0) {
       toastStore.trigger({ message: '参照画像の上限により編集を実行できません。', timeout: 2500 });
       return;
@@ -174,12 +199,25 @@ export function createGenerationActions(deps: GenerationDeps) {
         : DEFAULT_IMAGE_SIZE;
 
       const style = deps.getApplyStyle() ? deps.getStyle() : '';
-      const fullPrompt = style ? `${style}\n${prompt}` : prompt;
+      const fullPrompt = style ? `${style}${'\n'}${prompt}` : prompt;
+      const isAngleMode = imagingMode === ANGLE_EDIT_MODE;
+      const angleValues = deps.getAngleEditValues();
+      const option = isAngleMode
+        ? {
+            kind: 'angle' as const,
+            angle: {
+              rotate_right_left: -angleValues.rotateRightLeft,
+              move_forward: angleValues.moveForward,
+              vertical_angle: angleValues.verticalAngle,
+              wide_angle_lens: angleValues.wideAngleLens,
+            },
+          }
+        : { kind: 'none' as const };
       const canvases = await executeProcessAndNotify(
         5000,
         get(_)("generator.imageGenerated"),
         async () =>
-          await generateImage(fullPrompt, imageSize, deps.getImagingMode(), batchCount, 'auto', referenceUrls),
+          await generateImage(fullPrompt, imageSize, imagingMode, batchCount, 'auto', referenceUrls, option),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({

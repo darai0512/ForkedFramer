@@ -1,5 +1,6 @@
 <script lang="ts">
 import { _ } from 'svelte-i18n';
+import { tick } from 'svelte';
 import Drawer from '../utils/Drawer.svelte';
 import TimelineItemView from './TimelineItemView.svelte';
 import MediaFrame from '../gallery/MediaFrame.svelte';
@@ -8,8 +9,9 @@ import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
 import PlainDropdown from '../utils/PlainDropdown.svelte';
 import SliderEdit from '../utils/SliderEdit.svelte';
-import { RadioGroup, RadioItem, SlideToggle } from '@skeletonlabs/skeleton';
+import { RadioGroup, RadioItem, SlideToggle, toastStore } from '@skeletonlabs/skeleton';
 import { slide } from 'svelte/transition';
+import AngleControls from './components/AngleControls.svelte';
 import type { TimelineRow, MediaItem } from './timelineTypes';
 import { promptHistory as promptHistoryAction } from '../utils/promptHistoryAction';
 import { persistentText } from '../utils/persistentText';
@@ -42,6 +44,7 @@ export let videoDuration: ImageToVideoRequest['duration'] = '5';
 export let videoResolution: ImageToVideoResolution = '720p';
 export let videoAspectRatio: ImageToVideoRequest['aspectRatio'] = '16:9';
 export let onVideoModelChange: (model: ImageToVideoModel) => void = () => {};
+const angleEditOnlyMode: ImagingMode = 'qwen-image-edit/multiple-angles';
 
 export let onClose: () => void = () => {};
 export let toggleMediaSelection: (itemId: number) => void = () => {};
@@ -61,6 +64,10 @@ export let promptSubmitTrigger: number = 0;
 export let imageWidth: number = 1024;
 export let imageHeight: number = 1024;
 export let batchCount: number = 1;
+export let angleRotateRightLeft: number = 0;
+export let angleMoveForward: number = 0;
+export let angleVerticalAngle: number = 0;
+export let angleWideAngleLens: boolean = false;
 
 function clearAllSelections() {
   const selectedItems: MediaItem[] = [];
@@ -77,6 +84,7 @@ function clearAllSelections() {
 
 // More options
 let showMoreOptions = false;
+let angleModeActive = false;
 
 $: imageTemplates = [
   {
@@ -93,6 +101,14 @@ $: imageTemplates = [
     prompt: $_('dolphinRoom.templates.characterSheetPrompt'),
     templateImageUrl: '/assets/charactersheet.webp',
   },
+  {
+    id: 'angleEdit',
+    label: $_('dolphinRoom.templates.angleEdit'),
+    imagingMode: angleEditOnlyMode,
+    prompt: '',
+    applyStyle: false,
+    requiresSelection: true,
+  },
 ];
 
 $: videoTemplates = [
@@ -106,6 +122,7 @@ $: videoTemplates = [
 
 // テンプレート選択用のオプション
 let selectedTemplate = '';
+let pendingTemplateId: string | null = null;
 $: imageTemplateOptions = [
   { value: '', label: $_('dolphinRoom.generation.selectTemplate') },
   ...imageTemplates.map(t => ({ value: t.id, label: t.label })),
@@ -147,14 +164,24 @@ async function handleAddCollection() {
 }
 
 // テンプレート選択時の処理
-async function applyTemplate(templateId: string) {
-  if (!templateId) return;
+async function applyTemplate(templateId: string): Promise<boolean> {
+  if (!templateId) return false;
 
   if (generationType === 'image') {
     const template = imageTemplates.find(t => t.id === templateId);
     if (template) {
+      if (template.requiresSelection && !hasSelectedImages) {
+        toastStore.trigger({ message: $_('dolphinRoom.disable.needImageForMode'), timeout: 2500 });
+        pendingTemplateId = templateId;
+        return false;
+      }
       if (template.imagingMode !== undefined) {
         imagingMode = template.imagingMode;
+        // 角度テンプレートは画像モード前提
+        if (templateId === 'angleEdit' && generationType !== 'image') {
+          generationType = 'image';
+        }
+        await tick(); // UI切替を即時反映
       }
       draft = template.prompt;
       if (template.applyStyle !== undefined) {
@@ -165,22 +192,44 @@ async function applyTemplate(templateId: string) {
       if (template.templateImageUrl) {
         await loadTemplateImage(template.templateImageUrl);
       }
+      pendingTemplateId = null;
+      return true;
     }
   } else if (generationType === 'video') {
     const template = videoTemplates.find(t => t.id === templateId);
     if (template) {
       if (template.videoModel !== undefined) {
         onVideoModelChange(template.videoModel);
+        await tick();
       }
       draft = template.prompt;
+      pendingTemplateId = null;
+      return true;
     }
   }
+
+  return false;
 }
 
 $: if (selectedTemplate) {
-  applyTemplate(selectedTemplate);
+  const templateId = selectedTemplate;
   selectedTemplate = '';
+  void (async () => {
+    await applyTemplate(templateId);
+  })();
 }
+
+$: if (pendingTemplateId && hasSelectedImages) {
+  const templateId = pendingTemplateId;
+  pendingTemplateId = null;
+  selectedTemplate = templateId;
+}
+
+$: angleModeActive = imagingMode === 'qwen-image-edit/multiple-angles';
+$: if (angleModeActive && showMoreOptions) {
+  showMoreOptions = false;
+}
+
 </script>
 
 <Drawer
@@ -304,6 +353,7 @@ $: if (selectedTemplate) {
                 group="imaging"
                 width={240}
                 disabled={false}
+                forceInclude={hasSelectedImages ? [angleEditOnlyMode] : []}
                 {imageSize}
               />
             </div>
@@ -333,18 +383,20 @@ $: if (selectedTemplate) {
               width={180}
             />
           </div>
-          <button
-            type="button"
-            class="more-button"
-            on:click={() => showMoreOptions = !showMoreOptions}
-            aria-label={$_('dolphinRoom.generation.more')}
-            aria-expanded={showMoreOptions}
-          >
-            <span class="more-icon">{showMoreOptions ? '▲' : '▼'}</span>
-            <span>{$_('dolphinRoom.generation.more')}</span>
-          </button>
+          {#if !angleModeActive}
+            <button
+              type="button"
+              class="more-button"
+              on:click={() => showMoreOptions = !showMoreOptions}
+              aria-label={$_('dolphinRoom.generation.more')}
+              aria-expanded={showMoreOptions}
+            >
+              <span class="more-icon">{showMoreOptions ? '▲' : '▼'}</span>
+              <span>{$_('dolphinRoom.generation.more')}</span>
+            </button>
+          {/if}
         </div>
-        {#if showMoreOptions}
+        {#if !angleModeActive && showMoreOptions}
           <div class="more-options-panel" transition:slide={{ duration: 200 }}>
             {#if generationType === 'image'}
               <div class="style-row">
@@ -380,17 +432,26 @@ $: if (selectedTemplate) {
           </div>
         {/if}
         <div class="input-row">
-          <div class="input-wrapper">
-            <div class="history-hint">{$_('dolphinRoom.generation.historyHint')}</div>
-            <textarea
-              id="dolphin-room-message"
-              placeholder={$_('dolphinRoom.generation.promptPlaceholder')}
-              bind:value={draft}
-              on:paste={handleTextareaPaste}
-              use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding, submitTrigger: promptSubmitTrigger }}
-              aria-label={$_('dolphinRoom.generation.promptPlaceholder')}
-              rows={5}
-            />
+          <div class="input-wrapper" class:angle-mode={angleModeActive}>
+            {#if angleModeActive}
+              <AngleControls
+                bind:rotateRightLeft={angleRotateRightLeft}
+                bind:moveForward={angleMoveForward}
+                bind:verticalAngle={angleVerticalAngle}
+                bind:wideAngleLens={angleWideAngleLens}
+              />
+            {:else}
+              <div class="history-hint">{$_('dolphinRoom.generation.historyHint')}</div>
+              <textarea
+                id="dolphin-room-message"
+                placeholder={$_('dolphinRoom.generation.promptPlaceholder')}
+                bind:value={draft}
+                on:paste={handleTextareaPaste}
+                use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding, submitTrigger: promptSubmitTrigger }}
+                aria-label={$_('dolphinRoom.generation.promptPlaceholder')}
+                rows={5}
+              />
+            {/if}
           </div>
           <div class="action-panel">
             <div class="action-panel-main">
@@ -880,6 +941,13 @@ $: if (selectedTemplate) {
 
   .more-button:focus {
     outline: none;
+  }
+
+  /* Angle controls styles moved into components/AngleControls.svelte */
+
+  .input-wrapper.angle-mode {
+    justify-content: center;
+    padding-right: 1rem;
   }
 
   .more-icon {

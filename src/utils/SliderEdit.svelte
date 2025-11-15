@@ -3,10 +3,11 @@
   import NumberEdit from './NumberEdit.svelte';
 
   export let label: string | undefined = undefined;
-  export let value: number;
-  export let min: number;
-  export let max: number;
-  export let step: number = 1;
+export let value: number;
+export let min: number;
+export let max: number;
+export let step: number = 1;
+export let allowDecimal: boolean = false;
 </script>
 
 <div class="flex flex-row gap-0.5 expand w-full h-full">
@@ -17,7 +18,7 @@
     <RangeSlider name="batch-count" bind:value={value} min={min} max={max} step={step}/>
   </div>
   <div class="text-xs number-box">
-    <NumberEdit bind:value={value} min={min} max={max}/>
+    <NumberEdit bind:value={value} min={min} max={max} {allowDecimal}/>
   </div>  
 </div>
 

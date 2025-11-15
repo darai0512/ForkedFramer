@@ -15,6 +15,7 @@
   export let comment: string = '';
   export let width: number = 270;
   export let disabled = false;
+  export let forceInclude: ImagingMode[] = [];
 
   const preference = createPreference<ImagingMode>('imaging', 'mode');
 
@@ -63,7 +64,11 @@
 
   let allOptions: ModeOption[] = [];
   $: allOptions = unifiedModeOptions
-    .filter(filterByGroup())
+    .filter(o => {
+      const val = o.value as ImagingMode;
+      // 通常のグループ条件 or 強制表示 or 現在選択中のモードは必ず残す
+      return filterByGroup()(o) || forceInclude.includes(val) || same(val, internalMode) || same(val, mode);
+    })
     .map(o => ({
       value: o.value as ImagingMode,
       label: group === 'ref' && o.refImaging && o.textedit ? `☆ ${o.name}` : o.name,

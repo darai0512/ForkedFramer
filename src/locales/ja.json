@@ -1,7 +1,7 @@
 {
   "ui": {
     "newDocument": "新規ドキュメント",
-    "cabinet": "キャビネット", 
+    "cabinet": "キャビネット",
     "download": "ダウンロード",
     "about": "アバウト",
     "video": "ビデオ撮影",
@@ -410,7 +410,7 @@
   },
   "videoMaker": {
     "encodingSuccess": "エンコードに成功しました",
-    "encodingFailed": "エンコードに失敗しました", 
+    "encodingFailed": "エンコードに失敗しました",
     "moveDuration": "移動時間",
     "standardWait": "標準滞留時間",
     "standardScale": "標準スケール",
@@ -466,7 +466,7 @@
     "angleEdit": {
       "model": "モデル",
       "cameraSettings": "カメラ制御",
-      "rotate": "左右回転 (°)",
+      "rotate": "回り込み (°)",
       "rotateDescription": "左から ←→ 右から",
       "moveForward": "前進量",
       "moveForwardDescription": "そのまま → 接写",
@@ -566,6 +566,7 @@
       "inProgress": "現在処理中です",
       "emptyPrompt": "プロンプトを入力してください",
       "needImageForVideo": "動画生成には画像を選択してください",
+      "needImageForMode": "このモードでは加工対象の画像を選択してください",
       "noRefImageSupport": "このモードは参照画像に対応していません"
     },
     "tooltip": {
@@ -581,7 +582,9 @@
       "characterSheet": "キャラクターシート",
       "characterSheetPrompt": "◯◯のキャラクターシート。3方向からみた姿と、表情",
       "turntable": "ターンテーブル",
-      "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject"
+      "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject",
+      "angleEdit": "アングル編集",
+      "angleEditPrompt": ""
     },
     "options": {
       "width": "width",

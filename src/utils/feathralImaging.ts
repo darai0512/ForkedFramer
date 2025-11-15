@@ -9,7 +9,7 @@ import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, cons
 import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
 import { updateToken } from "../utils/accountStore";
-import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider } from './edgeFunctions/types/imagingTypes';
+import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextToImageOption } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
 import { FunctionsHttpError } from '@supabase/supabase-js'
 // import { captureConsoleIntegration } from '@sentry/svelte';
@@ -115,7 +115,15 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
 
 // 旧個別実装は廃止し、単一の submitImagingRequest に統合
 
-export async function generateImage(prompt: string, image_size: {width: number, height: number}, mode: ImagingMode, num_images: number, background: ImagingBackground, imageDataUrls: string[]): Promise<HTMLCanvasElement[]> {
+export async function generateImage(
+  prompt: string,
+  image_size: {width: number, height: number},
+  mode: ImagingMode,
+  num_images: number,
+  background: ImagingBackground,
+  imageDataUrls: string[],
+  option: TextToImageOption = { kind: 'none' },
+): Promise<HTMLCanvasElement[]> {
   const req: TextToImageRequest = {
     provider: inferProvider(mode),
     prompt,
@@ -124,7 +132,7 @@ export async function generateImage(prompt: string, image_size: {width: number, 
     mode,
     background,
     imageDataUrls,
-    option: { kind: "none" },
+    option,
   };
   return submitImagingRequest(req);
 }
@@ -247,7 +255,7 @@ export type ModeOption = { value: ImagingMode; name: string; uiType: ImagingProv
 export const modeOptions: ModeOption[] = [
   // Imaging-oriented
   { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
-  { value: 'qwen-image-edit/multiple-angles', name: 'Qwen Image Edit [Multiple Angles]', uiType: 'flux', imaging: false, textedit: false, refImaging: true, refRange: { min: 1, max: 1 } },
+  { value: 'qwen-image-edit/multiple-angles', name: 'アングル編集', uiType: 'flux', imaging: false, textedit: false, refImaging: true, refRange: { min: 1, max: 1 } },
   { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
   { value: 'pro', name: 'FLUX Pro', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
   { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },

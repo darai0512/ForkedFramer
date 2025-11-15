@@ -2,6 +2,7 @@
 import { createEventDispatcher, onDestroy, tick } from 'svelte';
 import { get } from 'svelte/store';
 import { _, locale, isLoading } from 'svelte-i18n';
+import { toastStore } from '@skeletonlabs/skeleton';
 import { dolphinRoomOpen } from './dolphinRoomStore';
 import { createMediaLoaders } from './mediaLoaders';
 import {
@@ -26,7 +27,7 @@ import {
   pickVideoAspectRatio,
 } from '../generator/videoModelConfig';
 import { createObjectUrlManager } from './objectUrlManager';
-import { supportsRefImages } from '../utils/feathralImaging';
+import { supportsRefImages, getRefRangeForMode } from '../utils/feathralImaging';
 import {
   createPlaceholderMediaItems,
   removeMediaItems as removeTimelineMediaItems,
@@ -47,6 +48,7 @@ import { DEFAULT_IMAGE_SIZE } from './constants';
 import { persistentText } from '../utils/persistentText';
 
 const dispatch = createEventDispatcher<{ dragstart: Media }>();
+const ANGLE_EDIT_MODE: ImagingMode = 'qwen-image-edit/multiple-angles';
 
 let timelineItems: TimelineItem[] = [];
 let timelineRows: TimelineRow[] = [];
@@ -81,6 +83,14 @@ let videoAspectRatioForCost: ImageToVideoRequest['aspectRatio'];
 let imageWidth = DEFAULT_IMAGE_SIZE.width;
 let imageHeight = DEFAULT_IMAGE_SIZE.height;
 let batchCount = 1;
+let angleRotateRightLeft = 0;
+let angleMoveForward = 0;
+let angleVerticalAngle = 0;
+let angleWideAngleLens = false;
+let requiresReferenceSelection = false;
+let isAngleEditMode = false;
+let promptRequired = true;
+let lastSelectableImagingMode: ImagingMode = 'schnell';
 
 const allocateId: AllocateId = () => nextId++;
 
@@ -165,7 +175,8 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
   getSelectedImageItems: () => selectedImageItems,
   getHasSelectedImages: () => hasSelectedImages,
   getGenerationType: () => generationType,
-  isDraftEmpty: () => isDraftEmpty,
+  isDraftEmpty: () => (promptRequired ? isDraftEmpty : false),
+  isPromptRequired: () => promptRequired,
   getDraft: () => draft,
   getStyle: () => style,
   getApplyStyle: () => applyStyle,
@@ -177,6 +188,12 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
   getImageWidth: () => imageWidth,
   getImageHeight: () => imageHeight,
   getBatchCount: () => batchCount,
+  getAngleEditValues: () => ({
+    rotateRightLeft: Number(angleRotateRightLeft),
+    moveForward: Number(angleMoveForward),
+    verticalAngle: Number(angleVerticalAngle),
+    wideAngleLens: angleWideAngleLens,
+  }),
   objectUrls,
   allocateId,
   ensureMediaItemMedia,
@@ -217,6 +234,23 @@ $: {
   videoSourceSize = imageSizeForCost;
   videoAspectRatioForCost = pickVideoAspectRatio(videoModel, videoSourceSize.width, videoSourceSize.height);
 }
+$: {
+  const nextRequires = getRefRangeForMode(imagingMode).min > 0;
+  if (requiresReferenceSelection !== nextRequires) {
+    requiresReferenceSelection = nextRequires;
+  }
+  if (!nextRequires || hasSelectedImages) {
+    lastSelectableImagingMode = imagingMode;
+  } else if (imagingMode !== lastSelectableImagingMode) {
+    toastStore.trigger({ message: $_('dolphinRoom.disable.needImageForMode'), timeout: 2500 });
+    imagingMode = lastSelectableImagingMode;
+  }
+}
+$: isAngleEditMode = imagingMode === ANGLE_EDIT_MODE;
+$: promptRequired = !(isAngleEditMode && generationType === 'image');
+$: if (isAngleEditMode && batchCount !== 1) {
+  batchCount = 1;
+}
 $: timelineRows = toTimelineRows(timelineItems);
 $: messageHeading = generationType === 'video'
   ? (isGenerating ? $_('dolphinRoom.heading.videoGenerating') : $_('dolphinRoom.heading.videoGenerate'))
@@ -225,8 +259,11 @@ $: messageHeading = generationType === 'video'
     : (isGenerating ? $_('dolphinRoom.heading.generating') : $_('dolphinRoom.heading.generate'));
 $: generationDisableReason = (() => {
   if (isGenerating) return $_('dolphinRoom.disable.inProgress');
-  if (isDraftEmpty) return $_('dolphinRoom.disable.emptyPrompt');
+  if (promptRequired && isDraftEmpty) return $_('dolphinRoom.disable.emptyPrompt');
   if (generationType === 'video' && !hasSelectedImages) return $_('dolphinRoom.disable.needImageForVideo');
+  if (generationType === 'image' && requiresReferenceSelection && !hasSelectedImages) {
+    return $_('dolphinRoom.disable.needImageForMode');
+  }
   if (generationType === 'image' && hasSelectedImages && !supportsRefImages(imagingMode)) {
     return $_('dolphinRoom.disable.noRefImageSupport');
   }
@@ -423,6 +460,10 @@ onDestroy(() => {
   bind:imageWidth={imageWidth}
   bind:imageHeight={imageHeight}
   bind:batchCount={batchCount}
+  bind:angleRotateRightLeft={angleRotateRightLeft}
+  bind:angleMoveForward={angleMoveForward}
+  bind:angleVerticalAngle={angleVerticalAngle}
+  bind:angleWideAngleLens={angleWideAngleLens}
   onVideoModelChange={handleVideoModelChange}
   onClose={closeDrawer}
   toggleMediaSelection={toggleMediaSelection}

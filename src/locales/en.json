@@ -2,7 +2,7 @@
   "ui": {
     "newDocument": "New Document",
     "cabinet": "Cabinet",
-    "download": "Download", 
+    "download": "Download",
     "about": "About",
     "video": "Video Recording",
     "post": "Post to Manga Farm!",
@@ -73,7 +73,7 @@
   },
   "fileManager": {
     "newFolder": "New Folder",
-    "newFile": "New File", 
+    "newFile": "New File",
     "untitled": "Untitled",
     "confirmDelete": "Are you sure you want to delete?",
     "cannotDeleteSpecialFolder": "Cannot delete special folder",
@@ -333,9 +333,8 @@
     }
   },
   "materialBucket": {
-    "materialCollection": "Material Collection",
     "generationHistory": "Generation History",
-    "closeOnDrag": "Close window when dragging"
+    "publicMaterials": "Public Materials"
   },
   "gallery": {
     "delete": "Delete",
@@ -446,10 +445,6 @@
       "effect": "Effect",
       "item": "Item"
     }
-  },
-  "materialBucket": {
-    "generationHistory": "Generation History",
-    "publicMaterials": "Public Materials"
   },
   "dialogs": {
     "confirm": "Confirm",
@@ -569,6 +564,7 @@
       "inProgress": "Currently processing",
       "emptyPrompt": "Please enter a prompt",
       "needImageForVideo": "Please select an image for video generation",
+      "needImageForMode": "Please select an image for this mode",
       "noRefImageSupport": "This mode does not support reference images"
     },
     "tooltip": {
@@ -584,7 +580,9 @@
       "characterSheet": "Character Sheet",
       "characterSheetPrompt": "Character sheet of ◯◯. Three-directional view and expressions",
       "turntable": "Turntable",
-      "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject"
+      "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject",
+      "angleEdit": "Angle Edit",
+      "angleEditPrompt": ""
     },
     "options": {
       "width": "width",
