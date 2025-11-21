@@ -118,6 +118,7 @@
         "kontext/max": 12,
         "kontext/inscene": 12,
         "nano-banana": 12,
+        "nano-banana-pro": 12,
         "chrono-edit": 12,
         "seedream/v4": 12,
       }

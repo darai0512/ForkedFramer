@@ -266,6 +266,7 @@ export const modeOptions: ModeOption[] = [
   { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
+  { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', imaging: false, textedit: true, refImaging: true, refRange: { min: 1, max: 1 } },
   { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
   // Text-edit–oriented

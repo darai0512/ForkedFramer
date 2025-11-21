@@ -1,7 +1,7 @@
 // このモジュールはFramePlanner側で定義してコピーしているので、
 // FramePlannerSupabaseで変更してはだめ
 
-import type { ImagingMode, ImageToVideoModel, ImageToVideoResolution, ImageToVideoRequest, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes";
+import type { ImagingMode, ImageToVideoModel, ImageToVideoResolution, ImageToVideoRequest, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes.d"; // @deno-ts
 
 /**
  * 画像サイズからメガピクセル単位でのコストを計算する
@@ -36,6 +36,7 @@ const COST_SPEC: Record<ImagingMode, CostSpec> = {
     "kontext/max": { kind: 'fixed', value: 13 },
     "kontext/inscene": { kind: 'perMP', value: 7 },
     "nano-banana": { kind: 'fixed', value: 6 },
+    "nano-banana-pro": { kind: 'fixed', value: 22 },
     "chrono-edit": { kind: 'fixed', value: 3 },
     "seedream/v4": { kind: 'fixed', value: 5 },
 };

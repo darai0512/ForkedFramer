@@ -19,6 +19,7 @@ export const ImagingModeSchema = z.enum([
   "kontext/max",
   "kontext/inscene",
   "nano-banana",
+  "nano-banana-pro",
   "chrono-edit",
   "seedream/v4",
   "qwen-image-edit/multiple-angles",
