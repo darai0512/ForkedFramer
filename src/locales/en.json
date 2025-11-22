@@ -461,6 +461,17 @@
       "referenceImageCount": "Reference images",
       "historyHint": "Ctrl + ↑↓ to browse history"
     },
+    "textLift": {
+      "title": "Text Lift",
+      "loading": "Detecting text regions...",
+      "empty": "No text regions were found",
+      "error": "Failed to run text lift",
+      "hint": "Click masks to toggle enable/disable",
+      "listTitle": "Detected masks",
+      "enabledLabel": "Enabled",
+      "disabledLabel": "Disabled",
+      "noImage": "Image source is missing"
+    },
     "angleEdit": {
       "model": "Model",
       "cameraSettings": "Camera controls",

@@ -68,6 +68,7 @@
   import ImageMaskDialog from './utils/ImageMaskDialog.svelte';
   import InpaintDialog from './utils/InpaintDialog.svelte';
   import TextEditDialog from './utils/TextEditDialog.svelte';
+  import TextLiftDialog from './utils/TextLiftDialog.svelte';
   import AngleEditDialog from './utils/AngleEditDialog.svelte';
   import Upscaler from './generator/Upscaler.svelte';
   import Dump from './transfer/Dump.svelte';
@@ -120,6 +121,9 @@
     },
     textedit: {
       ref: TextEditDialog,
+    },
+    textlift: {
+      ref: TextLiftDialog,
     },
     angleedit: {
       ref: AngleEditDialog,

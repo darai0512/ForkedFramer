@@ -215,7 +215,6 @@ export const TextMaskResponseSchema = z.object({
       x1: z.number(),
       y1: z.number(),
     }),
-    mask: z.string(),
     text: z.string(),
   }))
 });

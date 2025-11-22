@@ -463,6 +463,17 @@
       "referenceImageCount": "参考画像数",
       "historyHint": "Ctrl + ↑↓ で履歴を表示"
     },
+    "textLift": {
+      "title": "テキスト抽出",
+      "loading": "テキスト領域を検出中...",
+      "empty": "テキストが検出できませんでした",
+      "error": "テキスト抽出に失敗しました",
+      "hint": "マスクをクリックすると有効/無効を切り替えられます",
+      "listTitle": "検出マスク",
+      "enabledLabel": "有効",
+      "disabledLabel": "無効",
+      "noImage": "画像が読み込めませんでした"
+    },
     "angleEdit": {
       "model": "モデル",
       "cameraSettings": "カメラ制御",

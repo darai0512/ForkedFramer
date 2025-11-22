@@ -234,8 +234,10 @@ export async function handleSendToMaterialCollectionCommand<T extends FilmOperat
 export async function handleTextLiftCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  await textLiftFilm(target.commandTargetFilm!);
-  commit(null);
+  const result = await textLiftFilm(target.commandTargetFilm!);
+  if (result?.committed) {
+    commit(null);
+  }
   loading.set(false);
 }
 
