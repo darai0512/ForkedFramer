@@ -197,6 +197,7 @@
   async function onUpdateBook(book: Book | null) {
     if (book == null) {
       // initialize
+      console.log("book initialize:1");
       try {
         $loading = true;
 
@@ -206,6 +207,7 @@
           return;
         }
 
+        console.log("book initialize:2");
         const currentFileInfo = await fetchCurrentFileInfo();
         if (currentFileInfo) {
           if (currentFileInfo.fileSystem === 'cloud') {
@@ -226,16 +228,26 @@
             }
           }
           try {
+            console.log("book initialize:3");
             const fs = getFileSystemByType(currentFileInfo.fileSystem);
+            console.log("book initialize:4");
             let currentFile = (await fs.getNode(currentFileInfo.id))!.asFile()!;
+            console.log("book initialize:5");
             const newBook = await loadBookFrom(fs, currentFile);
+            console.log("book initialize:6");
             refreshFilms(newBook);
             currentRevision = {...newBook.revision};
+            console.log("book initialize:7");
             $mainBookFileSystem = fs;
+            console.log("book initialize:8");
             $mainBookExceptionHandler = loadExceptionHandler; // onChangeBookが一回実行されると消去される
+            console.log("book initialize:9");
             $mainBook = newBook;
+            console.log("book initialize:10");
             $mainBookTitle = currentFileInfo.title ?? '';
+            console.log("book initialize:11");
             $frameInspectorTarget = null;
+            console.log("book initialize:12");
             analyticsEvent('continue_book');
           }
           catch (e) {
