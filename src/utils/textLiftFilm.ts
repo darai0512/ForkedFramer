@@ -11,6 +11,7 @@ import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
 import { calculatePhysicalLayout, findLayoutOf, FrameElement } from '../lib/layeredCanvas/dataModels/frameTree';
 import { trapezoidBoundingRect } from '../lib/layeredCanvas/tools/geometry/trapezoid';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
+import { measureHorizontalText, measureVerticalText } from '../lib/layeredCanvas/tools/draw/drawText';
 
 export type TextLiftSelection = {
   id: number;
@@ -130,9 +131,45 @@ function placeBubbleBySelection(
     (p0[0] + p1[0]) * 0.5,
     (p0[1] + p1[1]) * 0.5,
   ];
+  const boxWidth = Math.abs(p1[0] - p0[0]);
 
+  adjustBubbleFontSize(bubble, paperSize, boxWidth);
   bubble.setPhysicalCenter(paperSize, center);
   const size = bubble.calculateFitSize(paperSize);
   bubble.setPhysicalSize(paperSize, size);
   return true;
+}
+
+function adjustBubbleFontSize(bubble: Bubble, paperSize: Vector, boxWidth: number) {
+  if (boxWidth <= 0) { return; }
+
+  const ctx = document.createElement('canvas').getContext('2d');
+  if (!ctx) { return; }
+
+  const measureWidth = (fontSize: number) => {
+    const baselineSkip = fontSize * 1.5 * (1.0 + bubble.lineSkip);
+    const charSkip = fontSize * (1.0 + bubble.charSkip);
+    ctx.font = `${bubble.fontStyle} ${bubble.fontWeight} ${fontSize}px '${bubble.fontFamily}'`;
+    if (bubble.direction === 'v') {
+      return measureVerticalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width;
+    }
+    return measureHorizontalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width;
+  };
+
+  const baseFontSize = bubble.getPhysicalFontSize(paperSize);
+  let low = 1;
+  let high = Math.max(boxWidth * 2, baseFontSize, 8);
+
+  // 収まる幅だけを基準に最大フォントサイズを探索（TextLiftのBOXはマージンなし）
+  for (let i = 0; i < 16; i++) {
+    const mid = (low + high) / 2;
+    const w = measureWidth(mid);
+    if (w <= boxWidth) {
+      low = mid;
+    } else {
+      high = mid;
+    }
+  }
+
+  bubble.setPhysicalFontSize(paperSize, low);
 }
