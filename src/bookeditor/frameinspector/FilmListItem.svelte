@@ -32,6 +32,7 @@
   import texteditIcon from '../../assets/filmlist/textedit.webp';
   import angleeditIcon from '../../assets/filmlist/angleedit.webp';
   import downloadIcon from '../../assets/download.webp';
+  import textLiftIcon from '../../assets/filmlist/textlift.webp';
   import stampIcon from '../../assets/stamp.webp';
   import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
   import { tick } from 'svelte';
@@ -462,7 +463,7 @@
             <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
           </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
-            <img draggable={false} src={downloadIcon} alt={$_('frame.actions.textlift')}/>
+            <img draggable={false} src={textLiftIcon} alt={$_('frame.actions.textlift')}/>
           </button>
         </div>
       </div>
