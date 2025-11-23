@@ -7,12 +7,11 @@
   import type { TextLiftDialogResult, TextLiftSelection } from './textLiftFilm';
   import FeathralCost from './FeathralCost.svelte';
   import textLiftIcon from '../assets/filmlist/textlift.webp';
-  import eraserIcon from '../assets/filmlist/eraser.webp';
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 600;
-  const RECOGNITION_COST = 6;
-  const ERASE_COST = 6;
+  const RECOGNITION_COST = 0;
+  const ERASE_COST = 0;
 
   let title = '';
   let imageSource: HTMLCanvasElement | null = null;
