@@ -236,6 +236,11 @@ export async function handleTextLiftCommand<T extends FilmOperationTarget & { fr
   target: T
 ): Promise<void> {
   const result = await textLiftFilm(target.page, target.commandTargetFilm!, target.frame);
+  if (result?.erasedFilm) {
+    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
+    const insertIndex = index >= 0 ? index + 1 : target.filmStack.films.length;
+    target.filmStack.films.splice(insertIndex, 0, result.erasedFilm);
+  }
   if (result?.committed) {
     commit(null);
   }

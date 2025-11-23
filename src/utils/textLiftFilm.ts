@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
+import { eraser, pollMediaStatus } from "../supabase";
 import { analyticsEvent } from "./analyticsEvent";
 import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
@@ -12,6 +13,9 @@ import { calculatePhysicalLayout, findLayoutOf, FrameElement } from '../lib/laye
 import { trapezoidBoundingRect } from '../lib/layeredCanvas/tools/geometry/trapezoid';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 import { measureHorizontalText, measureVerticalText } from '../lib/layeredCanvas/tools/draw/drawText';
+import { saveRequest } from '../filemanager/warehouse';
+import { mainBookFileSystem } from '../filemanager/fileManagerStore';
+import { loading } from './loadingStore';
 
 export type TextLiftSelection = {
   id: number;
@@ -27,7 +31,9 @@ export type TextLiftDialogResult = {
   response: TextMaskResponse;
 };
 
-export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement) {
+export type TextLiftResult = (TextLiftDialogResult & { erasedFilm?: Film }) | null;
+
+export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement): Promise<TextLiftResult> {
   if (get(onlineStatus) !== "signed-in") {
     toastStore.trigger({ message: `テキスト抽出はサインインしてないと使えません`, timeout: 3000});
     return null;
@@ -43,6 +49,27 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
   const dialogResult = await waitDialog<TextLiftDialogResult | null>('textlift', { title: "テキスト抽出", imageSource: sourceCanvas });
   if (!dialogResult?.committed) {
     return null;
+  }
+
+  const maskCanvas = createMaskCanvasFromSelections(sourceCanvas, dialogResult.selections);
+  let erasedFilm: Film | undefined;
+  if (maskCanvas) {
+    loading.set(true);
+    try {
+      const maskDataUrl = maskCanvas.toDataURL("image/png");
+      const imageDataUrl = sourceCanvas.toDataURL("image/png");
+      const { requestId, model } = await eraser({ maskDataUrl, imageDataUrl });
+      await saveRequest(get(mainBookFileSystem)!, "image", "eraser", requestId, model);
+
+      const { mediaResources } = await pollMediaStatus({ mediaType: "image", mode: "eraser", requestId, model });
+      erasedFilm = film.clone();
+      erasedFilm.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
+    } catch (error) {
+      console.error('textLift eraser failed', error);
+      toastStore.trigger({ message: `文字消去に失敗しました`, timeout: 3000 });
+    } finally {
+      loading.set(false);
+    }
   }
 
   const paperSize = page.paperSize;
@@ -77,7 +104,53 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
   });
 
   analyticsEvent('textlift');
-  return dialogResult;
+  return { ...dialogResult, erasedFilm };
+}
+
+function createMaskCanvasFromSelections(sourceCanvas: HTMLCanvasElement, selections: TextLiftSelection[]): HTMLCanvasElement | null {
+  const enabled = selections.filter(sel => sel.enabled);
+  if (!enabled.length) { return null; }
+
+  const mask = document.createElement('canvas');
+  mask.width = sourceCanvas.width;
+  mask.height = sourceCanvas.height;
+  const ctx = mask.getContext('2d');
+  if (!ctx) { return null; }
+
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, mask.width, mask.height);
+  ctx.fillStyle = 'white';
+
+  for (const sel of enabled) {
+    const rawWidth = Math.max(1, Math.abs(sel.box.x1 - sel.box.x0));
+    const rawHeight = Math.max(1, Math.abs(sel.box.y1 - sel.box.y0));
+    const expandWidth = rawWidth * 1.20;
+    const expandHeight = rawHeight * 1.20;
+    const centerX = (sel.box.x0 + sel.box.x1) * 0.5;
+    const centerY = (sel.box.y0 + sel.box.y1) * 0.5;
+
+    const x = Math.max(0, Math.floor(centerX - expandWidth * 0.5));
+    const y = Math.max(0, Math.floor(centerY - expandHeight * 0.5));
+    const w = Math.max(1, Math.min(mask.width - x, Math.ceil(expandWidth)));
+    const h = Math.max(1, Math.min(mask.height - y, Math.ceil(expandHeight)));
+    const radius = Math.max(2, Math.min(w, h) * 0.12);
+
+    drawRoundedRect(ctx, x, y, w, h, radius);
+  }
+
+  return mask;
+}
+
+function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const radius = Math.min(r, w * 0.5, h * 0.5);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function locateFrameLayout(page: Page, frame: FrameElement) {

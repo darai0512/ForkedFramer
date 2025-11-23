@@ -3,7 +3,6 @@
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { textMask } from '../supabase';
-  import { makePlainCanvas } from '../lib/layeredCanvas/tools/imageUtil';
   import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
   import type { TextLiftDialogResult, TextLiftSelection } from './textLiftFilm';
 
@@ -15,9 +14,11 @@
   let imageCanvas: HTMLCanvasElement;
   let overlayCanvas: HTMLCanvasElement;
 
+  type RecognitionState = 'idle' | 'loading' | 'ready' | 'empty' | 'error';
+
   let maskLayers: MaskLayer[] = [];
   let drawInfo: DrawInfo | null = null;
-  let isLoading = true;
+  let recognitionState: RecognitionState = 'idle';
   let errorMessage = '';
   let enabledCount = 0;
   let lastResponse: TextMaskResponse | null = null;
@@ -45,7 +46,7 @@
     const args = $modalStore[0]?.meta;
     if (!args?.imageSource) {
       errorMessage = $_('dialogs.textLift.noImage');
-      isLoading = false;
+      recognitionState = 'error';
       return;
     }
 
@@ -54,7 +55,6 @@
 
     drawInfo = computeDrawInfo();
     drawBaseImage();
-    await fetchMasks();
   });
 
   function computeDrawInfo(): DrawInfo | null {
@@ -97,28 +97,29 @@
   }
 
   async function fetchMasks() {
-    if (!imageSource) return;
+    if (!imageSource || recognitionState === 'loading') return;
 
-    isLoading = true;
+    recognitionState = 'loading';
     errorMessage = '';
     maskLayers = [];
+    lastResponse = null;
     redrawOverlay();
 
     try {
       const response = await textMask({ dataUrl: imageSource.toDataURL() });
       lastResponse = response;
       if (!response.boxes || response.boxes.length === 0) {
-        errorMessage = $_('dialogs.textLift.empty');
+        recognitionState = 'empty';
         return;
       }
 
       maskLayers = await prepareMaskLayers(response);
+      recognitionState = 'ready';
       redrawOverlay();
     } catch (error) {
       console.error('textMask failed', error);
       errorMessage = $_('dialogs.textLift.error');
-    } finally {
-      isLoading = false;
+      recognitionState = 'error';
     }
   }
 
@@ -188,7 +189,12 @@
   }
 
   function handleOverlayClick(event: MouseEvent) {
-    if (!drawInfo || isLoading || !maskLayers.length) return;
+    if (!drawInfo) return;
+    if (recognitionState === 'loading') return;
+    if (recognitionState !== 'ready') {
+      fetchMasks();
+      return;
+    }
 
     const rect = overlayCanvas.getBoundingClientRect();
     const scaleX = overlayCanvas.width / rect.width;
@@ -255,29 +261,24 @@
   <header class="card-header">
     <div>
       <h2>{title}</h2>
-      <p class="hint">{$_('dialogs.textLift.hint')}</p>
-    </div>
-    <div class="pill">
-      {enabledCount}/{maskLayers.length || 0} {$_('dialogs.textLift.enabledLabel')}
     </div>
   </header>
   <section class="p-4">
     <div class="dialog-body">
       <div class="status-row">
-        <div class="pill">
-          {enabledCount}/{maskLayers.length || 0} {$_('dialogs.textLift.enabledLabel')}
-        </div>
-        <div class="status-text">
-          {#if errorMessage}
-            {errorMessage}
-          {:else if isLoading}
-            {$_('dialogs.textLift.loading')}
-          {:else if maskLayers.length === 0}
-            {$_('dialogs.textLift.empty')}
-          {:else}
-            {$_('dialogs.textLift.hint')}
-          {/if}
-        </div>
+        {#if recognitionState !== 'ready'}
+          <div class="status-text">
+            {#if recognitionState === 'error'}
+              {errorMessage}
+            {:else if recognitionState === 'loading'}
+              {$_('dialogs.textLift.loading')}
+            {:else if recognitionState === 'empty'}
+              {$_('dialogs.textLift.empty')}
+            {:else}
+              {$_('dialogs.textLift.notStarted')}
+            {/if}
+          </div>
+        {/if}
       </div>
       <div class="canvas-pane">
         <div class="canvas-wrapper">
@@ -294,21 +295,35 @@
             class="overlay-canvas"
             on:click={handleOverlayClick}
           />
-          {#if isLoading}
+          {#if recognitionState === 'loading'}
             <div class="loading-overlay">
               <span>{$_('dialogs.textLift.loading')}</span>
             </div>
-          {:else if errorMessage}
+          {:else if recognitionState === 'error'}
             <div class="loading-overlay error">
               <span>{errorMessage}</span>
             </div>
-          {:else if maskLayers.length === 0}
+          {:else if recognitionState === 'empty'}
             <div class="loading-overlay subtle">
               <span>{$_('dialogs.textLift.empty')}</span>
+            </div>
+          {:else if recognitionState === 'idle'}
+            <div class="loading-overlay subtle">
+              <span>{$_('dialogs.textLift.notStarted')}</span>
             </div>
           {/if}
         </div>
       </div>
+      {#if recognitionState === 'ready'}
+        <div class="enabled-row">
+          <div class="pill">
+            {enabledCount}/{maskLayers.length || 0} {$_('dialogs.textLift.enabledLabel')}
+          </div>
+          <div class="status-text hint-text">
+            {$_('dialogs.textLift.hint')}
+          </div>
+        </div>
+      {/if}
     </div>
   </section>
   <footer class="card-footer flex gap-2">
@@ -320,7 +335,7 @@
       class="btn variant-filled-primary"
       type="button"
       on:click={onSubmit}
-      disabled={isLoading || maskLayers.length === 0}
+      disabled={recognitionState !== 'ready' || maskLayers.length === 0}
     >
       {$_('dialogs.ok')}
     </button>
@@ -419,11 +434,26 @@
     font-size: 14px;
   }
 
-  .loading-overlay.error {
-    background: rgba(var(--color-error-700), 0.65);
+  .enabled-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .hint-text {
+    color: rgb(var(--color-surface-600));
+    font-size: 14px;
   }
 
   .loading-overlay.subtle {
     background: rgba(15, 23, 42, 0.25);
+    pointer-events: none;
+  }
+
+  .loading-overlay.error {
+    background: rgba(var(--color-error-700), 0.65);
+    pointer-events: none;
   }
 </style>

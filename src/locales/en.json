@@ -470,7 +470,8 @@
       "listTitle": "Detected masks",
       "enabledLabel": "Enabled",
       "disabledLabel": "Disabled",
-      "noImage": "Image source is missing"
+      "noImage": "Image source is missing",
+      "notStarted": "Click the image to start text recognition"
     },
     "angleEdit": {
       "model": "Model",

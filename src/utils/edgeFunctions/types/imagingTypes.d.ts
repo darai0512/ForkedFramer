@@ -216,6 +216,7 @@ export const TextMaskResponseSchema = z.object({
       y1: z.number(),
     }),
     text: z.string(),
+    orientation: z.enum(["horizontal", "vertical"]),
   }))
 });
 export type TextMaskResponse = z.infer<typeof TextMaskResponseSchema>;
