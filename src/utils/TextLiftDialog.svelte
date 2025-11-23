@@ -1,13 +1,18 @@
 <script lang="ts">
-  import { modalStore } from '@skeletonlabs/skeleton';
+  import { modalStore, ProgressRadial } from '@skeletonlabs/skeleton';
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { textMask } from '../supabase';
   import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
   import type { TextLiftDialogResult, TextLiftSelection } from './textLiftFilm';
+  import FeathralCost from './FeathralCost.svelte';
+  import textLiftIcon from '../assets/filmlist/textlift.webp';
+  import eraserIcon from '../assets/filmlist/eraser.webp';
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 600;
+  const RECOGNITION_COST = 6;
+  const ERASE_COST = 6;
 
   let title = '';
   let imageSource: HTMLCanvasElement | null = null;
@@ -261,7 +266,8 @@
 
 <div class="card p-4 shadow-xl">
   <header class="card-header">
-    <div>
+    <div class="title-row">
+      <img src={textLiftIcon} alt={$_('dialogs.textLift.title')} class="title-icon" />
       <h2>{title}</h2>
     </div>
   </header>
@@ -295,11 +301,14 @@
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
             class="overlay-canvas"
-            on:click={handleOverlayClick}
+          on:click={handleOverlayClick}
           />
           {#if recognitionState === 'loading'}
             <div class="loading-overlay">
-              <span>{$_('dialogs.textLift.loading')}</span>
+              <div class="overlay-stack">
+                <ProgressRadial width="w-12" stroke={120} />
+                <span>{$_('dialogs.textLift.loading')}</span>
+              </div>
             </div>
           {:else if recognitionState === 'error'}
             <div class="loading-overlay error">
@@ -310,8 +319,11 @@
               <span>{$_('dialogs.textLift.empty')}</span>
             </div>
           {:else if recognitionState === 'idle'}
-            <div class="loading-overlay subtle">
-              <span>{$_('dialogs.textLift.notStarted')}</span>
+            <div class="loading-overlay start">
+              <div class="overlay-stack">
+                <span>{$_('dialogs.textLift.notStarted')}</span>
+                <FeathralCost cost={RECOGNITION_COST} showsLabel={false} inline={true}/>
+              </div>
             </div>
           {/if}
         </div>
@@ -329,6 +341,9 @@
           <label class="option-checkbox">
             <input type="checkbox" bind:checked={eraseFromSource}>
             <span>ソース画像から指定した文字を削除する</span>
+            <div class="cost-chip" class:disabled={!eraseFromSource}>
+              <FeathralCost cost={ERASE_COST} showsLabel={false} inline={true}/>
+            </div>
           </label>
         </div>
       {/if}
@@ -380,6 +395,20 @@
     font-family: '源暎アンチック';
   }
 
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .title-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
   .dialog-body {
     display: flex;
     flex-direction: column;
@@ -428,6 +457,7 @@
     color: white;
     font-weight: 600;
     letter-spacing: 0.5px;
+    text-align: center;
   }
 
   .status-row {
@@ -467,6 +497,7 @@
     gap: 8px;
     color: rgb(var(--color-surface-700));
     font-size: 14px;
+    flex-wrap: wrap;
   }
 
   .option-checkbox input {
@@ -479,8 +510,57 @@
     pointer-events: none;
   }
 
+  .loading-overlay.start {
+    background: rgba(15, 23, 42, 0.55);
+    pointer-events: none;
+  }
+
   .loading-overlay.error {
     background: rgba(var(--color-error-700), 0.65);
     pointer-events: none;
+  }
+
+  .overlay-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .cost-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border: 1px solid rgba(var(--color-primary-500), 0.35);
+    border-radius: 999px;
+    background: rgba(var(--color-primary-500), 0.12);
+    font-weight: 700;
+    color: rgb(var(--color-surface-800));
+  }
+
+  .cost-chip.disabled {
+    opacity: 0.55;
+  }
+
+  .chip-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    object-fit: cover;
+  }
+
+  .chip-label {
+    font-family: '源暎アンチック';
+  }
+
+  .loading-overlay .cost-chip {
+    border-color: rgba(255, 255, 255, 0.45);
+    background: rgba(var(--color-primary-500), 0.35);
+    color: white;
+  }
+
+  .loading-overlay .chip-label {
+    color: white;
   }
 </style>
