@@ -29,6 +29,7 @@ export type TextLiftDialogResult = {
   committed: boolean;
   selections: TextLiftSelection[];
   response: TextMaskResponse;
+  eraseFromSource: boolean;
 };
 
 export type TextLiftResult = (TextLiftDialogResult & { erasedFilm?: Film }) | null;
@@ -51,7 +52,8 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
     return null;
   }
 
-  const maskCanvas = createMaskCanvasFromSelections(sourceCanvas, dialogResult.selections);
+  const shouldEraseSource = dialogResult.eraseFromSource ?? true;
+  const maskCanvas = shouldEraseSource ? createMaskCanvasFromSelections(sourceCanvas, dialogResult.selections) : null;
   let erasedFilm: Film | undefined;
   if (maskCanvas) {
     loading.set(true);

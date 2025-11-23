@@ -22,6 +22,7 @@
   let errorMessage = '';
   let enabledCount = 0;
   let lastResponse: TextMaskResponse | null = null;
+  let eraseFromSource = true;
 
   type DrawInfo = {
     offsetX: number;
@@ -239,6 +240,7 @@
       committed: true,
       selections,
       response: lastResponse,
+      eraseFromSource,
     };
 
     $modalStore[0].response?.(response);
@@ -322,6 +324,12 @@
           <div class="status-text hint-text">
             {$_('dialogs.textLift.hint')}
           </div>
+        </div>
+        <div class="option-row">
+          <label class="option-checkbox">
+            <input type="checkbox" bind:checked={eraseFromSource}>
+            <span>ソース画像から指定した文字を削除する</span>
+          </label>
         </div>
       {/if}
     </div>
@@ -445,6 +453,25 @@
   .hint-text {
     color: rgb(var(--color-surface-600));
     font-size: 14px;
+  }
+
+  .option-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+  }
+
+  .option-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgb(var(--color-surface-700));
+    font-size: 14px;
+  }
+
+  .option-checkbox input {
+    width: 18px;
+    height: 18px;
   }
 
   .loading-overlay.subtle {
