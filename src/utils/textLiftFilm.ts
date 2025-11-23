@@ -147,13 +147,14 @@ function adjustBubbleFontSize(bubble: Bubble, paperSize: Vector, boxWidth: numbe
   if (!ctx) { return; }
 
   const measureWidth = (fontSize: number) => {
+    const unmargin = fontSize * 0.15; // TextLiftのBOXはマージンなしなので、フォントサイズに応じて適当に補正
     const baselineSkip = fontSize * 1.5 * (1.0 + bubble.lineSkip);
     const charSkip = fontSize * (1.0 + bubble.charSkip);
     ctx.font = `${bubble.fontStyle} ${bubble.fontWeight} ${fontSize}px '${bubble.fontFamily}'`;
     if (bubble.direction === 'v') {
-      return measureVerticalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width;
+      return measureVerticalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width - unmargin;
     }
-    return measureHorizontalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width;
+    return measureHorizontalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width - unmargin;
   };
 
   const baseFontSize = bubble.getPhysicalFontSize(paperSize);
