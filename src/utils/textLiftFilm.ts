@@ -18,6 +18,7 @@ export type TextLiftSelection = {
   enabled: boolean;
   text?: string;
   box: { x0: number; y0: number; x1: number; y1: number };
+  orientation: TextMaskResponse['boxes'][number]['orientation'];
 };
 
 export type TextLiftDialogResult = {
@@ -57,6 +58,7 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
     const bubble = new Bubble();
     bubble.text = selection.text;
     bubble.initOptions();
+    bubble.direction = selection.orientation === 'vertical' ? 'v' : 'h';
     bubble.fillColor = 'rgba(255, 255, 255, 0)';
     bubble.shape = 'none';
 
@@ -132,40 +134,42 @@ function placeBubbleBySelection(
     (p0[1] + p1[1]) * 0.5,
   ];
   const boxWidth = Math.abs(p1[0] - p0[0]);
+  const boxHeight = Math.abs(p1[1] - p0[1]);
 
-  adjustBubbleFontSize(bubble, paperSize, boxWidth);
+  adjustBubbleFontSize(bubble, paperSize, boxWidth, boxHeight);
   bubble.setPhysicalCenter(paperSize, center);
   const size = bubble.calculateFitSize(paperSize);
   bubble.setPhysicalSize(paperSize, size);
   return true;
 }
 
-function adjustBubbleFontSize(bubble: Bubble, paperSize: Vector, boxWidth: number) {
-  if (boxWidth <= 0) { return; }
+function adjustBubbleFontSize(bubble: Bubble, paperSize: Vector, boxWidth: number, boxHeight: number) {
+  const limit = bubble.direction === 'h' ? boxHeight : boxWidth;
+  if (limit <= 0) { return; }
 
   const ctx = document.createElement('canvas').getContext('2d');
   if (!ctx) { return; }
 
-  const measureWidth = (fontSize: number) => {
-    const unmargin = fontSize * 0.15; // TextLiftのBOXはマージンなしなので、フォントサイズに応じて適当に補正
+  const measureExtent = (fontSize: number) => {
+    const unmargin = bubble.direction == 'v' ? fontSize * 0.15 : fontSize * 0.50; // TextLiftのBOXはマージンなしなので、フォントサイズに応じて適当に補正
     const baselineSkip = fontSize * 1.5 * (1.0 + bubble.lineSkip);
     const charSkip = fontSize * (1.0 + bubble.charSkip);
     ctx.font = `${bubble.fontStyle} ${bubble.fontWeight} ${fontSize}px '${bubble.fontFamily}'`;
     if (bubble.direction === 'v') {
       return measureVerticalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width - unmargin;
     }
-    return measureHorizontalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width - unmargin;
+    return measureHorizontalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).height - unmargin;
   };
 
   const baseFontSize = bubble.getPhysicalFontSize(paperSize);
   let low = 1;
-  let high = Math.max(boxWidth * 2, baseFontSize, 8);
+  let high = Math.max(limit * 2, baseFontSize, 8);
 
-  // 収まる幅だけを基準に最大フォントサイズを探索（TextLiftのBOXはマージンなし）
+  // 収まる寸法を基準に最大フォントサイズを探索（TextLiftのBOXはマージンなし）
   for (let i = 0; i < 16; i++) {
     const mid = (low + high) / 2;
-    const w = measureWidth(mid);
-    if (w <= boxWidth) {
+    const extent = measureExtent(mid);
+    if (extent <= limit) {
       low = mid;
     } else {
       high = mid;

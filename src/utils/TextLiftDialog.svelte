@@ -30,12 +30,15 @@
     drawHeight: number;
   };
 
+  type TextOrientation = TextMaskResponse['boxes'][number]['orientation'];
+
   type MaskLayer = {
     id: number;
     rawBox: { x0: number; y0: number; x1: number; y1: number };
     displayBox: { x: number; y: number; width: number; height: number };
     text?: string;
     enabled: boolean;
+    orientation: TextOrientation;
   };
 
   onMount(async () => {
@@ -132,6 +135,7 @@
       const actualY1 = Math.floor(box.box_2d.y1 * sourceHeight / 1000);
       const width = Math.max(1, actualX1 - actualX0);
       const height = Math.max(1, actualY1 - actualY0);
+      const orientation: TextOrientation = box.orientation ?? 'vertical';
 
       return {
         id: idx,
@@ -139,6 +143,7 @@
         displayBox: { x: actualX0, y: actualY0, width, height },
         text: box.text,
         enabled: true,
+        orientation,
       };
     }));
 
@@ -221,6 +226,7 @@
       enabled: layer.enabled,
       text: layer.text,
       box: layer.rawBox,
+      orientation: layer.orientation,
     }));
 
     const response: TextLiftDialogResult = {
