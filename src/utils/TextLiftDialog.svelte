@@ -20,6 +20,7 @@
   let isLoading = true;
   let errorMessage = '';
   let enabledCount = 0;
+  let lastResponse: TextMaskResponse | null = null;
 
   type DrawInfo = {
     offsetX: number;
@@ -102,6 +103,7 @@
 
     try {
       const response = await textMask({ dataUrl: imageSource.toDataURL() });
+      lastResponse = response;
       if (!response.boxes || response.boxes.length === 0) {
         errorMessage = $_('dialogs.textLift.empty');
         return;
@@ -123,6 +125,7 @@
     const sourceHeight = imageSource.height;
 
     const layers = await Promise.all(response.boxes.map(async (box, idx) => {
+      // API は 0-1000 正規化で返すのでここでピクセルに戻す
       const actualX0 = Math.floor(box.box_2d.x0 * sourceWidth / 1000);
       const actualY0 = Math.floor(box.box_2d.y0 * sourceHeight / 1000);
       const actualX1 = Math.floor(box.box_2d.x1 * sourceWidth / 1000);
@@ -132,7 +135,7 @@
 
       return {
         id: idx,
-        rawBox: box.box_2d,
+        rawBox: { x0: actualX0, y0: actualY0, x1: actualX1, y1: actualY1 },
         displayBox: { x: actualX0, y: actualY0, width, height },
         text: box.text,
         enabled: true,
@@ -211,6 +214,8 @@
   }
 
   function onSubmit() {
+    if (!lastResponse) return;
+
     const selections: TextLiftSelection[] = maskLayers.map(layer => ({
       id: layer.id,
       enabled: layer.enabled,
@@ -221,6 +226,7 @@
     const response: TextLiftDialogResult = {
       committed: true,
       selections,
+      response: lastResponse,
     };
 
     $modalStore[0].response?.(response);
@@ -251,6 +257,22 @@
   </header>
   <section class="p-4">
     <div class="dialog-body">
+      <div class="status-row">
+        <div class="pill">
+          {enabledCount}/{maskLayers.length || 0} {$_('dialogs.textLift.enabledLabel')}
+        </div>
+        <div class="status-text">
+          {#if errorMessage}
+            {errorMessage}
+          {:else if isLoading}
+            {$_('dialogs.textLift.loading')}
+          {:else if maskLayers.length === 0}
+            {$_('dialogs.textLift.empty')}
+          {:else}
+            {$_('dialogs.textLift.hint')}
+          {/if}
+        </div>
+      </div>
       <div class="canvas-pane">
         <div class="canvas-wrapper">
           <canvas
@@ -270,43 +292,16 @@
             <div class="loading-overlay">
               <span>{$_('dialogs.textLift.loading')}</span>
             </div>
+          {:else if errorMessage}
+            <div class="loading-overlay error">
+              <span>{errorMessage}</span>
+            </div>
+          {:else if maskLayers.length === 0}
+            <div class="loading-overlay subtle">
+              <span>{$_('dialogs.textLift.empty')}</span>
+            </div>
           {/if}
         </div>
-      </div>
-      <div class="list-pane">
-        <div class="list-header">
-          <h3>{$_('dialogs.textLift.listTitle')}</h3>
-        </div>
-        {#if errorMessage}
-          <div class="status-block error">{errorMessage}</div>
-        {:else if isLoading}
-          <div class="status-block subtle">{$_('dialogs.textLift.loading')}</div>
-        {:else if maskLayers.length === 0}
-          <div class="status-block subtle">{$_('dialogs.textLift.empty')}</div>
-        {:else}
-          <div class="mask-list">
-            {#each maskLayers as mask}
-              <button
-                type="button"
-                class={`mask-item ${mask.enabled ? 'enabled' : 'disabled'}`}
-                on:click={() => toggleMask(mask.id)}
-              >
-                <div class="mask-item-header">
-                  <span class="badge">#{mask.id + 1}</span>
-                  <span class="state">
-                    {mask.enabled ? $_('dialogs.textLift.enabledLabel') : $_('dialogs.textLift.disabledLabel')}
-                  </span>
-                </div>
-                {#if mask.text}
-                  <div class="mask-text">{mask.text}</div>
-                {/if}
-                <div class="mask-meta">
-                  {Math.round(mask.displayBox.width)} x {Math.round(mask.displayBox.height)}
-                </div>
-              </button>
-            {/each}
-          </div>
-        {/if}
       </div>
     </div>
   </section>
@@ -357,20 +352,24 @@
   }
 
   .dialog-body {
-    display: grid;
-    grid-template-columns: 1.6fr 1fr;
-    gap: 16px;
-    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .canvas-pane {
-    min-height: 620px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .canvas-wrapper {
     position: relative;
-    width: 100%;
-    height: 620px;
+    width: min(100%, 1100px);
+    aspect-ratio: 4 / 3;
+    max-height: 80vh;
+    min-height: 520px;
+    margin: 0 auto;
     background: radial-gradient(circle at 20% 20%, rgba(var(--color-primary-200), 0.2), transparent 40%),
       #0f172a;
     border: 1px solid rgb(var(--color-surface-300));
@@ -402,96 +401,23 @@
     letter-spacing: 0.5px;
   }
 
-  .list-pane {
+  .status-row {
     display: flex;
-    flex-direction: column;
     gap: 12px;
-    min-width: 260px;
-  }
-
-  .list-header h3 {
-    font-family: '源暎エムゴ';
-    font-size: 18px;
-    margin: 0;
-    color: rgb(var(--color-primary-500));
-  }
-
-  .mask-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    max-height: 600px;
-    overflow: auto;
-    padding-right: 4px;
-  }
-
-  .mask-item {
-    width: 100%;
-    text-align: left;
-    border-radius: 10px;
-    border: 1px solid rgb(var(--color-surface-300));
-    padding: 10px 12px;
-    background: rgba(var(--color-surface-50), 0.6);
-    transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
-  }
-
-  .mask-item.enabled {
-    border-color: rgb(var(--color-primary-400));
-    background: rgba(var(--color-primary-50), 0.55);
-  }
-
-  .mask-item.disabled {
-    opacity: 0.7;
-    border-style: dashed;
-  }
-
-  .mask-item:hover {
-    transform: translateY(-1px);
-  }
-
-  .mask-item-header {
-    display: flex;
     align-items: center;
-    gap: 8px;
-    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
-  .badge {
-    font-weight: 700;
-    color: rgb(var(--color-primary-600));
+  .status-text {
+    color: rgb(var(--color-surface-600));
+    font-size: 14px;
   }
 
-  .state {
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 999px;
-    background: rgba(var(--color-surface-500), 0.1);
-    color: rgb(var(--color-surface-700));
+  .loading-overlay.error {
+    background: rgba(var(--color-error-700), 0.65);
   }
 
-  .mask-text {
-    margin: 6px 0 2px 0;
-    font-family: '源暎アンチック';
-    color: rgb(var(--color-surface-800));
-    word-break: break-word;
-  }
-
-  .mask-meta {
-    font-size: 12px;
-    color: rgb(var(--color-surface-500));
-  }
-
-  .status-block {
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px dashed rgb(var(--color-surface-300));
-    color: rgb(var(--color-surface-700));
-    background: rgba(var(--color-surface-100), 0.6);
-  }
-
-  .status-block.error {
-    border-color: rgba(var(--color-error-500), 0.6);
-    color: rgb(var(--color-error-700));
-    background: rgba(var(--color-error-50), 0.5);
+  .loading-overlay.subtle {
+    background: rgba(15, 23, 42, 0.25);
   }
 </style>

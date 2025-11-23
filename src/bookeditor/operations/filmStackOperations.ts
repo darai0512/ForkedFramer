@@ -18,6 +18,7 @@ import { angleEditFilm } from "../../utils/angleEditFilm";
 import { mainBook } from '../workspaceStore'; // デバッグ用
 import { textLiftFilm } from "../../utils/textLiftFilm";
 import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
+import type { FrameElement } from "../../lib/layeredCanvas/dataModels/frameTree";
 
 // 共通インターフェース - フィルムオペレーション対象
 export interface FilmOperationTarget {
@@ -231,10 +232,10 @@ export async function handleSendToMaterialCollectionCommand<T extends FilmOperat
   });
 }
 
-export async function handleTextLiftCommand<T extends FilmOperationTarget>(
+export async function handleTextLiftCommand<T extends FilmOperationTarget & { frame?: FrameElement }>(
   target: T
 ): Promise<void> {
-  const result = await textLiftFilm(target.commandTargetFilm!);
+  const result = await textLiftFilm(target.page, target.commandTargetFilm!, target.frame);
   if (result?.committed) {
     commit(null);
   }
