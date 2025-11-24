@@ -14,7 +14,7 @@
   const RECOGNITION_COST = 0;
   const ERASE_COST = 0;
   // デバッグ用キャッシュ。無効化したいときは false にするかこの行をコメントアウトする
-  const ENABLE_TEXTLIFT_CACHE = false;
+  const ENABLE_TEXTLIFT_CACHE = true;
   const CACHE_KEY_PREFIX = 'textlift-cache:';
 
   let title = '';
@@ -29,7 +29,6 @@
   let recognitionState: RecognitionState = 'idle';
   let errorMessage = '';
   let enabledCount = 0;
-  let lastResponse: TextMaskResponse | null = null;
 
   type DrawInfo = {
     offsetX: number;
@@ -139,7 +138,6 @@
     recognitionState = 'loading';
     errorMessage = '';
     maskLayers = [];
-    lastResponse = null;
     redrawOverlay();
 
     try {
@@ -154,7 +152,6 @@
         saveCachedResponse(imageSource, response);
       }
 
-      lastResponse = response;
       if (!response.boxes || response.boxes.length === 0) {
         recognitionState = 'empty';
         return;
@@ -270,7 +267,7 @@
   }
 
   function onSubmit() {
-    if (!lastResponse) return;
+    if (maskLayers.length === 0) return;
 
     const selections: TextLiftSelection[] = maskLayers.map(layer => ({
       id: layer.id,
@@ -283,7 +280,6 @@
     const response: TextLiftDialogResult = {
       committed: true,
       selections,
-      response: lastResponse,
       eraseFromSource: $TextLiftDialog_applyEraserStore,
     };
 

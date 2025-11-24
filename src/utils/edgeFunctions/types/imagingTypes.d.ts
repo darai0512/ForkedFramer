@@ -220,3 +220,22 @@ export const TextMaskResponseSchema = z.object({
   }))
 });
 export type TextMaskResponse = z.infer<typeof TextMaskResponseSchema>;
+
+export const TextEraserRequestSchema = z.object({
+  imageDataUrl: z.string(),
+  boxes:z.array(z.object({
+    box_2d: z.object({
+      x0: z.number(),
+      y0: z.number(),
+      x1: z.number(),
+      y1: z.number(),
+    }),
+  }))
+});
+export type TextEraserRequest = z.infer<typeof TextEraserRequestSchema>;
+
+export const TextEraserResponseSchema = z.object({
+  requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
+});
+export type TextEraserResponse = z.infer<typeof TextEraserResponseSchema>;

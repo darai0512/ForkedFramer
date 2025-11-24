@@ -12,6 +12,7 @@ import {
   type VisionRequest, VisionRequestSchema, VisionResponseSchema,
   type InPaintRequest, InPaintRequestSchema, InPaintResponseSchema,
   type TextMaskRequest, TextMaskRequestSchema, TextMaskResponseSchema,
+  type TextEraserRequest, TextEraserRequestSchema, TextEraserResponseSchema,
 } from "./utils/edgeFunctions/types/imagingTypes.d";
 import { EraseFileResponseSchema, GetDownloadUrlResponseSchema, GetUploadUrlResponseSchema } from "$protocolTypes/cloudFileTypes.d";
 import { type ListMaterialsRequest, ListMaterialsRequestSchema, ListMaterialsResponseSchema, type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes.d";
@@ -106,6 +107,10 @@ export async function upscale(req: UpscaleRequest) {
 
 export async function textMask(req: TextMaskRequest) {
   return await invoke("charged/imaging/textmask", req, TextMaskRequestSchema, TextMaskResponseSchema);
+}
+
+export async function textEraser(req: TextEraserRequest) {
+  return await invoke("charged/imaging/texteraser", req, TextEraserRequestSchema, TextEraserResponseSchema);
 }
 
 export async function adviseTheme(req: NotebookRequest) {

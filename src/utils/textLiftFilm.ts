@@ -2,20 +2,20 @@ import { get } from 'svelte/store';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
-import { eraser, pollMediaStatus } from "../supabase";
 import { analyticsEvent } from "./analyticsEvent";
 import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
 import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
 import type { Page } from '../lib/book/book';
-import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
+import type { TextEraserRequest, TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
 import { calculatePhysicalLayout, findLayoutOf, FrameElement } from '../lib/layeredCanvas/dataModels/frameTree';
 import { trapezoidBoundingRect } from '../lib/layeredCanvas/tools/geometry/trapezoid';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 import { measureHorizontalText, measureVerticalText } from '../lib/layeredCanvas/tools/draw/drawText';
+import { loading } from './loadingStore';
+import { textEraser, pollMediaStatus } from '../supabase';
 import { saveRequest } from '../filemanager/warehouse';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore';
-import { loading } from './loadingStore';
 
 export type TextLiftSelection = {
   id: number;
@@ -28,11 +28,12 @@ export type TextLiftSelection = {
 export type TextLiftDialogResult = {
   committed: boolean;
   selections: TextLiftSelection[];
-  response: TextMaskResponse;
   eraseFromSource: boolean;
 };
 
 export type TextLiftResult = (TextLiftDialogResult & { erasedFilm?: Film }) | null;
+
+type MaskRect = { x: number; y: number; w: number; h: number };
 
 export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement): Promise<TextLiftResult> {
   if (get(onlineStatus) !== "signed-in") {
@@ -54,21 +55,22 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
 
   // チェックボックスがオンの場合は消しゴム処理も行う
   const shouldEraseSource = dialogResult.eraseFromSource ?? true;
-  const maskCanvas = shouldEraseSource ? createMaskCanvasFromSelections(sourceCanvas, dialogResult.selections) : null;
+  const maskRects = shouldEraseSource ? buildMaskRects(sourceCanvas, dialogResult.selections) : [];
+  const eraserBoxes = shouldEraseSource ? buildTextEraserBoxes(maskRects) : [];
+
   let erasedFilm: Film | undefined;
-  if (maskCanvas) {
+  if (eraserBoxes.length) {
     loading.set(true);
     try {
-      const maskDataUrl = maskCanvas.toDataURL("image/png");
       const imageDataUrl = sourceCanvas.toDataURL("image/png");
-      const { requestId, model } = await eraser({ maskDataUrl, imageDataUrl });
-      await saveRequest(get(mainBookFileSystem)!, "image", "eraser", requestId, model);
-
-      const { mediaResources } = await pollMediaStatus({ mediaType: "image", mode: "eraser", requestId, model });
+      const { requestId, model } = await textEraser({ imageDataUrl, boxes: eraserBoxes });
+      await saveRequest(get(mainBookFileSystem)!, 'image', 'text-eraser', requestId, model);
+      const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'text-eraser', requestId, model });
+      const resultCanvas = mediaResources[0] as HTMLCanvasElement;
       erasedFilm = film.clone();
-      erasedFilm.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
+      erasedFilm.media = new ImageMedia(resultCanvas);
     } catch (error) {
-      console.error('textLift eraser failed', error);
+      console.error('textLift text-eraser failed', error);
       toastStore.trigger({ message: `文字消去に失敗しました`, timeout: 3000 });
     } finally {
       loading.set(false);
@@ -79,10 +81,7 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
   const paperSize = page.paperSize;
   const enabledSelections = dialogResult.selections
     .filter(s => s.enabled)
-    .map(sel => {
-      const text = sel.text ?? dialogResult.response.boxes[sel.id]?.text;
-      return { ...sel, text: text?.trim() ?? '' };
-    })
+    .map(sel => ({ ...sel, text: sel.text?.trim() ?? '' }))
     .filter(s => s.text.length > 0);
 
   enabledSelections.forEach((selection, idx) => {
@@ -111,19 +110,13 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
   return { ...dialogResult, erasedFilm };
 }
 
-function createMaskCanvasFromSelections(sourceCanvas: HTMLCanvasElement, selections: TextLiftSelection[]): HTMLCanvasElement | null {
+function buildMaskRects(sourceCanvas: HTMLCanvasElement, selections: TextLiftSelection[]): MaskRect[] {
   const enabled = selections.filter(sel => sel.enabled);
-  if (!enabled.length) { return null; }
+  if (!enabled.length) { return []; }
 
-  const mask = document.createElement('canvas');
-  mask.width = sourceCanvas.width;
-  mask.height = sourceCanvas.height;
-  const ctx = mask.getContext('2d');
-  if (!ctx) { return null; }
-
-  ctx.fillStyle = 'black';
-  ctx.fillRect(0, 0, mask.width, mask.height);
-  ctx.fillStyle = 'white';
+  const rects: MaskRect[] = [];
+  const maskWidth = sourceCanvas.width;
+  const maskHeight = sourceCanvas.height;
 
   for (const sel of enabled) {
     const rawWidth = Math.max(1, Math.abs(sel.box.x1 - sel.box.x0));
@@ -135,26 +128,24 @@ function createMaskCanvasFromSelections(sourceCanvas: HTMLCanvasElement, selecti
 
     const x = Math.max(0, Math.floor(centerX - expandWidth * 0.5));
     const y = Math.max(0, Math.floor(centerY - expandHeight * 0.5));
-    const w = Math.max(1, Math.min(mask.width - x, Math.ceil(expandWidth)));
-    const h = Math.max(1, Math.min(mask.height - y, Math.ceil(expandHeight)));
-    const radius = Math.max(2, Math.min(w, h) * 0.12);
+    const w = Math.max(1, Math.min(maskWidth - x, Math.ceil(expandWidth)));
+    const h = Math.max(1, Math.min(maskHeight - y, Math.ceil(expandHeight)));
 
-    drawRoundedRect(ctx, x, y, w, h, radius);
+    rects.push({ x, y, w, h });
   }
 
-  return mask;
+  return rects;
 }
 
-function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  const radius = Math.min(r, w * 0.5, h * 0.5);
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + w, y, x + w, y + h, radius);
-  ctx.arcTo(x + w, y + h, x, y + h, radius);
-  ctx.arcTo(x, y + h, x, y, radius);
-  ctx.arcTo(x, y, x + w, y, radius);
-  ctx.closePath();
-  ctx.fill();
+function buildTextEraserBoxes(rects: MaskRect[]): TextEraserRequest['boxes'] {
+  return rects.map(({ x, y, w, h }) => ({
+    box_2d: {
+      x0: x,
+      y0: y,
+      x1: x + w,
+      y1: y + h,
+    },
+  }));
 }
 
 function locateFrameLayout(page: Page, frame: FrameElement) {
