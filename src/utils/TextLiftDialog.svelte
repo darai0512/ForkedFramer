@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
   import { textMask } from '../supabase';
+  import { TextLiftDialog_applyEraserStore } from '../materialBucket/tweakUiStore';
   import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
   import type { TextLiftDialogResult, TextLiftSelection } from './textLiftFilm';
   import FeathralCost from './FeathralCost.svelte';
@@ -12,6 +13,9 @@
   const CANVAS_HEIGHT = 600;
   const RECOGNITION_COST = 0;
   const ERASE_COST = 0;
+  // デバッグ用キャッシュ。無効化したいときは false にするかこの行をコメントアウトする
+  const ENABLE_TEXTLIFT_CACHE = false;
+  const CACHE_KEY_PREFIX = 'textlift-cache:';
 
   let title = '';
   let imageSource: HTMLCanvasElement | null = null;
@@ -26,7 +30,6 @@
   let errorMessage = '';
   let enabledCount = 0;
   let lastResponse: TextMaskResponse | null = null;
-  let eraseFromSource = true;
 
   type DrawInfo = {
     offsetX: number;
@@ -101,6 +104,35 @@
     ctx.drawImage(imageSource, drawInfo.offsetX, drawInfo.offsetY, drawInfo.drawWidth, drawInfo.drawHeight);
   }
 
+  function getCacheKey(canvas: HTMLCanvasElement) {
+    return `${CACHE_KEY_PREFIX}${canvas.toDataURL('image/png')}`;
+  }
+
+  function loadCachedResponse(canvas: HTMLCanvasElement): TextMaskResponse | null {
+    if (!ENABLE_TEXTLIFT_CACHE) return null;
+    if (typeof sessionStorage === 'undefined') return null;
+    try {
+      const raw = sessionStorage.getItem(getCacheKey(canvas));
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as TextMaskResponse;
+      console.log('textLift cache hit');
+      return parsed;
+    } catch (error) {
+      console.warn('textLift cache read failed', error);
+      return null;
+    }
+  }
+
+  function saveCachedResponse(canvas: HTMLCanvasElement, response: TextMaskResponse) {
+    if (!ENABLE_TEXTLIFT_CACHE) return;
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+      sessionStorage.setItem(getCacheKey(canvas), JSON.stringify(response));
+    } catch (error) {
+      console.warn('textLift cache write failed', error);
+    }
+  }
+
   async function fetchMasks() {
     if (!imageSource || recognitionState === 'loading') return;
 
@@ -111,7 +143,17 @@
     redrawOverlay();
 
     try {
-      const response = await textMask({ dataUrl: imageSource.toDataURL() });
+      const cachedResponse = loadCachedResponse(imageSource);
+      let response: TextMaskResponse;
+
+      if (cachedResponse) {
+        response = cachedResponse;
+      } else {
+        console.log('Sending image for textMask...', imageSource.width, imageSource.height);
+        response = await textMask({ dataUrl: imageSource.toDataURL() });
+        saveCachedResponse(imageSource, response);
+      }
+
       lastResponse = response;
       if (!response.boxes || response.boxes.length === 0) {
         recognitionState = 'empty';
@@ -130,15 +172,13 @@
 
   async function prepareMaskLayers(response: TextMaskResponse): Promise<MaskLayer[]> {
     if (!imageSource) return [];
-    const sourceWidth = imageSource.width;
-    const sourceHeight = imageSource.height;
 
     const layers = await Promise.all(response.boxes.map(async (box, idx) => {
-      // API は 0-1000 正規化で返すのでここでピクセルに戻す
-      const actualX0 = Math.floor(box.box_2d.x0 * sourceWidth / 1000);
-      const actualY0 = Math.floor(box.box_2d.y0 * sourceHeight / 1000);
-      const actualX1 = Math.floor(box.box_2d.x1 * sourceWidth / 1000);
-      const actualY1 = Math.floor(box.box_2d.y1 * sourceHeight / 1000);
+      // API は元画像のピクセル座標を返すのでそのまま扱う
+      const actualX0 = Math.floor(box.box_2d.x0);
+      const actualY0 = Math.floor(box.box_2d.y0);
+      const actualX1 = Math.floor(box.box_2d.x1);
+      const actualY1 = Math.floor(box.box_2d.y1);
       const width = Math.max(1, actualX1 - actualX0);
       const height = Math.max(1, actualY1 - actualY0);
       const orientation: TextOrientation = box.orientation ?? 'vertical';
@@ -244,7 +284,7 @@
       committed: true,
       selections,
       response: lastResponse,
-      eraseFromSource,
+      eraseFromSource: $TextLiftDialog_applyEraserStore,
     };
 
     $modalStore[0].response?.(response);
@@ -338,9 +378,9 @@
         </div>
         <div class="option-row">
           <label class="option-checkbox">
-            <input type="checkbox" bind:checked={eraseFromSource}>
-            <span>ソース画像から指定した文字を削除する</span>
-            <div class="cost-chip" class:disabled={!eraseFromSource}>
+            <input type="checkbox" bind:checked={$TextLiftDialog_applyEraserStore}>
+            <span>{$_('dialogs.textLift.eraseOption')}</span>
+            <div class="cost-chip" class:disabled={!$TextLiftDialog_applyEraserStore}>
               <FeathralCost cost={ERASE_COST} showsLabel={false} inline={true}/>
             </div>
           </label>

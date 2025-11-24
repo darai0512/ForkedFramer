@@ -473,7 +473,8 @@
       "enabledLabel": "有効",
       "disabledLabel": "無効",
       "noImage": "画像が読み込めませんでした",
-      "notStarted": "画像をクリックしてテキスト認識を開始してください"
+      "notStarted": "画像をクリックしてテキスト認識を開始してください",
+      "eraseOption": "ソース画像で選択された文字を消しゴム"
     },
     "angleEdit": {
       "model": "モデル",

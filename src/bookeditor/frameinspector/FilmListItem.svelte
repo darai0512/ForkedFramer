@@ -459,11 +459,11 @@
           <button class="transformix-item" use:toolTip={$_('frame.actions.sendToMaterialCollection')} on:click={onSendToMaterialCollection}>
             <img draggable={false} src={stampIcon} alt={$_('frame.actions.sendToMaterialCollection')}/>
           </button>
-          <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
-            <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
-          </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
             <img draggable={false} src={textLiftIcon} alt={$_('frame.actions.textlift')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
+            <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
           </button>
         </div>
       </div>

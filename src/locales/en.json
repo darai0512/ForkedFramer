@@ -471,7 +471,8 @@
       "enabledLabel": "Enabled",
       "disabledLabel": "Disabled",
       "noImage": "Image source is missing",
-      "notStarted": "Click the image to start text recognition"
+      "notStarted": "Click the image to start text recognition",
+      "eraseOption": "Erase selected text on the source image"
     },
     "angleEdit": {
       "model": "Model",

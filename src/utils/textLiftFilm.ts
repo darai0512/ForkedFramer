@@ -52,6 +52,7 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
     return null;
   }
 
+  // チェックボックスがオンの場合は消しゴム処理も行う
   const shouldEraseSource = dialogResult.eraseFromSource ?? true;
   const maskCanvas = shouldEraseSource ? createMaskCanvasFromSelections(sourceCanvas, dialogResult.selections) : null;
   let erasedFilm: Film | undefined;
@@ -74,6 +75,7 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
     }
   }
 
+  // フキダシの配置
   const paperSize = page.paperSize;
   const enabledSelections = dialogResult.selections
     .filter(s => s.enabled)
@@ -208,10 +210,12 @@ function placeBubbleBySelection(
     (p0[0] + p1[0]) * 0.5,
     (p0[1] + p1[1]) * 0.5,
   ];
+  console.log('placeBubbleBySelection', selection, p0, p1, center);
   const boxWidth = Math.abs(p1[0] - p0[0]);
   const boxHeight = Math.abs(p1[1] - p0[1]);
-
-  adjustBubbleFontSize(bubble, paperSize, boxWidth, boxHeight);
+  // フィルムの拡大率でボックス寸法が肥大しないように、推定用の制限は n_scale を除外しておく
+  const scale = Math.max(1e-6, Math.abs(film.n_scale));
+  adjustBubbleFontSize(bubble, paperSize, boxWidth / scale, boxHeight / scale);
   bubble.setPhysicalCenter(paperSize, center);
   const size = bubble.calculateFitSize(paperSize);
   bubble.setPhysicalSize(paperSize, size);
