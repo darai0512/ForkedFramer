@@ -182,11 +182,13 @@ export type OnlineProfile = {
 
 export type OnlineStatus = "unknown" | "signed-in" | "signed-out";
 export type SubscriptionPlan = "free" | "basic" | "basic/en" | "premium";
+export type FatalStorageError = "none" | "indexeddb-unavailable";
 
 export const updateToken: Writable<boolean> = writable(false);
 export const onlineStatus: Writable<OnlineStatus> = writable("unknown");
 export const onlineAccount: Writable<OnlineAccount | null> = writable(null);
 export const onlineProfile: Writable<OnlineProfile | null> = writable(null);
+export const fatalStorageError: Writable<FatalStorageError> = writable("none");
 
 async function subscribeToWallet(uid: string) {
   const jwt = await supabase.auth.getSession();

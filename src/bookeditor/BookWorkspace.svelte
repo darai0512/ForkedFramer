@@ -2,7 +2,6 @@
   import { setLayerRefs, commit } from './operations/commitOperations';
   import { BookWorkspaceOperators } from './BookWorkspaceOperators';
   import { onDestroy, onMount } from 'svelte';
-  import { get } from 'svelte/store';
   import { type LayeredCanvas, Viewport } from '../lib/layeredCanvas/system/layeredCanvas';
   import { PaperRendererLayer } from '../lib/layeredCanvas/layers/paperRendererLayer';
   import { setBubbleCommandTools } from './bubbleinspector/bubbleInspectorStore';
@@ -19,6 +18,7 @@
   import { DefaultBubbleSlot } from '../lib/layeredCanvas/layers/bubbleLayer';
   import { currentLocale, type Locale } from '../stores/i18n';
   import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
+  import { fatalStorageError } from '../utils/accountStore';
 
   let canvas: HTMLCanvasElement;
   let painter: Painter;
@@ -180,6 +180,20 @@
 <div class="main-paper-container">
   <AutoSizeCanvas bind:canvas on:resize={onResizeCanvas}>
   </AutoSizeCanvas>
+
+  <!-- fatalErrorStoreでアウトのとき、ここにオーバーレイでエラーが表示される -->
+  {#if $fatalStorageError === 'indexeddb-unavailable'}
+    <div class="absolute top-0 left-0 w-full h-full bg-white bg-opacity-90 flex flex-col items-center justify-center p-4">
+      <h2 class="text-2xl font-bold mb-4">致命的なエラーが発生しました</h2>
+      <p class="mb-2">IndexedDBを利用できないため、アプリケーションを正常に動作させることができません。</p>
+      <p class="mb-2">以下の対処法をお試しください（要リロード）：</p>
+      <ul class="list-disc list-inside mb-4">
+        <li>ブラウザの設定でIndexedDBが有効になっていることを確認してください。</li>
+        <li>プライベートブラウジングモードを使用している場合は、通常のブラウジングモードで再度お試しください。</li>
+      </ul>
+      <p>問題が解決しない場合は、<a href="mailto:support@example.com">naoyuki.hirayama@gmail.com</a>までお問い合わせください。</p>
+    </div>
+  {/if}
 </div>
 
 <Painter bind:this={painter} layeredCanvas={layeredCanvas} arrayLayer={arrayLayer} />
