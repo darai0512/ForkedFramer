@@ -14,7 +14,7 @@
   const RECOGNITION_COST = 0;
   const ERASE_COST = 0;
   // デバッグ用キャッシュ。無効化したいときは false にするかこの行をコメントアウトする
-  const ENABLE_TEXTLIFT_CACHE = true;
+  const ENABLE_TEXTLIFT_CACHE = false;
   const CACHE_KEY_PREFIX = 'textlift-cache:';
 
   let title = '';
