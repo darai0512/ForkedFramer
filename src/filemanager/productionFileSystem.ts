@@ -22,14 +22,17 @@ export async function buildFileSystem(): Promise<FileSystem> {
   
   try {
     const fs = new IndexedDBFileSystem(new BrowserMediaConverter());
+    console.log("IndexedDBFileSystem initialize:1");
     await fs.open();
     // throw new Error("Not implemented");
 
+    console.log("IndexedDBFileSystem initialize:2");
     await makeSpecialFolders(fs);
     // const tree = await folderTree(fs);
     // console.log(tree);
     console.log(fs);
 
+    console.log("IndexedDBFileSystem の初期化に成功しました。");
     return fs;
   } catch (e) {
     console.error("IndexedDBFileSystem の初期化に失敗しました。", e);
