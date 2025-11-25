@@ -7,11 +7,10 @@ import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
 import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
 import type { Page } from '../lib/book/book';
-import type { TextEraserRequest, TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
+import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
 import { calculatePhysicalLayout, findLayoutOf, FrameElement } from '../lib/layeredCanvas/dataModels/frameTree';
 import { trapezoidBoundingRect } from '../lib/layeredCanvas/tools/geometry/trapezoid';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
-import { measureHorizontalText, measureVerticalText } from '../lib/layeredCanvas/tools/draw/drawText';
 import { loading } from './loadingStore';
 import { textEraser, pollMediaStatus } from '../supabase';
 import { saveRequest } from '../filemanager/warehouse';
@@ -23,6 +22,7 @@ export type TextLiftSelection = {
   text?: string;
   box: { x0: number; y0: number; x1: number; y1: number };
   orientation: TextMaskResponse['boxes'][number]['orientation'];
+  charHeight: number;
 };
 
 export type TextLiftDialogResult = {
@@ -56,19 +56,21 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
   // チェックボックスがオンの場合は消しゴム処理も行う
   const shouldEraseSource = dialogResult.eraseFromSource ?? true;
   const maskRects = shouldEraseSource ? buildMaskRects(sourceCanvas, dialogResult.selections) : [];
-  const eraserBoxes = shouldEraseSource ? buildTextEraserBoxes(maskRects) : [];
 
   let erasedFilm: Film | undefined;
-  if (eraserBoxes.length) {
+  if (maskRects.length) {
     loading.set(true);
     try {
       const imageDataUrl = sourceCanvas.toDataURL("image/png");
-      const { requestId, model } = await textEraser({ imageDataUrl, boxes: eraserBoxes });
+      // 全文字消去済み画像を取得
+      const { requestId, model } = await textEraser({ imageDataUrl });
       await saveRequest(get(mainBookFileSystem)!, 'image', 'text-eraser', requestId, model);
       const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'text-eraser', requestId, model });
-      const resultCanvas = mediaResources[0] as HTMLCanvasElement;
+      const fullyErasedCanvas = mediaResources[0] as HTMLCanvasElement;
+      // 選択された領域だけ消去済み画像から元画像にコピーした合成画像を作成
+      const compositeCanvas = compositeErasedRegions(sourceCanvas, fullyErasedCanvas, maskRects);
       erasedFilm = film.clone();
-      erasedFilm.media = new ImageMedia(resultCanvas);
+      erasedFilm.media = new ImageMedia(compositeCanvas);
     } catch (error) {
       console.error('textLift text-eraser failed', error);
       toastStore.trigger({ message: `文字消去に失敗しました`, timeout: 3000 });
@@ -137,15 +139,32 @@ function buildMaskRects(sourceCanvas: HTMLCanvasElement, selections: TextLiftSel
   return rects;
 }
 
-function buildTextEraserBoxes(rects: MaskRect[]): TextEraserRequest['boxes'] {
-  return rects.map(({ x, y, w, h }) => ({
-    box_2d: {
-      x0: x,
-      y0: y,
-      x1: x + w,
-      y1: y + h,
-    },
-  }));
+/**
+ * 元画像の上に、指定領域だけ消去済み画像からコピーした合成画像を作成する
+ */
+function compositeErasedRegions(
+  originalCanvas: HTMLCanvasElement,
+  erasedCanvas: HTMLCanvasElement,
+  maskRects: MaskRect[]
+): HTMLCanvasElement {
+  const resultCanvas = document.createElement('canvas');
+  resultCanvas.width = originalCanvas.width;
+  resultCanvas.height = originalCanvas.height;
+  const ctx = resultCanvas.getContext('2d')!;
+
+  // まず元画像を描画
+  ctx.drawImage(originalCanvas, 0, 0);
+
+  // 指定領域だけ消去済み画像からコピー
+  for (const rect of maskRects) {
+    ctx.drawImage(
+      erasedCanvas,
+      rect.x, rect.y, rect.w, rect.h,  // source
+      rect.x, rect.y, rect.w, rect.h   // destination
+    );
+  }
+
+  return resultCanvas;
 }
 
 function locateFrameLayout(page: Page, frame: FrameElement) {
@@ -202,49 +221,13 @@ function placeBubbleBySelection(
     (p0[1] + p1[1]) * 0.5,
   ];
   console.log('placeBubbleBySelection', selection, p0, p1, center);
-  const boxWidth = Math.abs(p1[0] - p0[0]);
-  const boxHeight = Math.abs(p1[1] - p0[1]);
-  // フィルムの拡大率でボックス寸法が肥大しないように、推定用の制限は n_scale を除外しておく
-  const scale = Math.max(1e-6, Math.abs(film.n_scale));
-  adjustBubbleFontSize(bubble, paperSize, boxWidth / scale, boxHeight / scale);
+
+  // charHeightをページ座標系に変換（フィルムのスケールを適用）
+  const scale = Math.max(1e-6, Math.abs(film.n_scale) * 0.8); // 0.8はヒューリスティック
+  const physicalFontSize = selection.charHeight * scale;
+  bubble.setPhysicalFontSize(paperSize, physicalFontSize);
   bubble.setPhysicalCenter(paperSize, center);
   const size = bubble.calculateFitSize(paperSize);
   bubble.setPhysicalSize(paperSize, size);
   return true;
-}
-
-function adjustBubbleFontSize(bubble: Bubble, paperSize: Vector, boxWidth: number, boxHeight: number) {
-  const limit = bubble.direction === 'h' ? boxHeight : boxWidth;
-  if (limit <= 0) { return; }
-
-  const ctx = document.createElement('canvas').getContext('2d');
-  if (!ctx) { return; }
-
-  const measureExtent = (fontSize: number) => {
-    const unmargin = bubble.direction == 'v' ? fontSize * 0.15 : fontSize * 0.50; // TextLiftのBOXはマージンなしなので、フォントサイズに応じて適当に補正
-    const baselineSkip = fontSize * 1.5 * (1.0 + bubble.lineSkip);
-    const charSkip = fontSize * (1.0 + bubble.charSkip);
-    ctx.font = `${bubble.fontStyle} ${bubble.fontWeight} ${fontSize}px '${bubble.fontFamily}'`;
-    if (bubble.direction === 'v') {
-      return measureVerticalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).width - unmargin;
-    }
-    return measureHorizontalText(ctx, Infinity, bubble.text, baselineSkip, charSkip, bubble.autoNewline).height - unmargin;
-  };
-
-  const baseFontSize = bubble.getPhysicalFontSize(paperSize);
-  let low = 1;
-  let high = Math.max(limit * 2, baseFontSize, 8);
-
-  // 収まる寸法を基準に最大フォントサイズを探索（TextLiftのBOXはマージンなし）
-  for (let i = 0; i < 16; i++) {
-    const mid = (low + high) / 2;
-    const extent = measureExtent(mid);
-    if (extent <= limit) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  bubble.setPhysicalFontSize(paperSize, low);
 }

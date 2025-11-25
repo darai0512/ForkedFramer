@@ -46,6 +46,7 @@
     displayBox: { x: number; y: number; width: number; height: number };
     text?: string;
     enabled: boolean;
+    charHeight: number;
     orientation: TextOrientation;
   };
 
@@ -186,6 +187,7 @@
         displayBox: { x: actualX0, y: actualY0, width, height },
         text: box.text,
         enabled: true,
+        charHeight: box.char_height,
         orientation,
       };
     }));
@@ -275,6 +277,7 @@
       text: layer.text,
       box: layer.rawBox,
       orientation: layer.orientation,
+      charHeight: layer.charHeight,
     }));
 
     const response: TextLiftDialogResult = {

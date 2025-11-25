@@ -216,6 +216,7 @@ export const TextMaskResponseSchema = z.object({
       y1: z.number(),
     }),
     text: z.string(),
+    char_height: z.number(),
     orientation: z.enum(["horizontal", "vertical"]),
   }))
 });
@@ -223,14 +224,6 @@ export type TextMaskResponse = z.infer<typeof TextMaskResponseSchema>;
 
 export const TextEraserRequestSchema = z.object({
   imageDataUrl: z.string(),
-  boxes:z.array(z.object({
-    box_2d: z.object({
-      x0: z.number(),
-      y0: z.number(),
-      x1: z.number(),
-      y1: z.number(),
-    }),
-  }))
 });
 export type TextEraserRequest = z.infer<typeof TextEraserRequestSchema>;
 
