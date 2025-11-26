@@ -6,7 +6,7 @@ import { _ } from 'svelte-i18n';
 import { image2Video, pollMediaStatus } from '../supabase';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { saveRequest } from '../filemanager/warehouse';
-import { resizeCanvasIfNeeded } from '../lib/layeredCanvas/tools/imageUtil';
+import { fitCanvasToRange } from '../lib/layeredCanvas/tools/imageUtil';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import type { MediaItem, TimelineItem, MessageItem } from './timelineTypes';
 import type { ImagingMode, ImageToVideoModel, ImageToVideoRequest } from '$protocolTypes/imagingTypes';
@@ -276,7 +276,7 @@ export function createGenerationActions(deps: GenerationDeps) {
         return;
       }
 
-      const resizedCanvas = resizeCanvasIfNeeded(baseMedia.drawSourceCanvas, DEFAULT_VIDEO_SOURCE_MAX);
+      const resizedCanvas = fitCanvasToRange(baseMedia.drawSourceCanvas, { max: DEFAULT_VIDEO_SOURCE_MAX });
       const model = get(deps.videoModelStore);
       const style = deps.getApplyStyle() ? deps.getStyle() : '';
       const fullPrompt = style ? `${style}\n${prompt}` : prompt;

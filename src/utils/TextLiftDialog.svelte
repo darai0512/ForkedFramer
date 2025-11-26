@@ -8,6 +8,7 @@
   import type { TextLiftDialogResult, TextLiftSelection } from './textLiftFilm';
   import FeathralCost from './FeathralCost.svelte';
   import textLiftIcon from '../assets/filmlist/textlift.webp';
+  import { fitCanvasToRange } from '../lib/layeredCanvas/tools/imageUtil';
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 600;
@@ -144,13 +145,23 @@
     try {
       const cachedResponse = loadCachedResponse(imageSource);
       let response: TextMaskResponse;
+      let coordScale = 1; // APIに送った画像から元画像への座標スケール係数
 
       if (cachedResponse) {
         response = cachedResponse;
       } else {
-        console.log('Sending image for textMask...', imageSource.width, imageSource.height);
-        response = await textMask({ dataUrl: imageSource.toDataURL() });
-        saveCachedResponse(imageSource, response);
+        // textMask APIは長辺が512以上1536以下である必要があるためリサイズ
+        const resizedCanvas = fitCanvasToRange(imageSource, { min: 512, max: 1024 });
+        coordScale = imageSource.width / resizedCanvas.width;
+        console.log('Sending image for textMask...', imageSource.width, imageSource.height, '-> resized:', resizedCanvas.width, resizedCanvas.height, 'scale:', coordScale);
+        response = await textMask({ dataUrl: resizedCanvas.toDataURL() });
+        // キャッシュには座標スケール情報も含める
+        saveCachedResponse(imageSource, { ...response, _coordScale: coordScale } as TextMaskResponse);
+      }
+
+      // キャッシュから取得した場合は座標スケール情報を復元
+      if ('_coordScale' in response) {
+        coordScale = (response as TextMaskResponse & { _coordScale?: number })._coordScale ?? 1;
       }
 
       if (!response.boxes || response.boxes.length === 0) {
@@ -158,7 +169,7 @@
         return;
       }
 
-      maskLayers = await prepareMaskLayers(response);
+      maskLayers = await prepareMaskLayers(response, coordScale);
       recognitionState = 'ready';
       redrawOverlay();
     } catch (error) {
@@ -168,18 +179,20 @@
     }
   }
 
-  async function prepareMaskLayers(response: TextMaskResponse): Promise<MaskLayer[]> {
+  async function prepareMaskLayers(response: TextMaskResponse, coordScale: number = 1): Promise<MaskLayer[]> {
     if (!imageSource) return [];
 
     const layers = await Promise.all(response.boxes.map(async (box, idx) => {
-      // API は元画像のピクセル座標を返すのでそのまま扱う
-      const actualX0 = Math.floor(box.box_2d.x0);
-      const actualY0 = Math.floor(box.box_2d.y0);
-      const actualX1 = Math.floor(box.box_2d.x1);
-      const actualY1 = Math.floor(box.box_2d.y1);
+      // APIから返された座標をスケール係数で元画像の座標に変換
+      const actualX0 = Math.floor(box.box_2d.x0 * coordScale);
+      const actualY0 = Math.floor(box.box_2d.y0 * coordScale);
+      const actualX1 = Math.floor(box.box_2d.x1 * coordScale);
+      const actualY1 = Math.floor(box.box_2d.y1 * coordScale);
       const width = Math.max(1, actualX1 - actualX0);
       const height = Math.max(1, actualY1 - actualY0);
       const orientation: TextOrientation = box.orientation ?? 'vertical';
+      // charHeightも座標と同様にスケール
+      const charHeight = box.char_height * coordScale;
 
       return {
         id: idx,
@@ -187,7 +200,7 @@
         displayBox: { x: actualX0, y: actualY0, width, height },
         text: box.text,
         enabled: true,
-        charHeight: box.char_height,
+        charHeight,
         orientation,
       };
     }));

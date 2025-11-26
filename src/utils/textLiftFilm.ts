@@ -15,6 +15,7 @@ import { loading } from './loadingStore';
 import { textEraser, pollMediaStatus } from '../supabase';
 import { saveRequest } from '../filemanager/warehouse';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore';
+import { fitCanvasToRange, resizeCanvas } from '../lib/layeredCanvas/tools/imageUtil';
 
 export type TextLiftSelection = {
   id: number;
@@ -61,12 +62,18 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
   if (maskRects.length) {
     loading.set(true);
     try {
-      const imageDataUrl = sourceCanvas.toDataURL("image/png");
+      // textEraser APIは長辺が512以上1536以下である必要があるためリサイズ
+      const originalWidth = sourceCanvas.width;
+      const originalHeight = sourceCanvas.height;
+      const resizedForApi = fitCanvasToRange(sourceCanvas, { min: 512, max: 1536 });
+      const imageDataUrl = resizedForApi.toDataURL("image/png");
       // 全文字消去済み画像を取得
       const { requestId, model } = await textEraser({ imageDataUrl });
       await saveRequest(get(mainBookFileSystem)!, 'image', 'text-eraser', requestId, model);
       const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'text-eraser', requestId, model });
-      const fullyErasedCanvas = mediaResources[0] as HTMLCanvasElement;
+      const erasedCanvasFromApi = mediaResources[0] as HTMLCanvasElement;
+      // 消去済み画像を元のサイズに戻す
+      const fullyErasedCanvas = resizeCanvas(erasedCanvasFromApi, originalWidth, originalHeight);
       // 選択された領域だけ消去済み画像から元画像にコピーした合成画像を作成
       const compositeCanvas = compositeErasedRegions(sourceCanvas, fullyErasedCanvas, maskRects);
       erasedFilm = film.clone();
@@ -222,9 +229,15 @@ function placeBubbleBySelection(
   ];
   console.log('placeBubbleBySelection', selection, p0, p1, center);
 
-  // charHeightをページ座標系に変換（フィルムのスケールを適用）
-  const scale = Math.max(1e-6, Math.abs(film.n_scale) * 0.8); // 0.8はヒューリスティック
-  const physicalFontSize = selection.charHeight * scale;
+  // charHeightをページ座標系に変換（行列を使用して画像サイズも考慮）
+  const originPoint = m.transformPoint({ x: 0, y: 0 });
+  const heightPoint = m.transformPoint({ x: 0, y: selection.charHeight });
+  const physicalCharHeight = Math.sqrt(
+    Math.pow(heightPoint.x - originPoint.x, 2) +
+    Math.pow(heightPoint.y - originPoint.y, 2)
+  );
+  console.log('physicalCharHeight:', physicalCharHeight);
+  const physicalFontSize = physicalCharHeight * 0.8; // 0.8はヒューリスティック
   bubble.setPhysicalFontSize(paperSize, physicalFontSize);
   bubble.setPhysicalCenter(paperSize, center);
   const size = bubble.calculateFitSize(paperSize);

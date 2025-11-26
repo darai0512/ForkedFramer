@@ -5,7 +5,7 @@
   import { recognizeImage } from '../supabase';
   import type { Media } from '../lib/layeredCanvas/dataModels/media';
   import { onMount, onDestroy } from 'svelte';
-  import { resizeCanvasIfNeeded } from '../lib/layeredCanvas/tools/imageUtil';
+  import { fitCanvasToRange } from '../lib/layeredCanvas/tools/imageUtil';
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { _ } from 'svelte-i18n';
   import { calculateI2VCost } from '../utils/edgeFunctions/calculateCost';
@@ -118,7 +118,7 @@
   }
 
   async function onSubmit() {
-    const resizedCanvas = resizeCanvasIfNeeded(sourceMedia.drawSourceCanvas, 1024);
+    const resizedCanvas = fitCanvasToRange(sourceMedia.drawSourceCanvas, { max: 1024 });
     const resizedImageUrl = resizedCanvas.toDataURL();
     const request: ImageToVideoRequest = {
       prompt,
@@ -136,7 +136,7 @@
   async function onAskPrompt() {
     try {
       promptWaiting = true;
-      const resizedCanvas = resizeCanvasIfNeeded(sourceMedia.drawSourceCanvas, 512);
+      const resizedCanvas = fitCanvasToRange(sourceMedia.drawSourceCanvas, { max: 512 });
       const resizedImageUrl = resizedCanvas.toDataURL();
       console.log("resizedImageUrl", resizedImageUrl.length);
       const response = await recognizeImage({

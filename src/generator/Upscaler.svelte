@@ -2,7 +2,7 @@
   import { modalStore } from '@skeletonlabs/skeleton';
   import type { UpscaleRequest } from '../utils/edgeFunctions/types/imagingTypes';
   import { onMount } from 'svelte';
-  import { resizeCanvasIfNeeded } from '../lib/layeredCanvas/tools/imageUtil';
+  import { fitCanvasToRange } from '../lib/layeredCanvas/tools/imageUtil';
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { _ } from 'svelte-i18n';
   
@@ -25,7 +25,7 @@
   }
 
   async function onSubmit() {
-    const resizedCanvas = resizeCanvasIfNeeded(canvas!, 2048);
+    const resizedCanvas = fitCanvasToRange(canvas!, { max: 2048 });
     const resizedImageUrl = resizedCanvas.toDataURL();
     const request: UpscaleRequest = {
       dataUrl: resizedImageUrl,

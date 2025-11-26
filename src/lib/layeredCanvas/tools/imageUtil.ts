@@ -218,40 +218,33 @@ export async function createVideoFromBlob(blob: Blob): Promise<HTMLVideoElement>
   return video;
 }
 
-export function resizeCanvas(canvas: HTMLCanvasElement, maxSize: number = 1024): HTMLCanvasElement {
+export function fitCanvasToRange(canvas: HTMLCanvasElement, options: { min?: number; max?: number } = {}): HTMLCanvasElement {
+  const { min = 0, max = Infinity } = options;
   const outputCanvas = document.createElement('canvas');
   let width = canvas.width;
   let height = canvas.height;
+  const longerSide = Math.max(width, height);
 
-  if (width > maxSize || height > maxSize) {
-    if (width > height) {
-      height = Math.round((height * maxSize) / width);
-      width = maxSize;
-    } else {
-      width = Math.round((width * maxSize) / height);
-      height = maxSize;
-    }
+  let scale = 1;
+  if (min > 0 && longerSide < min) {
+    // 長辺が最小サイズ未満の場合は拡大
+    scale = min / longerSide;
+  } else if (max < Infinity && longerSide > max) {
+    // 長辺が最大サイズを超える場合は縮小
+    scale = max / longerSide;
+  }
+
+  if (scale !== 1) {
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
   }
 
   outputCanvas.width = width;
   outputCanvas.height = height;
   const ctx = outputCanvas.getContext('2d');
   ctx?.drawImage(canvas, 0, 0, width, height);
-  
+
   return outputCanvas;
-}
-
-export function resizeCanvasIfNeeded(canvas: HTMLCanvasElement, maxSize: number = 1024): HTMLCanvasElement {
-  const width = canvas.width;
-  const height = canvas.height;
-
-  // サイズが制限以下なら単にコピーして返す
-  if (width <= maxSize && height <= maxSize) {
-    return copyCanvas(canvas);
-  }
-
-  // サイズが制限を超えている場合はリサイズ
-  return resizeCanvas(canvas, maxSize);
 }
 
 export function computeAspectFitSize(r: DOMRect, [w,h]: [number, number]): { width: number, height: number } {
@@ -287,3 +280,20 @@ export async function createCanvasFromDataUrl(dataUrl: string): Promise<HTMLCanv
   const image = await createImageFromDataUrl(dataUrl);
   return createCanvasFromImage(image);
 }
+
+/**
+ * キャンバスを指定サイズにリサイズする
+ * @param canvas 元のキャンバス
+ * @param targetWidth 目標幅
+ * @param targetHeight 目標高さ
+ * @returns リサイズされたキャンバス
+ */
+export function resizeCanvas(canvas: HTMLCanvasElement, targetWidth: number, targetHeight: number): HTMLCanvasElement {
+  const outputCanvas = document.createElement('canvas');
+  outputCanvas.width = targetWidth;
+  outputCanvas.height = targetHeight;
+  const ctx = outputCanvas.getContext('2d');
+  ctx?.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+  return outputCanvas;
+}
+
