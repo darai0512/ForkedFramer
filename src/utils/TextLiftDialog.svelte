@@ -193,6 +193,7 @@
       const orientation: TextOrientation = box.orientation ?? 'vertical';
       // charHeightも座標と同様にスケール
       const charHeight = box.char_height * coordScale;
+      console.log('charHeight scaled:', box.char_height, '->', charHeight);
 
       return {
         id: idx,

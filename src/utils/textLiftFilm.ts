@@ -232,10 +232,12 @@ function placeBubbleBySelection(
   // charHeightをページ座標系に変換（行列を使用して画像サイズも考慮）
   const originPoint = m.transformPoint({ x: 0, y: 0 });
   const heightPoint = m.transformPoint({ x: 0, y: selection.charHeight });
-  const physicalCharHeight = Math.sqrt(
+  let physicalCharHeight = Math.sqrt(
     Math.pow(heightPoint.x - originPoint.x, 2) +
     Math.pow(heightPoint.y - originPoint.y, 2)
   );
+  console.log('physicalCharHeight:', physicalCharHeight);
+  physicalCharHeight = Math.max(10, physicalCharHeight); // 最低限のサイズ補正
   console.log('physicalCharHeight:', physicalCharHeight);
   const physicalFontSize = physicalCharHeight * 0.8; // 0.8はヒューリスティック
   bubble.setPhysicalFontSize(paperSize, physicalFontSize);
