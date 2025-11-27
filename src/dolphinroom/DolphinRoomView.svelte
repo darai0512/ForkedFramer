@@ -30,7 +30,6 @@ export let timelineRows: TimelineRow[] = [];
 export let capturingMediaIds = new Set<number>();
 export let messageHeading = '';
 export let generationDisableReason = '';
-export let isDraftEmpty = true;
 export let isGenerating = false;
 export let hasSelectedImages = false;
 export let draft = '';

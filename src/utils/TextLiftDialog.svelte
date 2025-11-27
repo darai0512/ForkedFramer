@@ -431,12 +431,6 @@
     gap: 12px;
   }
 
-  .hint {
-    margin: 4px 0 0 0;
-    font-size: 12px;
-    color: rgb(var(--color-surface-500));
-  }
-
   .pill {
     background: rgba(var(--color-primary-500), 0.1);
     color: rgb(var(--color-primary-700));
@@ -595,24 +589,4 @@
     opacity: 0.55;
   }
 
-  .chip-icon {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    object-fit: cover;
-  }
-
-  .chip-label {
-    font-family: '源暎アンチック';
-  }
-
-  .loading-overlay .cost-chip {
-    border-color: rgba(255, 255, 255, 0.45);
-    background: rgba(var(--color-primary-500), 0.35);
-    color: white;
-  }
-
-  .loading-overlay .chip-label {
-    color: white;
-  }
 </style>

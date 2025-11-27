@@ -441,7 +441,6 @@ onDestroy(() => {
   {capturingMediaIds}
   {messageHeading}
   {generationDisableReason}
-  {isDraftEmpty}
   {isGenerating}
   {hasSelectedImages}
   bind:draft={draft}
