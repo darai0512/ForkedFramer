@@ -62,42 +62,6 @@
     $bubbleBucketDirty = true;
   }
 
-  function addBubbleWithText(text: string) {
-    const dir = $mainBook!.direction;
-    const page = $bubbleBucketPage!;
-    const frameSeq = collectPageContents(page, 0, dir)
-    const contents = frameSeq.contents;
-
-    let rect;
-
-    if (contents.length == 0) {
-      rect = sizeToRect(page.paperSize);
-    } else {
-      // 一番番号が若くてbubblesが少ないマスを探す
-      let min = 0;
-      for (let i = 0; i < contents.length; i++) {
-        if (contents[i].bubbles.length < contents[min].bubbles.length) {
-          min = i;
-        }
-      }
-      rect = contents[min].sourceRect;
-    }
-
-    const paperSize = page.paperSize;
-    const center = getRectCenter(rect);
-
-    const bubble = new Bubble();
-    bubble.text = text;
-    bubble.initOptions();
-    bubble.setPhysicalCenter(paperSize, center);
-    const size = bubble.calculateFitSize(paperSize);
-    bubble.setPhysicalSize(paperSize, size);
-
-    page.bubbles.push(bubble);
-    $bubbleBucketPage = page;
-    $bubbleBucketDirty = true;
-  }
-
   function handlePaste(event: ClipboardEvent) {
     event.preventDefault();
     const clipboardData = event.clipboardData;
@@ -108,13 +72,38 @@
 
     // 空行で分割（連続する改行、\n\n または \r\n\r\n）
     const texts = text.split(/\n\s*\n|\r\n\s*\r\n/).filter(t => t.trim());
-    
+
     if (texts.length === 0) return;
 
-    // 複数のテキストを順番に追加
+    // bubbleLayer.tsのcreateTextBubbleと同じ配置ロジック
+    const page = $bubbleBucketPage!;
+    const paperSize = page.paperSize;
+
+    let cursorX = 10;
+    let cursorY = 10;
+    let lineHeight = 0;
+
     texts.forEach(t => {
-      addBubbleWithText(t.trim());
+      const bubble = new Bubble();
+      bubble.text = t.trim();
+      bubble.initOptions();
+      const size = bubble.calculateFitSize(paperSize);
+
+      if (cursorX + size[0] > paperSize[0]) {
+        cursorX = 10;
+        cursorY += lineHeight + 10;
+        lineHeight = 0;
+      }
+
+      bubble.setPhysicalRect(paperSize, [cursorX, cursorY, ...size]);
+      page.bubbles.push(bubble);
+
+      cursorX += size[0] + 10;
+      lineHeight = Math.max(lineHeight, size[1]);
     });
+
+    $bubbleBucketPage = page;
+    $bubbleBucketDirty = true;
   }
 
   // ドロワーが開いたときにフォーカスを設定
