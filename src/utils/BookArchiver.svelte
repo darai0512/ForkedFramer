@@ -2,7 +2,7 @@
   import { saveAsPngZip, saveAsPsdZip, makeZip } from "./saver/saveAsZip";
   import { copyToClipboard } from "./saver/copyToClipboard";
   import { type BookArchiveOperation, bookArchiver } from "./bookArchiverStore";
-  import { mainBook, bookOperators } from "../bookeditor/workspaceStore";
+  import { mainBook, bookOperators, mainBookTitle } from "../bookeditor/workspaceStore";
   import { saveAsPng } from "./saver/saveAsPng";
   import { saveAsPsd } from "./saver/saveAsPsd";
   import { toastStore } from '@skeletonlabs/skeleton';
@@ -41,14 +41,14 @@
             if (targetPages.length === 1) {
               await saveAsPng(targetPages[0], false);
             } else {
-              await saveAsPngZip(targetPages, false);
+              await saveAsPngZip(targetPages, false, $mainBookTitle);
             }
             break;
           case 'download-after-upscale':
             if (targetPages.length === 1) {
               await saveAsPng(targetPages[0], true);
             } else {
-              await saveAsPngZip(targetPages, true);
+              await saveAsPngZip(targetPages, true, $mainBookTitle);
             }
             break;
           case 'copy':
@@ -61,7 +61,7 @@
             if (targetPages.length === 1) {
               saveAsPsd(targetPages[0]);
             } else {
-              saveAsPsdZip(targetPages);
+              saveAsPsdZip(targetPages, $mainBookTitle);
             }
             break;
           case 'aipictors':
@@ -285,7 +285,7 @@
         const blob = await canvasToBlob(canvas);
         return blob;
       };
-      const zipFile = await makeZip(pages, pageToBlob, 'png');
+      const zipFile = await makeZip(pages, pageToBlob, 'png', $mainBookTitle);
       const sha1 = await blobToSha1(zipFile);
         
       let content_url;
