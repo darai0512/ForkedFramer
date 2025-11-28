@@ -228,7 +228,8 @@
       "delete": "Delete",
       "reorder": "Drag to reorder",
       "copy": "Copy",
-      "split": "Split (Shift+Enter)"
+      "split": "Split (Shift+Enter)",
+      "select": "Select"
     }
   },
   "bubbleBucket": {

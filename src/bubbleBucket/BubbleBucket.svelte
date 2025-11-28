@@ -1,6 +1,7 @@
 <script lang="ts">
   import Drawer from '../utils/Drawer.svelte'
   import { bubbleBucketPage, bubbleBucketDirty } from './bubbleBucketStore';
+  import { bookOperators } from '../bookeditor/workspaceStore';
   import BubbleBucketItem from './BubbleBucketItem.svelte';
   import { collectPageContents } from '../lib/book/book';
   import { mainBook } from '../bookeditor/workspaceStore';
@@ -117,6 +118,17 @@
 
     $bubbleBucketPage = page;
     $bubbleBucketDirty = true;
+  }
+
+  function onSelectBubble(event: CustomEvent<Bubble>) {
+    const bubble = event.detail;
+    const page = $bubbleBucketPage!;
+
+    // bucketを閉じる
+    close();
+
+    // bookOperatorsで直接選択
+    $bookOperators?.selectBubbleExternal(page, bubble);
   }
 
   function handlePaste(event: ClipboardEvent) {
@@ -270,7 +282,7 @@
         }}
       >
         {#each bubbles as bubble (bubble.uuid)}
-          <BubbleBucketItem bubble={bubble} paperSize={$bubbleBucketPage?.paperSize ?? [0, 0]} on:delete={onDeleteBubble} on:split={onSplitBubble} />
+          <BubbleBucketItem bubble={bubble} paperSize={$bubbleBucketPage?.paperSize ?? [0, 0]} on:delete={onDeleteBubble} on:split={onSplitBubble} on:select={onSelectBubble} />
         {/each}
       </div>
       <div>

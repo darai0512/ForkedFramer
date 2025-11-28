@@ -340,6 +340,7 @@ export interface BookOperators {
   scribbleBubble: (page: Page, bubble: Bubble) => void;
   coverFrame: (page: Page, frame: FrameElement) => void;
   coverBubble: (page: Page, bubble: Bubble) => void;
+  selectBubbleExternal: (page: Page, bubble: Bubble) => void;
 }
 
 export function clonePage(page: Page): Page {

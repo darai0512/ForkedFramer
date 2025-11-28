@@ -1,7 +1,7 @@
 import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
 import type { Border } from '../lib/layeredCanvas/dataModels/frameTree';
 import type { Book, Page, BookOperators, HistoryTag } from '../lib/book/book';
-import { DefaultBubbleSlot } from '../lib/layeredCanvas/layers/bubbleLayer';
+import { DefaultBubbleSlot, BubbleLayer } from '../lib/layeredCanvas/layers/bubbleLayer';
 import { collectBookContents, dealBookContents, swapBookContents, newPage } from '../lib/book/book';
 import type { ArrayLayer } from '../lib/layeredCanvas/layers/arrayLayer';
 import type { LayeredCanvas } from '../lib/layeredCanvas/system/layeredCanvas';
@@ -401,6 +401,40 @@ export class BookWorkspaceOperators implements BookOperators {
       command: "cover",
       commandTargetFilm: null,
     });
+  }
+
+  selectBubbleExternal(page: Page, bubble: Bubble): void {
+    if (!this.arrayLayer) {
+      console.warn("BookWorkspaceOperators not properly initialized");
+      return;
+    }
+
+    // ページのインデックスを見つける
+    const pageIndex = this.book.pages.findIndex((p: Page) => p.id === page.id);
+    if (pageIndex === -1) {
+      console.warn("Page not found in book");
+      return;
+    }
+
+    // そのページにフォーカス
+    this.focusToPage(pageIndex, 1, true);
+
+    // arrayLayerからそのページのpaperを取得
+    const paperEntry = this.arrayLayer.array.papers[pageIndex];
+    if (!paperEntry || !paperEntry.paper) {
+      console.warn("Paper not found for page index", pageIndex);
+      return;
+    }
+
+    // paperからBubbleLayerを取得
+    const bubbleLayer = paperEntry.paper.findLayer(BubbleLayer);
+    if (!bubbleLayer) {
+      console.warn("BubbleLayer not found in paper");
+      return;
+    }
+
+    // bubbleLayerでバブルを選択
+    bubbleLayer.selectBubble(bubble);
   }
 
 }

@@ -228,7 +228,8 @@
       "delete": "削除",
       "reorder": "ドラッグして並べ替え",
       "copy": "コピー",
-      "split": "分割 (Shift+Enter)"
+      "split": "分割 (Shift+Enter)",
+      "select": "選択"
     }
   },
   "bubbleBucket": {

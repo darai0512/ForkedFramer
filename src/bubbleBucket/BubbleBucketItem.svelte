@@ -9,6 +9,7 @@
   import trashIcon from '../assets/trash.webp';
   import clipboardIcon from '../assets/clipboard.webp';
   import splitIcon from '../assets/split.webp';
+  import selectIcon from '../assets/inspect.webp';
   import { toastStore } from '@skeletonlabs/skeleton';
 
   export let bubble: Bubble;
@@ -80,6 +81,12 @@
       onSplit();
     }
   }
+
+  function onSelect(ev: MouseEvent) {
+    ev.stopPropagation();
+    ev.preventDefault();
+    dispatch('select', bubble);
+  }
 </script>
 
 <div class="bubblet-container">
@@ -96,6 +103,16 @@
   <div class="bubblet-content">
     <textarea class="bubblet variant-soft-surface rounded-container-token" bind:value={text} on:input={onInput} on:paste={onPaste} on:keydown={onKeyDown} bind:this={textarea}></textarea>
     <div class="control-panel">
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <img
+        draggable={false}
+        class="control-icon"
+        src={selectIcon}
+        alt={$_('bubble.actions.select')}
+        use:toolTip={$_('bubble.actions.select')}
+        on:click={onSelect}
+      />
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <img
