@@ -227,7 +227,8 @@
     "actions": {
       "delete": "削除",
       "reorder": "ドラッグして並べ替え",
-      "copy": "コピー"
+      "copy": "コピー",
+      "split": "分割 (Shift+Enter)"
     }
   },
   "bubbleBucket": {

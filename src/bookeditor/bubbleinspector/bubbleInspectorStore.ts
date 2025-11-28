@@ -4,6 +4,7 @@ import { Film } from "../../lib/layeredCanvas/dataModels/film";
 
 import type { Page } from '../../lib/book/book';
 import { minimumBoundingScale } from "../../lib/layeredCanvas/tools/geometry/geometry";
+import { splitBubbleAt } from "../../lib/layeredCanvas/tools/bubbleUtil";
 import { commit } from '../operations/commitOperations';
 import type { FilmOperationTarget } from '../operations/filmStackOperations';
 import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
@@ -114,51 +115,21 @@ async function onBubbleCommand(bit: BubbleInspectorTarget | null) {
 async function splitBubble(bit: BubbleInspectorTarget) {
   const cursor = bit.commandArgs?.cursor as number;
   if (cursor === undefined || cursor === null) return;
-  
+
   const page = bit.page;
-  const oldBubble = bit.bubble;
-  const text = oldBubble.text;
-  
-  // カーソル位置でテキストを分割
   const paperSize = page.paperSize;
-  const bubbleSize = oldBubble.getPhysicalSize(paperSize);
-  const width = bubbleSize[0];
-  const center = oldBubble.getPhysicalCenter(paperSize);
-  
-  // 新しいバブルを作成
-  const newBubble = oldBubble.clone(false);
-  newBubble.n_p0 = oldBubble.n_p0;
-  newBubble.n_p1 = oldBubble.n_p1;
-  newBubble.initOptions();
-  newBubble.text = text.slice(cursor).trimStart();
+
+  const newBubble = splitBubbleAt(bit.bubble, paperSize, cursor);
+  if (!newBubble) return;
+
   page.bubbles.push(newBubble);
-  
-  // 元のバブルのテキストを更新
-  oldBubble.text = text.slice(0, cursor).trimEnd();
-  
-  // バブルの位置を調整
-  const c0: [number, number] = [center[0] + width / 2, center[1]];
-  const c1: [number, number] = [center[0] - width / 2, center[1]];
-  if (oldBubble.direction === 'v') {
-    oldBubble.setPhysicalCenter(paperSize, c0);
-    newBubble.setPhysicalCenter(paperSize, c1);
-  } else {
-    oldBubble.setPhysicalCenter(paperSize, c1);
-    newBubble.setPhysicalCenter(paperSize, c0);
-  }
-  
-  // バブルのサイズを調整
-  const oldSize = oldBubble.calculateFitSize(paperSize);
-  oldBubble.setPhysicalSize(paperSize, oldSize);
-  const newSize = newBubble.calculateFitSize(paperSize);
-  newBubble.setPhysicalSize(paperSize, newSize);
-  
+
   // インスペクタのターゲットを新しいバブルに設定
   bubbleInspectorTarget.set({
     ...bit,
     bubble: newBubble,
     commandArgs: undefined  // コマンド引数をクリア
   });
-  
+
   commit(null);
 }

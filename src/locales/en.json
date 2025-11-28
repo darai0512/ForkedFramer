@@ -227,7 +227,8 @@
     "actions": {
       "delete": "Delete",
       "reorder": "Drag to reorder",
-      "copy": "Copy"
+      "copy": "Copy",
+      "split": "Split (Shift+Enter)"
     }
   },
   "bubbleBucket": {

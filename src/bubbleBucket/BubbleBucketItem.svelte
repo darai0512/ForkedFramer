@@ -8,9 +8,11 @@
 
   import trashIcon from '../assets/trash.webp';
   import clipboardIcon from '../assets/clipboard.webp';
+  import splitIcon from '../assets/split.webp';
   import { toastStore } from '@skeletonlabs/skeleton';
 
   export let bubble: Bubble;
+  export let paperSize: [number, number];
 
   const dispatch = createEventDispatcher();
   let text: string;
@@ -33,8 +35,21 @@
     // デフォルトのペースト動作はそのまま実行される
   }
 
+  // bubble.textが外部から変更されたときにtextを同期
+  let prevBubbleText: string;
+  $: {
+    if (prevBubbleText !== bubble.text && text !== bubble.text) {
+      text = bubble.text;
+      if (textarea) {
+        tick().then(() => autoResize());
+      }
+    }
+    prevBubbleText = bubble.text;
+  }
+
   onMount(async () => {
     text = bubble.text;
+    prevBubbleText = bubble.text;
     await tick();
     autoResize();
   });
@@ -51,6 +66,20 @@
     await navigator.clipboard.writeText(bubble.text);
     toastStore.trigger({ message: 'コピーしました', timeout: 1500 });
   }
+
+  function onSplit(ev?: MouseEvent) {
+    ev?.stopPropagation();
+    ev?.preventDefault();
+    const cursor = textarea.selectionStart;
+    dispatch('split', { bubble, cursor, paperSize });
+  }
+
+  function onKeyDown(event: KeyboardEvent) {
+    if (event.shiftKey && event.key === 'Enter') {
+      event.preventDefault();
+      onSplit();
+    }
+  }
 </script>
 
 <div class="bubblet-container">
@@ -65,7 +94,7 @@
     </svg>
   </div>
   <div class="bubblet-content">
-    <textarea class="bubblet variant-soft-surface rounded-container-token" bind:value={text} on:input={onInput} on:paste={onPaste} bind:this={textarea}></textarea>
+    <textarea class="bubblet variant-soft-surface rounded-container-token" bind:value={text} on:input={onInput} on:paste={onPaste} on:keydown={onKeyDown} bind:this={textarea}></textarea>
     <div class="control-panel">
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -76,6 +105,16 @@
         alt={$_('bubble.actions.copy')}
         use:toolTip={$_('bubble.actions.copy')}
         on:click={onCopy}
+      />
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <img
+        draggable={false}
+        class="control-icon"
+        src={splitIcon}
+        alt={$_('bubble.actions.split')}
+        use:toolTip={$_('bubble.actions.split')}
+        on:click={onSplit}
       />
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <!-- svelte-ignore a11y-click-events-have-key-events -->

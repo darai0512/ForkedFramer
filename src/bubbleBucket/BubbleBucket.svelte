@@ -10,6 +10,7 @@
   import { onMount } from 'svelte';
   import { sortableList } from '../utils/sortableList';
   import { moveInArray } from '../utils/moveInArray';
+  import { splitBubbleAt } from '../lib/layeredCanvas/tools/bubbleUtil';
   import { toolTip } from '../utils/passiveToolTipStore';
   import { _ } from 'svelte-i18n';
   import { toastStore } from '@skeletonlabs/skeleton';
@@ -94,6 +95,28 @@
       $bubbleBucketPage = page;
       $bubbleBucketDirty = true;
     }
+  }
+
+  function onSplitBubble(event: CustomEvent<{ bubble: Bubble; cursor: number; paperSize: [number, number] }>) {
+    const { bubble, cursor, paperSize } = event.detail;
+    const page = $bubbleBucketPage!;
+
+    const newBubble = splitBubbleAt(bubble, paperSize, cursor);
+    if (!newBubble) {
+      toastStore.trigger({ message: '分割できません', timeout: 1500 });
+      return;
+    }
+
+    // 元のバブルの次に挿入
+    const index = page.bubbles.indexOf(bubble);
+    if (index !== -1) {
+      page.bubbles.splice(index + 1, 0, newBubble);
+    } else {
+      page.bubbles.push(newBubble);
+    }
+
+    $bubbleBucketPage = page;
+    $bubbleBucketDirty = true;
   }
 
   function handlePaste(event: ClipboardEvent) {
@@ -247,7 +270,7 @@
         }}
       >
         {#each bubbles as bubble (bubble.uuid)}
-          <BubbleBucketItem bubble={bubble} on:delete={onDeleteBubble} />
+          <BubbleBucketItem bubble={bubble} paperSize={$bubbleBucketPage?.paperSize ?? [0, 0]} on:delete={onDeleteBubble} on:split={onSplitBubble} />
         {/each}
       </div>
       <div>
