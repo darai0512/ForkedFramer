@@ -223,7 +223,16 @@
     "videoParameters": "Video Parameters",
     "videoDelay": "Video Creation Delay",
     "appearanceDelay": "Appearance Delay",
-    "layer": "Layer"
+    "layer": "Layer",
+    "actions": {
+      "delete": "Delete",
+      "reorder": "Drag to reorder",
+      "copy": "Copy"
+    }
+  },
+  "bubbleBucket": {
+    "copyAll": "Copy All",
+    "pasteAll": "Paste to Create"
   },
   "frame": {
     "visibility": "Visibility",

@@ -223,7 +223,16 @@
     "videoParameters": "ビデオパラメータ",
     "videoDelay": "ビデオ作成時のディレイ",
     "appearanceDelay": "出現ディレイ",
-    "layer": "レイヤー"
+    "layer": "レイヤー",
+    "actions": {
+      "delete": "削除",
+      "reorder": "ドラッグして並べ替え",
+      "copy": "コピー"
+    }
+  },
+  "bubbleBucket": {
+    "copyAll": "全てコピー",
+    "pasteAll": "作成ペースト"
   },
   "frame": {
     "visibility": "表示",
