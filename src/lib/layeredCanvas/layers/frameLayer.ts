@@ -1676,8 +1676,9 @@ export class FrameLayer extends LayerBase {
   }
 
   selectLayout(layout: Layout | null): void {
-    this.doSelectLayout(layout);
+    // 先にFocusKeeperに通知することで、古いFrameLayerのクリアが先に行われる
     this.focusKeeper.setFocus(layout == null ? null : this);
+    this.doSelectLayout(layout);
   }
 
   tick(_now: number): void {
