@@ -183,17 +183,19 @@
     if (!imageSource) return [];
 
     const layers = await Promise.all(response.boxes.map(async (box, idx) => {
-      // APIから返された座標をスケール係数で元画像の座標に変換
-      const actualX0 = Math.floor(box.box_2d.x0 * coordScale);
-      const actualY0 = Math.floor(box.box_2d.y0 * coordScale);
-      const actualX1 = Math.floor(box.box_2d.x1 * coordScale);
-      const actualY1 = Math.floor(box.box_2d.y1 * coordScale);
-      const width = Math.max(1, actualX1 - actualX0);
-      const height = Math.max(1, actualY1 - actualY0);
-      const orientation: TextOrientation = box.orientation ?? 'vertical';
       // charHeightも座標と同様にスケール
       const charHeight = box.char_height * coordScale;
       console.log('charHeight scaled:', box.char_height, '->', charHeight);
+      // APIから返された座標をスケール係数で元画像の座標に変換
+      // マスク矩形を上下左右それぞれ 0.5 * charHeight 広げる
+      const margin = charHeight * 0.5;
+      const actualX0 = Math.floor(box.box_2d.x0 * coordScale - margin);
+      const actualY0 = Math.floor(box.box_2d.y0 * coordScale - margin);
+      const actualX1 = Math.floor(box.box_2d.x1 * coordScale + margin);
+      const actualY1 = Math.floor(box.box_2d.y1 * coordScale + margin);
+      const width = Math.max(1, actualX1 - actualX0);
+      const height = Math.max(1, actualY1 - actualY0);
+      const orientation: TextOrientation = box.orientation ?? 'vertical';
 
       return {
         id: idx,
