@@ -9,13 +9,12 @@ import { UndoLayer } from '../../lib/layeredCanvas/layers/undoLayer';
 import { InlinePainterLayer } from '../../lib/layeredCanvas/layers/inlinePainterLayer';
 import { initializeKeyCache } from '../../lib/layeredCanvas/system/keyCache';
 import type { Book, Page, BookOperators, WrapMode, ReadingDirection } from '../../lib/book/book';
-import { PaperRendererLayer } from '../../lib/layeredCanvas/layers/paperRendererLayer';
+import { PaperRendererLayer, BubbleRenderMode } from '../../lib/layeredCanvas/layers/paperRendererLayer';
 import type { FrameElement, Layout, Border } from '../../lib/layeredCanvas/dataModels/frameTree';
 import { Bubble } from '../../lib/layeredCanvas/dataModels/bubble';
 import { trapezoidCenter } from '../../lib/layeredCanvas/tools/geometry/trapezoid';
 import { FocusKeeper } from '../../lib/layeredCanvas/tools/focusKeeper';
-import { get } from 'svelte/store';
-import { undoToken } from '../workspaceStore';
+import { undoToken, renderPreference } from '../workspaceStore';
 
 export function buildBookEditor(
   viewport: Viewport,
@@ -211,7 +210,7 @@ function buildPaper(
   const paper = new Paper(page.paperSize, false);
 
   // renderer
-  const paperRendererLayer = new PaperRendererLayer(true);
+  const paperRendererLayer = new PaperRendererLayer(true, renderPreference);
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
   paper.addLayer(paperRendererLayer);

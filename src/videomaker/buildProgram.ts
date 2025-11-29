@@ -1,7 +1,7 @@
 import { LayeredCanvas, Paper, Viewport } from '../lib/layeredCanvas/system/layeredCanvas';
 import { ArrayLayer } from '../lib/layeredCanvas/layers/arrayLayer';
 import { type Book, type Page, type WrapMode, type ReadingDirection, collectBookContents } from '../lib/book/book';
-import { PaperRendererLayer } from '../lib/layeredCanvas/layers/paperRendererLayer';
+import { PaperRendererLayer, BubbleRenderMode } from '../lib/layeredCanvas/layers/paperRendererLayer';
 import { trapezoidBoundingRect, trapezoidCenter } from '../lib/layeredCanvas/tools/geometry/trapezoid';
 import type { Layout } from '../lib/layeredCanvas/dataModels/frameTree';
 import type { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
@@ -60,7 +60,7 @@ function buildPaper(page: Page) {
   const paper = new Paper(page.paperSize, false);
 
   // renderer
-  const paperRendererLayer = new PaperRendererLayer(false);
+  const paperRendererLayer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
   paper.addLayer(paperRendererLayer);

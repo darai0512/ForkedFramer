@@ -21,7 +21,13 @@
     "profileNotRegistered": "Profile not registered",
     "signInBonus": "Sign in and register profile for",
     "sprytBonus": "500 bonus!",
-    "purchase": "Purchase"
+    "purchase": "Purchase",
+    "bubbleRenderMode": {
+      "all": "Show All",
+      "backgroundOnly": "No Text",
+      "none": "Hidden",
+      "tooltip": "Bubble display mode"
+    }
   },
   "settings": {
     "paperSize": "Paper Size",

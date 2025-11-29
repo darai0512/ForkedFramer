@@ -1,6 +1,6 @@
 import type { Page } from '../../lib/book/book';
 import { LayeredCanvas, Viewport } from '../../lib/layeredCanvas/system/layeredCanvas'
-import { PaperRendererLayer } from '../../lib/layeredCanvas/layers/paperRendererLayer';
+import { PaperRendererLayer, BubbleRenderMode } from '../../lib/layeredCanvas/layers/paperRendererLayer';
 import { writePsd } from 'ag-psd';
 
 export async function renderThumbnailToWebpBlob(page: Page, [w,h]: [number, number]): Promise<Blob> {
@@ -36,7 +36,7 @@ export async function renderPage(page: Page): Promise<HTMLCanvasElement> {
   layeredCanvas.rootPaper.size = page.paperSize;
 
   // renderer
-  const paperRendererLayer = new PaperRendererLayer(false);
+  const paperRendererLayer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
   layeredCanvas.rootPaper.addLayer(paperRendererLayer);
@@ -55,7 +55,7 @@ export async function renderPageToPsd(page: Page) {
   const layeredCanvas = new LayeredCanvas(viewport, true);
   layeredCanvas.rootPaper.size = page.paperSize;
 
-  const paperRendererLayer = new PaperRendererLayer(false);
+  const paperRendererLayer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
   layeredCanvas.rootPaper.addLayer(paperRendererLayer);
 
   paperRendererLayer.setFrameTree(page.frameTree);

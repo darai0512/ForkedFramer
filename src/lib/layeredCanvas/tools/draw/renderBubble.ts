@@ -48,7 +48,7 @@ function setBubbleStyle(ctx: CanvasRenderingContext2D, bubble: Bubble, paperSize
   }
 }
 
-export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, drawsUnited: boolean, supportsDpr: boolean) {
+export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, drawsUnited: boolean, supportsDpr: boolean, skipText: boolean = false) {
   if (bubble.parent) {
     if (!drawsUnited) { return; }
   } else {
@@ -67,7 +67,7 @@ export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize:
   clipBubbleElement(ctx, bubble, size);
 
   // テキスト描画
-  if (bubble.text && !bubble.hidesText) {
+  if (bubble.text && !bubble.hidesText && !skipText) {
     drawBubbleText(ctx, paperSize, bubble, supportsDpr);
   }
   ctx.restore();

@@ -1,7 +1,15 @@
 <script lang="ts">
   import { toolTip } from '../utils/passiveToolTipStore';
   import streamSaver from 'streamsaver';
-  import { undoToken } from '../bookeditor/workspaceStore';
+  import { undoToken, renderPreference, redrawToken } from '../bookeditor/workspaceStore';
+  import { BubbleRenderMode } from '../lib/layeredCanvas/layers/paperRendererLayer';
+
+  let bubbleRenderMode = renderPreference.bubbleRenderMode;
+
+  function onBubbleRenderModeChange() {
+    renderPreference.bubbleRenderMode = bubbleRenderMode;
+    $redrawToken = !$redrawToken;
+  }
   import { onlineStatus, authStore, onlineProfile, onlineAccount, type SubscriptionPlan } from '../utils/accountStore';
   import Feathral from '../utils/Feathral.svelte';
   import AvatarIcon from './AvatarIcon.svelte';
@@ -22,6 +30,7 @@
 
   import undoIcon from '../assets/undo.webp';
   import redoIcon from '../assets/redo.webp';
+  import bubbleIcon from '../assets/bubbleLayer/bubble.webp';
 
   function getParentDomain(): string {
     return window.location.hostname.split('.').slice(1).join('.');
@@ -195,7 +204,7 @@
   <button class="btn btn-sm bg-primary-400 undo-redo-button" on:click={redo} use:toolTip={$_('ui.redo')}>
     <img src={redoIcon} alt="redo" class="h-6 w-auto"/>
   </button>
-  
+
   <ul class="flex space-x-6 ml-8">
     <!-- svelte-ignore a11y-click-events-have-key-events -->
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
@@ -207,7 +216,23 @@
   <div class="rounded px-2 text-white transition-colors duration-300 {$titleBgClass}">{$mainBookTitle}</div>
 
   <div class="flex-grow"></div>
-  
+
+  <div
+    class="flex items-center px-2 py-1 text-sm bg-surface-700 text-white border border-surface-500 rounded hover:bg-surface-600"
+    use:toolTip={$_('toolbar.bubbleRenderMode.tooltip')}
+  >
+    <img src={bubbleIcon} alt="bubble" class="w-4 h-4 mr-1"/>
+    <select
+      class="bg-transparent text-white text-sm focus:outline-none cursor-pointer"
+      bind:value={bubbleRenderMode}
+      on:change={onBubbleRenderModeChange}
+    >
+      <option class="bg-surface-700 text-white" value={BubbleRenderMode.All}>{$_('toolbar.bubbleRenderMode.all')}</option>
+      <option class="bg-surface-700 text-white" value={BubbleRenderMode.BackgroundOnly}>{$_('toolbar.bubbleRenderMode.backgroundOnly')}</option>
+      <option class="bg-surface-700 text-white" value={BubbleRenderMode.None}>{$_('toolbar.bubbleRenderMode.none')}</option>
+    </select>
+  </div>
+
   <LanguageSwitcher />
   {#if $onlineStatus === "signed-in"}
     <div class="flex items-center gap-2">

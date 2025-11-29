@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, createEventDispatcher, onDestroy } from "svelte";
   import { LayeredCanvas, Viewport } from '../lib/layeredCanvas/system/layeredCanvas'
-  import { PaperRendererLayer } from '../lib/layeredCanvas/layers/paperRendererLayer';
+  import { PaperRendererLayer, BubbleRenderMode } from '../lib/layeredCanvas/layers/paperRendererLayer';
   import { FrameElement } from '../lib/layeredCanvas/dataModels/frameTree';
 
   const dispatch = createEventDispatcher();
@@ -21,7 +21,7 @@
       viewport, 
       false);
 
-    const paperRendererLayer = new PaperRendererLayer(false);
+    const paperRendererLayer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
     layeredCanvas.rootPaper.size = [140, 198];
     layeredCanvas.rootPaper.addLayer(paperRendererLayer);
 

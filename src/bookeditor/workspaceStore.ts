@@ -6,6 +6,7 @@ import { FrameElement } from "../lib/layeredCanvas/dataModels/frameTree";
 import { Bubble } from "../lib/layeredCanvas/dataModels/bubble";
 import { loadFonts } from "./fontLoading"
 import { get } from "svelte/store";
+import { BubbleRenderMode, type RenderPreference } from "../lib/layeredCanvas/layers/paperRendererLayer";
 
 export const mainBook = writable<Book | null>(null);
 export const mainBookTitle = writable('');
@@ -19,6 +20,7 @@ export const redrawToken = writable(false);
 export const undoToken: Writable<'undo' | 'redo' | null> = writable(null);
 export const fontLoadToken: Writable<{family: string, weight: string}[]> = writable([]);
 export const resetFontCacheKey = writable(0);
+export const renderPreference: RenderPreference = { bubbleRenderMode: BubbleRenderMode.All };
 
 export let mainBookExceptionHandler: Writable<((e: any) => void) | null> = writable(null);
 

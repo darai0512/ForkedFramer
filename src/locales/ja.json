@@ -21,7 +21,13 @@
     "profileNotRegistered": "プロフィール未登録",
     "signInBonus": "サインインしてプロフィール登録で",
     "sprytBonus": "500プレゼント！",
-    "purchase": "購入"
+    "purchase": "購入",
+    "bubbleRenderMode": {
+      "all": "全て表示",
+      "backgroundOnly": "文字表示なし",
+      "none": "非表示",
+      "tooltip": "フキダシの表示モード"
+    }
   },
   "settings": {
     "paperSize": "紙のサイズ",

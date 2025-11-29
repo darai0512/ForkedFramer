@@ -3,7 +3,7 @@ import { FloorLayer } from '../layers/floorLayer';
 import { ArrayLayer } from '../layers/arrayLayer';
 import { ViewerLayer } from '../layers/viewerLayer';
 import type { Book, Page, WrapMode, ReadingDirection } from '../../book/book';
-import { PaperRendererLayer } from '../layers/paperRendererLayer';
+import { PaperRendererLayer, BubbleRenderMode } from '../layers/paperRendererLayer';
 import { FocusKeeper } from './focusKeeper';
 import type { Layout } from '../dataModels/frameTree';
 import { Bubble } from '../dataModels/bubble';
@@ -85,7 +85,7 @@ function buildPaper(page: Page, focusKeeper: FocusKeeper, showPlayButton: boolea
   const paper = new Paper(page.paperSize, false);
 
   // renderer
-  const paperRendererLayer = new PaperRendererLayer(true);
+  const paperRendererLayer = new PaperRendererLayer(true, { bubbleRenderMode: BubbleRenderMode.All });
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
   paper.addLayer(paperRendererLayer);

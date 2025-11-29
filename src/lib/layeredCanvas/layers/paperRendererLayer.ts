@@ -35,12 +35,22 @@ type RenderData = {
   floatingBubbles: Bubble[]
 };
 
+export enum BubbleRenderMode {
+  None,
+  BackgroundOnly,
+  All,
+}
+
+export type RenderPreference = {
+  bubbleRenderMode: BubbleRenderMode;
+};  
+
 export class PaperRendererLayer extends LayerBase {
   frameTree: FrameElement | null = null;
   rawBubbles: Bubble[] | null = null;
   thisFrameRenderData: RenderData | null = null;
 
-  constructor(private supportsDpr: boolean) {
+  constructor(private supportsDpr: boolean, private renderPreference: RenderPreference = { bubbleRenderMode: BubbleRenderMode.All }) {
     super();
   }
 
@@ -96,7 +106,7 @@ export class PaperRendererLayer extends LayerBase {
     }
 
     if (depth === 1) {
-      renderBubbles(ctx, this.getPaperSize(), floatingBubbles, true, this.supportsDpr);
+      this.renderBubblesWithPreference(ctx, floatingBubbles);
     }
   }
 
@@ -365,7 +375,7 @@ export class PaperRendererLayer extends LayerBase {
       if (bubbles) {
         ctx.save();
         ctx.clip(framePath);
-        renderBubbles(ctx, this.getPaperSize(), bubbles, true, this.supportsDpr);
+        this.renderBubblesWithPreference(ctx, bubbles);
         ctx.restore();
       }
     }
@@ -381,6 +391,26 @@ export class PaperRendererLayer extends LayerBase {
       const path = this.makeFramePath(layout, 0);
       ctx.stroke(path);
       ctx.restore();
+    }
+  }
+
+  renderBubblesWithPreference(ctx: CanvasRenderingContext2D, bubbles: Bubble[]) {
+    const mode = this.renderPreference.bubbleRenderMode;
+    if (mode === BubbleRenderMode.None) {
+      return;
+    }
+    const paperSize = this.getPaperSize();
+    if (mode === BubbleRenderMode.BackgroundOnly) {
+      // 背景と枠線を描画、テキストはスキップ
+      for (const bubble of bubbles) {
+        renderBubbleBackground(ctx, paperSize, bubble, true);
+        renderBubbleForeground(ctx, paperSize, bubble, false, this.supportsDpr, true);
+      }
+      for (const bubble of bubbles) {
+        renderBubbleForeground(ctx, paperSize, bubble, true, this.supportsDpr, true);
+      }
+    } else {
+      renderBubbles(ctx, paperSize, bubbles, true, this.supportsDpr);
     }
   }
 
