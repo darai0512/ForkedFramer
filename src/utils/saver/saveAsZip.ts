@@ -16,9 +16,10 @@ export async function makeZip(pages: Page[], render: (page: Page) => Promise<Blo
   const effectiveFolderName = sanitizeFileName(folderName) || 'book';
   const folder = zip.folder(effectiveFolderName)!;
 
+  const digits = Math.max(2, String(pages.length).length);
   for (let i = 0; i < pages.length; i++) {
     const pic = await render(pages[i]);
-    folder.file(`page-${i+1}.${ext}`, pic);
+    folder.file(`page-${String(i+1).padStart(digits, '0')}.${ext}`, pic);
   }
 
   const zipFile = await zip.generateAsync({type: 'blob'});
