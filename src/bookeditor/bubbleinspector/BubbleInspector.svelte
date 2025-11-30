@@ -121,8 +121,18 @@
   function onChangeShape(s: string | null) {
     if (s != null && $bubble && $bubble.shape !== s) {
       console.log("onChangeShape", s);
+      // しっぽの設定を保持
+      const oldTail = {
+        tailTip: $bubble.optionContext.tailTip,
+        tailMid: $bubble.optionContext.tailMid,
+        tailWidth: $bubble.optionContext.tailWidth,
+      };
       $bubble.shape = s;
       $bubble.initOptions();
+      // しっぽの設定を復元
+      if (oldTail.tailTip !== undefined) $bubble.optionContext.tailTip = oldTail.tailTip;
+      if (oldTail.tailMid !== undefined) $bubble.optionContext.tailMid = oldTail.tailMid;
+      if (oldTail.tailWidth !== undefined) $bubble.optionContext.tailWidth = oldTail.tailWidth;
     }
   }
 
