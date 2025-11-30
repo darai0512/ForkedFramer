@@ -10,6 +10,8 @@
   import { Bubble } from "../../lib/layeredCanvas/dataModels/bubble";
   import type { Vector } from "../../lib/layeredCanvas/tools/geometry/geometry";
   import { captureException } from "@sentry/svelte";
+  import { sortableList } from "../../utils/sortableList";
+  import { moveInArray } from "../../utils/moveInArray";
 
   export let itemSize: Vector = [64,96];
 
@@ -97,6 +99,34 @@
     await buildTemplateBubbles();
   }
 
+  async function onTemplateSortUpdate(e: { oldIndex: number | undefined; newIndex: number | undefined }) {
+    if (e.oldIndex == null || e.newIndex == null) return;
+    moveInArray(templateBubbles, e.oldIndex, e.newIndex);
+    templateBubbles = templateBubbles;
+    // ファイルシステム上の順序も更新
+    await reorderTemplates(e.oldIndex, e.newIndex);
+  }
+
+  async function reorderTemplates(oldIndex: number, newIndex: number) {
+    try {
+      const root = await $gadgetFileSystem!.getRoot();
+      const folder = (await root.getNodeByName("テンプレート"))!.asFolder()!;
+      const entries = await folder.list();
+      if (oldIndex < 0 || oldIndex >= entries.length) return;
+      if (newIndex < 0 || newIndex >= entries.length) newIndex = entries.length - 1;
+
+      const [bindId, name, nodeId] = entries[oldIndex];
+      // いったん削除
+      await folder.unlink(bindId);
+      // 削除によってインデックスが1つ詰まるので調整
+      const adjustedNewIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+      // 同じ名前で希望位置に再挿入
+      await folder.insert(name, nodeId, adjustedNewIndex);
+    } catch (err) {
+      console.error('Failed to persist template order:', err);
+    }
+  }
+
   $: onOpen($shapeChooserOpen);
   async function onOpen(f: boolean) {
     if (f) {
@@ -150,15 +180,28 @@
           on:click={(e) => chooseShape(e, s)}
         />
       {/each}
-      {#each templateBubbles as [bubble, bindId]}
-        <BubbleTemplateSample
-          size={itemSize}
-          bubble={bubble}
-          on:click={(e) => chooseTemplate(e, bubble)}
-          on:delete={(e) => deleteTemplate(e, bindId)}
-          on:rename={e => onRenameBubble(e)}
-        />
-      {/each}
+      {#if templateBubbles.length > 0}
+        <div class="template-section-label">テンプレート（ドラッグで並べ替え）</div>
+        <div
+          class="template-list"
+          use:sortableList={{
+            animation: 150,
+            ghostClass: "sortable-ghost",
+            chosenClass: "sortable-chosen",
+            onUpdate: onTemplateSortUpdate
+          }}
+        >
+          {#each templateBubbles as [bubble, bindId] (bindId)}
+            <BubbleTemplateSample
+              size={itemSize}
+              bubble={bubble}
+              on:click={(e) => chooseTemplate(e, bubble)}
+              on:delete={(e) => deleteTemplate(e, bindId)}
+              on:rename={e => onRenameBubble(e)}
+            />
+          {/each}
+        </div>
+      {/if}
     </div>
   </Drawer>
 </div>
@@ -173,5 +216,25 @@
     flex-wrap: wrap;
     gap: 10px;
     margin: 16px;
+  }
+  .template-section-label {
+    width: 100%;
+    font-size: 0.85rem;
+    color: rgb(var(--color-surface-600));
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgb(var(--color-surface-300));
+  }
+  .template-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+  }
+  :global(.sortable-ghost) {
+    opacity: 0.5;
+  }
+  :global(.sortable-chosen) {
+    box-shadow: 0 0 0 2px rgba(0, 100, 255, 0.3);
   }
 </style>
