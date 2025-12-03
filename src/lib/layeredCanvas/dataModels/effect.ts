@@ -5,25 +5,35 @@ import parseColor from 'color-parse';
 
 const isTestEnvironment = typeof process !== 'undefined' && (process.env.NODE_ENV === 'test' || process.env.VITEST);
 
-let jfaPromise: Promise<JFACompute> | null = null;
-async function ensureJFA(): Promise<JFACompute> {
+let jfaPromise: Promise<JFACompute | null> | null = null;
+let webGPUAvailable = true;
+
+async function ensureJFA(): Promise<JFACompute | null> {
   if (!jfaPromise) {
     jfaPromise = (async () => {
-      const c = new Computron();
-      await c.init();
+      try {
+        const c = new Computron();
+        await c.init();
 
-      const jfa = new JFACompute(c);
-      await jfa.init();
-      return jfa;
+        const jfa = new JFACompute(c);
+        await jfa.init();
+        return jfa;
+      } catch (error) {
+        console.warn("WebGPU not available, OutlineEffect disabled:", error);
+        webGPUAvailable = false;
+        return null;
+      }
     })();
   }
 
   return jfaPromise;
 }
 if (!isTestEnvironment) {
-  ensureJFA().catch((error) => {
-    console.error("Failed to initialize JFA compute", error);
-  });
+  ensureJFA();
+}
+
+export function isWebGPUAvailable(): boolean {
+  return webGPUAvailable;
 }
 
 export class Effect {
@@ -83,17 +93,20 @@ export class OutlineEffect extends Effect {
     return new OutlineEffect(this.color, this.width, this.sharp);
   }
 
-  async apply(inputMedia: Media): Promise<Media> { 
+  async apply(inputMedia: Media): Promise<Media> {
+    const jfa = await ensureJFA();
+    if (!jfa) {
+      // WebGPU非対応時は入力をそのまま返す
+      return inputMedia;
+    }
 
     if (this.inputMedia != inputMedia) {
       const inputCanvas = (inputMedia as ImageMedia).drawSource;
 
       const plainImage = FloatField.createFromImageOrCanvas(inputCanvas);
       const seedMap = JFACompute.createJFASeedMap(plainImage, 0.5, false);
-      const jfa = await ensureJFA();
       this.rawDistanceField = await jfa.compute(seedMap);
       this.inputMedia = inputMedia;
-    } else {
     }
 
     const inputCanvas = (inputMedia as ImageMedia).drawSource;
