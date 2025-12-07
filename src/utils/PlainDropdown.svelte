@@ -20,6 +20,7 @@
   export let triggerClass = '';
   export let listClass = '';
   export let optionClass = '';
+  export let placement: 'auto' | 'top' | 'bottom' = 'auto';
   export let match: (optionValue: DropdownValue, current: DropdownValue | undefined) => boolean = (optionValue, current) => optionValue === current;
   export let optionKey = (option: DropdownOption) => option.value;
 
@@ -55,7 +56,13 @@
 
     const spaceBelow = vh - rect.bottom - margin;
     const spaceAbove = rect.top - margin;
-    openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
+    if (placement === 'top') {
+      openUp = true;
+    } else if (placement === 'bottom') {
+      openUp = false;
+    } else {
+      openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
+    }
 
     if (openUp) {
       portalTop = Math.max(0, Math.round(rect.top - margin));

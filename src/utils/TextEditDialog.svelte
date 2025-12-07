@@ -29,12 +29,9 @@
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
   
-  // 参考画像が使用可能なモデルかチェック（定義元に合わせる）
-  $: referenceImagesSupported = (() => {
-    const opt = modeOptions.find(o => o.value === selectedModel);
-    return !!opt?.refImaging && !!opt?.refRange && (opt.refRange.min > 0 || opt.refRange.max > 0);
-  })();
   $: refMax = modeOptions.find(o => o.value === selectedModel)?.refRange?.max ?? 0;
+  // 参考画像が使用可能なモデルかチェック
+  $: referenceImagesSupported = refMax > 0;
   
   // モデルが変更されて参考画像が使用できない場合はリセット
   $: if (!referenceImagesSupported && (referenceImages.length > 0 || referenceMedias.length > 0)) {

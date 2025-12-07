@@ -349,11 +349,11 @@ $: if (angleModeActive && showMoreOptions) {
               <span class="model-label">{$_('dolphinRoom.generation.image')}</span>
               <ImagingModes
                 bind:mode={imagingMode}
-                group="imaging"
-                width={240}
+                group="all"
+                width={300}
                 disabled={false}
-                forceInclude={hasSelectedImages ? [angleEditOnlyMode] : []}
                 {imageSize}
+                placement="top"
               />
             </div>
           {/if}

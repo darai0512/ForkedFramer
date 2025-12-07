@@ -229,9 +229,9 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
 
 // textEdit専用の分岐は廃止（generateFrameImage内で参照画像を自動添付）
 
-export function calculateCost(size: {width:number,height:number}, mode: ImagingMode): number {
+export function calculateCost(size: {width:number,height:number}, mode: ImagingMode, inputSizes: {width:number,height:number}[]): number {
   console.log("calculateCost", size, mode);
-  return calculateImagingCost(mode, size);
+  return calculateImagingCost(mode, size, inputSizes);
 }
 
 /*
@@ -251,29 +251,51 @@ function calculateGPTCost(mode: Mode): number {
 }
 */
 
-export type ModeOption = { value: ImagingMode; name: string; uiType: ImagingProvider; imaging: boolean; textedit: boolean; refImaging: boolean; refRange: { min: number; max: number } };
-export const modeOptions: ModeOption[] = [
-  // Imaging-oriented
-  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
-  { value: 'qwen-image-edit/multiple-angles', name: 'アングル編集', uiType: 'flux', imaging: false, textedit: false, refImaging: true, refRange: { min: 1, max: 1 } },
-  { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
-  { value: 'pro', name: 'FLUX Pro', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 0 } },
-  { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
-  { value: 'manga', name: 'FLUX まんが', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
-  { value: 'comibg', name: 'シンプル背景', uiType: 'flux', imaging: true, textedit: false, refImaging: true, refRange: { min: 0, max: 1 } },
+/**
+ * textedit: テキスト編集モードで選択可能か
+ * refRange: 参照画像の許容枚数（min=必須枚数、max=最大枚数）
+ *   - min=0: 生成モードで使用可能（参照画像なしでOK）
+ *   - max>0: 編集モードで使用可能（参照画像を受け取れる）
+ * timeFactor: 生成時間の推定係数（プログレスバー用、大きいほど遅い）
+ */
+export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number };
+export const modeOptions: readonly ModeOption[] = [
+  // Imaging-oriented (refRange.min=0: 参照画像なしで生成可能)
+  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
+  { value: 'qwen-image-edit/multiple-angles', name: 'アングル編集', uiType: 'flux', textedit: false, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+  { value: 'schnell', name: 'FLUX Schnell', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 5 },
+  { value: 'pro', name: 'FLUX Pro', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12 },
+  { value: 'chibi', name: 'FLUX ちび', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
+  { value: 'manga', name: 'FLUX まんが', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
+  { value: 'comibg', name: 'シンプル背景', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
+  { value: 'z-image', name: 'Z Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12 },
   // Both imaging and text-edit friendly
-  { value: 'gpt-image-1/low', name: 'GPT-image-1 low', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', imaging: false, textedit: true, refImaging: true, refRange: { min: 1, max: 1 } },
-  { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', imaging: true, textedit: true, refImaging: true, refRange: { min: 0, max: 4 } },
-  // Text-edit–oriented
-  { value: 'kontext/pro', name: 'Flux Kontext [Pro]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },
-  { value: 'kontext/max', name: 'Flux Kontext [Max]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },
-  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]', uiType: 'flux', imaging: false, textedit: true, refImaging: false, refRange: { min: 1, max: 1 } },
-];
+  { value: 'gpt-image-1/low', name: 'GPT-image-1 low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+  { value: 'gpt-image-1/medium', name: 'GPT-image-1 medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+  { value: 'gpt-image-1/high', name: 'GPT-image-1 high', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+  { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+  { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+  { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+  { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+  { value: 'seedream/v4.5', name: 'Seedream v4.5', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+  { value: 'flux-2-dev', name: 'Flux 2 Dev', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12 },
+  { value: 'flux-2-pro', name: 'Flux 2 Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12 },
+  { value: 'flux-2-flex', name: 'Flux 2 Flex', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12 },
+  // Text-edit–oriented (refRange.min>0: 参照画像必須)
+  { value: 'kontext/pro', name: 'Flux Kontext [Pro]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+  { value: 'kontext/max', name: 'Flux Kontext [Max]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+  { value: 'kontext/inscene', name: 'Flux Kontext [InScene]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+  { value: 'kling-image/o1', name: 'Kling Image O1', uiType: 'flux', textedit: true, refRange: { min: 1, max: 4 }, timeFactor: 12 },
+] as const satisfies readonly ModeOption[];
+
+// 型安全チェック: modeOptions が全 ImagingMode をカバーしているか
+type CoveredModes = typeof modeOptions[number]['value'];
+type MissingModes = Exclude<ImagingMode, CoveredModes>;
+type ExtraModes = Exclude<CoveredModes, ImagingMode>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _checkMissingModes: MissingModes extends never ? true : { error: 'modeOptions に不足している ImagingMode があります'; missing: MissingModes } = true;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _checkExtraModes: ExtraModes extends never ? true : { error: 'modeOptions に ImagingMode にない値があります'; extra: ExtraModes } = true;
 
 // ModeChoice は廃止（すべて ImagingMode で扱う）
 
@@ -288,7 +310,9 @@ export function getRefMaxForMode(mode: ImagingMode): number {
 }
 
 export function supportsRefImages(mode: ImagingMode): boolean {
-  const opt = modeOptions.find(o => o.value === mode);
-  if (!opt) return false;
-  return !!opt.refImaging && (opt.refRange.min > 0 || opt.refRange.max > 0);
+  return getRefRangeForMode(mode).max > 0;
+}
+
+export function getTimeFactorForMode(mode: ImagingMode): number {
+  return modeOptions.find(o => o.value === mode)?.timeFactor ?? 12;
 }

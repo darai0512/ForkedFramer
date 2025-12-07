@@ -557,7 +557,7 @@
       "hint": "スタジオ",
       "alt": "studio"
     },
-    "welcome": "スタジオへようこそ！　ここでは画像を生成したり、加工したりできます。加工をしたい場合は、生成した画像やドロップした画像を選択してください。",
+    "welcome": "スタジオへようこそ！　ここでは画像を生成したり、編集したりできます。編集をしたい場合は、生成した画像やドロップした画像を選択してください。",
     "header": {
       "materialBucket": "素材集"
     },
@@ -588,8 +588,8 @@
     "heading": {
       "videoGenerating": "動画生成中…",
       "videoGenerate": "動画生成",
-      "processing": "加工中…",
-      "process": "加工",
+      "editing": "編集中…",
+      "edit": "編集",
       "generating": "生成中…",
       "generate": "生成"
     },
@@ -597,13 +597,14 @@
       "inProgress": "現在処理中です",
       "emptyPrompt": "プロンプトを入力してください",
       "needImageForVideo": "動画生成には画像を選択してください",
-      "needImageForMode": "このモードでは加工対象の画像を選択してください",
-      "noRefImageSupport": "このモードは参照画像に対応していません"
+      "needImageForMode": "このモードでは編集対象の画像を選択してください",
+      "noRefImageSupport": "このモードは参照画像に対応していません",
+      "tooManyImages": "選択画像が多すぎます（最大{max}枚）"
     },
     "tooltip": {
       "videoWithImage": "選択画像から動画を生成",
       "videoNoImage": "動画生成には画像を選択してください",
-      "imageWithSelection": "選択中メディアを加工",
+      "imageWithSelection": "選択中メディアを編集",
       "imageNoSelection": "新規生成モード",
       "generating": "処理中です…"
     },

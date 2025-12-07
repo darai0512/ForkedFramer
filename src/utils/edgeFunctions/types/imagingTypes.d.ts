@@ -22,7 +22,13 @@ export const ImagingModeSchema = z.enum([
   "nano-banana-pro",
   "chrono-edit",
   "seedream/v4",
+  "seedream/v4.5",
   "qwen-image-edit/multiple-angles",
+  "flux-2-dev",
+  "flux-2-pro",
+  "flux-2-flex",
+  "z-image",
+  "kling-image/o1",
 ]);
 export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 

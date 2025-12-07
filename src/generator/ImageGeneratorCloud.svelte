@@ -9,7 +9,7 @@
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import type { ImagingMode, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
-  import { calculateCost, generateImage, modeOptions as unifiedModeOptions, isContentsPolicyViolationError, getRefMaxForMode, supportsRefImages } from '../utils/feathralImaging';
+  import { calculateCost, generateImage, modeOptions as unifiedModeOptions, isContentsPolicyViolationError, getRefMaxForMode, supportsRefImages, getTimeFactorForMode } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
   import ImagingModes from './ImagingModes.svelte';
@@ -102,29 +102,9 @@
         fallbackCanvases
       );
 
-      const factorTable: {[key in ImagingMode]: number}= {
-        "schnell": 5,
-        "pro": 12,
-        "chibi": 12,
-        "manga": 12,
-        "comibg": 12,
-        "gpt-image-1/low": 30,
-        "gpt-image-1/medium": 30,
-        "gpt-image-1/high": 30,
-        "qwen-image": 12,
-        "qwen-image-edit/multiple-angles": 12,
-        // 追加統合分（実際にはここでは選べないが型合わせ）
-        "kontext/pro": 12,
-        "kontext/max": 12,
-        "kontext/inscene": 12,
-        "nano-banana": 12,
-        "nano-banana-pro": 12,
-        "chrono-edit": 12,
-        "seedream/v4": 12,
-      }
       // 参照画像の枚数で推定時間を増やす: 0枚=1x, 1枚=2x, 2枚以上=3x
       const refMultiplier = 1 + Math.min(2, imageDataUrls.length);
-      const delta = 1 / (factorTable[mode] * refMultiplier) / pixelRatio;
+      const delta = 1 / (getTimeFactorForMode(mode) * refMultiplier) / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
 
 
@@ -162,7 +142,7 @@
     toastStore.trigger({ message: $_('generator.copiedToClipboard'), timeout: 1500});
   }
 
-  $: estimatedCost = batchCount * calculateCost({width,height}, mode);
+  $: estimatedCost = batchCount * calculateCost({width,height}, mode, []);
 
   onMount(async () => {
   });

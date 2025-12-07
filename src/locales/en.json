@@ -586,8 +586,8 @@
     "heading": {
       "videoGenerating": "Generating Video…",
       "videoGenerate": "Generate Video",
-      "processing": "Processing…",
-      "process": "Process",
+      "editing": "Editing…",
+      "edit": "Edit",
       "generating": "Generating…",
       "generate": "Generate"
     },
@@ -595,13 +595,14 @@
       "inProgress": "Currently processing",
       "emptyPrompt": "Please enter a prompt",
       "needImageForVideo": "Please select an image for video generation",
-      "needImageForMode": "Please select an image for this mode",
-      "noRefImageSupport": "This mode does not support reference images"
+      "needImageForMode": "Please select an image to edit for this mode",
+      "noRefImageSupport": "This mode does not support reference images",
+      "tooManyImages": "Too many images selected (max {max})"
     },
     "tooltip": {
       "videoWithImage": "Generate video from selected image",
       "videoNoImage": "Please select an image for video generation",
-      "imageWithSelection": "Process selected media",
+      "imageWithSelection": "Edit selected media",
       "imageNoSelection": "New generation mode",
       "generating": "Processing…"
     },

@@ -14,7 +14,7 @@ function calculateCostFromMegapixels(size: { width: number; height: number }, co
     return Math.ceil(pixels / (1024 * 1024) * costPerMegapixel);
 }
 
-type CostSpec = { kind: 'fixed', value: number } | { kind: 'perMP', value: number };
+type CostSpec = { kind: 'fixed', value: number } | { kind: 'perMP', value: number } | { kind: 'perMP/IO', input: number, output: number } ;
 
 // モード単位で単一仕様に一般化（ref画像数には非依存）
 const COST_SPEC: Record<ImagingMode, CostSpec> = {
@@ -39,6 +39,14 @@ const COST_SPEC: Record<ImagingMode, CostSpec> = {
     "nano-banana-pro": { kind: 'fixed', value: 22 },
     "chrono-edit": { kind: 'fixed', value: 3 },
     "seedream/v4": { kind: 'fixed', value: 5 },
+    "seedream/v4.5": { kind: 'fixed', value: 6 },
+    // FLUX 2 系
+    "flux-2-dev": { kind: 'perMP/IO', input: 2, output:2 },
+    "flux-2-pro": { kind: 'perMP/IO', input: 2, output:5 },
+    "flux-2-flex": { kind: 'perMP/IO', input: 9, output: 9 },
+    // その他
+    "z-image": { kind: 'perMP', value: 1 },
+    "kling-image/o1": { kind: 'fixed', value: 5 },
 };
 
 // 互換のための内部ヘルパ（アスペクト比からピクセル数を推定）
@@ -134,21 +142,38 @@ export function calculateInPaintingCost(size: { width: number; height: number })
     return calculateCostFromMegapixels(size, 8);
 }
 
-function calcFromSpec(spec: CostSpec, size: { width: number; height: number }): number {
-    return spec.kind === 'fixed' ? spec.value : calculateCostFromMegapixels(size, spec.value);
+export type ImageSize = { width: number; height: number };
+
+function calcFromSpec(spec: CostSpec, outputSize: ImageSize, inputSizes: ImageSize[]): number {
+    switch (spec.kind) {
+        case 'fixed':
+            return spec.value;
+        case 'perMP':
+            return calculateCostFromMegapixels(outputSize, spec.value);
+        case 'perMP/IO': {
+            let cost = calculateCostFromMegapixels(outputSize, spec.output);
+            for (const inputSize of inputSizes) {
+                cost += calculateCostFromMegapixels(inputSize, spec.input);
+            }
+            return cost;
+        }
+    }
 }
 
 /**
  * 統合: refImage の数に応じて t2i か textedit/i2i のコストを計算
  * refImageCount === 0 -> t2i, 1 以上 -> textedit/i2i
+ * @param mode 画像生成モード
+ * @param imageSize 出力画像サイズ
+ * @param inputSizes 入力画像サイズの配列（perMP/IOモードで使用、なければ空配列）
  */
-export function calculateImagingCost(mode: ImagingMode, imageSize: { width: number; height: number }): number {
-    return calcFromSpec(COST_SPEC[mode], imageSize);
+export function calculateImagingCost(mode: ImagingMode, imageSize: ImageSize, inputSizes: ImageSize[]): number {
+    return calcFromSpec(COST_SPEC[mode], imageSize, inputSizes);
 }
 
 // リクエストオブジェクトから直接コストを計算
-export function calculateRequestCost(req: TextToImageRequest): number {
-    return calculateImagingCost(req.mode, req.imageSize);
+export function calculateRequestCost(req: TextToImageRequest, inputSizes: ImageSize[]): number {
+    return calculateImagingCost(req.mode, req.imageSize, inputSizes);
 }
 
 export function calculateSeedanceCost(baseCost: number, duration: number, pixels: number): number {

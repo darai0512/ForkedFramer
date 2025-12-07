@@ -16,13 +16,14 @@
   export let width: number = 270;
   export let disabled = false;
   export let forceInclude: ImagingMode[] = [];
+  export let placement: 'auto' | 'top' | 'bottom' = 'auto';
 
   const preference = createPreference<ImagingMode>('imaging', 'mode');
 
   function coerceMode(v: unknown): ImagingMode {
     if (typeof v === 'string') return v as ImagingMode;
     if (v && typeof v === 'object' && 'value' in (v as any)) return (v as any).value as ImagingMode; // migration support
-    return 'schnell';
+    return 'z-image';
   }
 
   let internalMode: ImagingMode = coerceMode(mode);
@@ -33,7 +34,7 @@
     mode = internalMode;
   });
 
-  type ModeOption = { value: ImagingMode; label: string; cost: number; uiType?: ImagingProvider };
+  type ModeOption = { value: ImagingMode; label: string; cost: number; uiType?: ImagingProvider; supportsGenerate: boolean; supportsEdit: boolean; refRange: { min: number; max: number } };
 
   function same(a: ImagingMode, b?: ImagingMode) {
     return !!b && a === b;
@@ -45,11 +46,11 @@
   function filterByGroup() {
     switch (group) {
       case 'imaging':
-        return (o: typeof unifiedModeOptions[number]) => !!o.imaging;
+        return (o: typeof unifiedModeOptions[number]) => o.refRange.min === 0;
       case 'textedit':
         return (o: typeof unifiedModeOptions[number]) => !!o.textedit;
       case 'ref':
-        return (o: typeof unifiedModeOptions[number]) => !!o.refImaging;
+        return (o: typeof unifiedModeOptions[number]) => o.refRange.max > 0;
       case 'all':
       default:
         return (_o: typeof unifiedModeOptions[number]) => true;
@@ -71,9 +72,12 @@
     })
     .map(o => ({
       value: o.value as ImagingMode,
-      label: group === 'ref' && o.refImaging && o.textedit ? `☆ ${o.name}` : o.name,
-      cost: calculateImagingCost(o.value as ImagingMode, effectiveImageSize),
+      label: group === 'ref' && o.refRange.max > 0 && o.textedit ? `☆ ${o.name}` : o.name,
+      cost: calculateImagingCost(o.value as ImagingMode, effectiveImageSize, []),
       uiType: o.uiType as ImagingProvider,
+      supportsGenerate: o.refRange.min === 0,
+      supportsEdit: o.refRange.max > 0,
+      refRange: o.refRange,
     }));
 
   let coercedOnce = false;
@@ -113,17 +117,34 @@
       width={width}
       placeholder="選択可能なモードがありません"
       disabled={disabled || allOptions.length === 0}
+      {placement}
     >
       <svelte:fragment slot="trigger" let:selectedOption>
         {#if selectedOption}
-          <span>{ensureModeOption(selectedOption).label}</span>
+          <span class="label-with-chip">
+            {ensureModeOption(selectedOption).label}
+            {#if ensureModeOption(selectedOption).supportsGenerate}
+              <span class="chip chip-generate">生成</span>
+            {/if}
+            {#if ensureModeOption(selectedOption).supportsEdit}
+              <span class="chip chip-edit">編集({ensureModeOption(selectedOption).refRange.max})</span>
+            {/if}
+          </span>
           <span class="cost"><FeathralCost cost={ensureModeOption(selectedOption).cost} showsLabel={false} /></span>
         {:else}
           <span class="placeholder">選択可能なモードがありません</span>
         {/if}
       </svelte:fragment>
       <svelte:fragment slot="option" let:option>
-        <span>{ensureModeOption(option).label}</span>
+        <span class="label-with-chip">
+          {ensureModeOption(option).label}
+          {#if ensureModeOption(option).supportsGenerate}
+            <span class="chip chip-generate">生成</span>
+          {/if}
+          {#if ensureModeOption(option).supportsEdit}
+            <span class="chip chip-edit">編集({ensureModeOption(option).refRange.max})</span>
+          {/if}
+        </span>
         <span class="cost"><FeathralCost cost={ensureModeOption(option).cost} showsLabel={false} /></span>
       </svelte:fragment>
     </PlainDropdown>
@@ -199,5 +220,29 @@
   .comment-inline {
     font-family: '源暎アンチック';
     font-size: 12px;
+  }
+
+  .label-with-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+
+  .chip {
+    display: inline-block;
+    padding: 0.1em 0.35em;
+    font-size: 0.65em;
+    font-weight: 600;
+    color: white;
+    border-radius: 0.25em;
+    white-space: nowrap;
+  }
+
+  .chip-generate {
+    background-color: #3b82f6;
+  }
+
+  .chip-edit {
+    background-color: #10b981;
   }
 </style>

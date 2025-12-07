@@ -255,11 +255,10 @@ $: timelineRows = toTimelineRows(timelineItems);
 $: messageHeading = generationType === 'video'
   ? (isGenerating ? $_('dolphinRoom.heading.videoGenerating') : $_('dolphinRoom.heading.videoGenerate'))
   : hasSelectedImages
-    ? (isGenerating ? $_('dolphinRoom.heading.processing') : $_('dolphinRoom.heading.process'))
+    ? (isGenerating ? $_('dolphinRoom.heading.editing') : $_('dolphinRoom.heading.edit'))
     : (isGenerating ? $_('dolphinRoom.heading.generating') : $_('dolphinRoom.heading.generate'));
 $: generationDisableReason = (() => {
   if (isGenerating) return $_('dolphinRoom.disable.inProgress');
-  if (promptRequired && isDraftEmpty) return $_('dolphinRoom.disable.emptyPrompt');
   if (generationType === 'video' && !hasSelectedImages) return $_('dolphinRoom.disable.needImageForVideo');
   if (generationType === 'image' && requiresReferenceSelection && !hasSelectedImages) {
     return $_('dolphinRoom.disable.needImageForMode');
@@ -267,6 +266,13 @@ $: generationDisableReason = (() => {
   if (generationType === 'image' && hasSelectedImages && !supportsRefImages(imagingMode)) {
     return $_('dolphinRoom.disable.noRefImageSupport');
   }
+  if (generationType === 'image' && hasSelectedImages) {
+    const refRange = getRefRangeForMode(imagingMode);
+    if (selectedImageItems.length > refRange.max) {
+      return $_('dolphinRoom.disable.tooManyImages', { values: { max: refRange.max } });
+    }
+  }
+  if (promptRequired && isDraftEmpty) return $_('dolphinRoom.disable.emptyPrompt');
   return '';
 })();
 
