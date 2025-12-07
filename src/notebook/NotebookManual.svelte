@@ -2,7 +2,7 @@
   import { type CharacterBase, type CharactersBase } from '$bookTypes/notebook';
   import { type Storyboard } from '$bookTypes/storyboard';
   import { type Thinker } from "$protocolTypes/adviseTypes.d";
-  import { commitBook, type NotebookLocal, type CharacterLocal } from '../lib/book/book';
+  import { commitBook, newPage, type NotebookLocal, type CharacterLocal } from '../lib/book/book';
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
@@ -12,6 +12,9 @@
   import { ulid } from 'ulid';
   import { onMount, tick } from 'svelte';
   import {makePagesFromStoryboard} from './makePage';
+  import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
+  import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
+  import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
   import { toastStore } from '@skeletonlabs/skeleton';
   import NotebookTextarea from './NotebookTextarea.svelte';
   import NotebookCharacterList from './NotebookCharacterList.svelte';
@@ -30,6 +33,7 @@
   import { createPreference } from '../preferences';
   import { _ } from 'svelte-i18n';
   import ThinkerSelector from './ThinkerSelector.svelte';
+  import { toolTip } from '../utils/passiveToolTipStore';
 
   let notebook: NotebookLocal | null;
   $: notebook = $mainBook?.notebook ?? null;
@@ -361,6 +365,98 @@
     }
   }
 
+  async function onCreatePages() {
+    console.log('onCreatePages called');
+    try {
+      storyboardWaiting = true;
+      const result = await adviseStoryboard(makeRequest());
+      const storyboard = result as Storyboard;
+      notebook!.storyboard = storyboard;
+      storyboardWaiting = false;
+      console.log(storyboard);
+
+      // 画像生成の準備
+      imageProgress = 0.001;
+      imagingContext = {
+        awakeWarningToken: false,
+        errorToken: false,
+        total: storyboard.pages.length,
+        succeeded: 0,
+        failed: 0,
+        refImages: {},
+        maxRefImages: getRefMaxForMode(imagingMode),
+      };
+      imagingContext.refImages = portraitsRecordFromNotebook(notebook ?? null);
+
+      const lastPage = $mainBook!.pages[$mainBook!.pages.length - 1];
+      const paperSize = lastPage.paperSize;
+      const primaryPrompt = "セリフの言語は維持すること。日本語なら日本語で。日本語縦書きの場合は先に読むコマが右、後に読むコマが左。idは出力しない。";
+
+      // 各ページを処理
+      for (let pageIndex = 0; pageIndex < storyboard.pages.length; pageIndex++) {
+        const storyboardPage = storyboard.pages[pageIndex];
+
+        // ページのJSONをそのままプロンプトに
+        const pagePrompt = `${postfix}\n${primaryPrompt}\n${JSON.stringify(storyboardPage)}`;
+        console.log('Page prompt:', pagePrompt);
+
+        try {
+          // 画像生成
+          const canvases = await generateImage(
+            pagePrompt,
+            { width: paperSize[0], height: paperSize[1] },
+            imagingMode,
+            1,
+            "opaque",
+            []
+          );
+
+          if (canvases.length > 0) {
+            // 1枚絵ページを作成
+            const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
+            const frameTree = rootFrameTree.children[0];
+            const film = Film.fromMedia(buildMedia(canvases[0]));
+            frameTree.filmStack.films = [film];
+
+            const page = newPage(rootFrameTree, []);
+            page.paperSize = [...paperSize];
+            page.paperColor = lastPage.paperColor;
+            page.frameColor = lastPage.frameColor;
+            page.frameWidth = lastPage.frameWidth;
+            page.source = storyboardPage;
+
+            const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
+            const frameLayout = findLayoutOf(layout, frameTree)!;
+            const transformer = new FilmStackTransformer(paperSize, frameTree.filmStack.films);
+            transformer.scale(0.01);
+            constraintLeaf(paperSize, frameLayout);
+
+            $mainBook!.pages.push(page);
+            imagingContext.succeeded++;
+          }
+        } catch (e) {
+          console.error('Image generation failed for page', pageIndex, e);
+          imagingContext.failed++;
+          if (!isContentsPolicyViolationError(e)) {
+            toastStore.trigger({ message: aiErrorMessage, timeout: 1500 });
+          }
+        }
+
+        imageProgress = (pageIndex + 1) / storyboard.pages.length;
+        imagingContext = imagingContext;
+      }
+
+      commit();
+      $redrawToken = true;
+      imageProgress = 1;
+
+    } catch (e) {
+      toastStore.trigger({ message: aiErrorMessage, timeout: 1500 });
+      console.error(e);
+      storyboardWaiting = false;
+    }
+  }
+
   async function onGenerateImages() {
     imageProgress = 0.001;
     imagingContext = {
@@ -531,9 +627,10 @@
       <h2 class="warning">Sorry, storyboard creation is under adjustment due to AI issues</h2>
     </div> -->
     <div class="flex flex-row gap-4 mb-4">
-      <button class="btn variant-filled-warning" on:click={reset}>{$_('notebook.manual.reset')}</button>
+      <button class="btn variant-filled-warning" on:click={reset} use:toolTip={"入力したものをクリア"}>{$_('notebook.manual.reset')}</button>
       <span class="flex-grow"></span>
-      <button class="btn variant-filled-primary" on:click={onBuildStoryboard}>{$_('notebook.manual.createStoryboard')}</button>
+      <button class="btn variant-filled-primary" on:click={onBuildStoryboard} use:toolTip={"1コマずつ画像生成する方式でページを作成"}>{$_('notebook.manual.createStoryboard')}</button>
+      <button class="btn variant-filled-primary" on:click={onCreatePages} use:toolTip={"1ページずつ直接画像生成"}>{$_('notebook.manual.createPages')}</button>
     </div>
     <div class="section">
       <h2>{$_('notebook.manual.imageGeneration')}</h2>
