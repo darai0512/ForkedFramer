@@ -90,7 +90,6 @@ let angleWideAngleLens = false;
 let requiresReferenceSelection = false;
 let isAngleEditMode = false;
 let promptRequired = true;
-let lastSelectableImagingMode: ImagingMode = 'schnell';
 
 const allocateId: AllocateId = () => nextId++;
 
@@ -238,12 +237,6 @@ $: {
   const nextRequires = getRefRangeForMode(imagingMode).min > 0;
   if (requiresReferenceSelection !== nextRequires) {
     requiresReferenceSelection = nextRequires;
-  }
-  if (!nextRequires || hasSelectedImages) {
-    lastSelectableImagingMode = imagingMode;
-  } else if (imagingMode !== lastSelectableImagingMode) {
-    toastStore.trigger({ message: $_('dolphinRoom.disable.needImageForMode'), timeout: 2500 });
-    imagingMode = lastSelectableImagingMode;
   }
 }
 $: isAngleEditMode = imagingMode === ANGLE_EDIT_MODE;

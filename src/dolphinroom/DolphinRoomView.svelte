@@ -92,6 +92,7 @@ $: imageTemplates = [
     imagingMode: 'nano-banana' as ImagingMode,
     prompt: $_('dolphinRoom.templates.lineArtPrompt'),
     applyStyle: false,
+    requiresSelection: true,
   },
   {
     id: 'characterSheet',
@@ -170,7 +171,7 @@ async function applyTemplate(templateId: string): Promise<boolean> {
     const template = imageTemplates.find(t => t.id === templateId);
     if (template) {
       if (template.requiresSelection && !hasSelectedImages) {
-        toastStore.trigger({ message: $_('dolphinRoom.disable.needImageForMode'), timeout: 2500 });
+        toastStore.trigger({ message: $_('dolphinRoom.disable.needImageForTemplate'), timeout: 2500 });
         pendingTemplateId = templateId;
         return false;
       }

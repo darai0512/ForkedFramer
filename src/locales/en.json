@@ -596,6 +596,7 @@
       "emptyPrompt": "Please enter a prompt",
       "needImageForVideo": "Please select an image for video generation",
       "needImageForMode": "Please select an image to edit for this mode",
+      "needImageForTemplate": "Please select an image to edit for this template",
       "noRefImageSupport": "This mode does not support reference images",
       "tooManyImages": "Too many images selected (max {max})"
     },

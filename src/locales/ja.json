@@ -598,6 +598,7 @@
       "emptyPrompt": "プロンプトを入力してください",
       "needImageForVideo": "動画生成には画像を選択してください",
       "needImageForMode": "このモードでは編集対象の画像を選択してください",
+      "needImageForTemplate": "このテンプレートでは編集対象の画像を選択してください",
       "noRefImageSupport": "このモードは参照画像に対応していません",
       "tooManyImages": "選択画像が多すぎます（最大{max}枚）"
     },
