@@ -442,6 +442,7 @@ onDestroy(() => {
   {generationDisableReason}
   {isGenerating}
   {hasSelectedImages}
+  selectedImageCount={selectedImageItems.length}
   bind:draft={draft}
   bind:style={style}
   bind:applyStyle={applyStyle}

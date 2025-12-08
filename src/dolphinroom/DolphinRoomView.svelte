@@ -32,6 +32,7 @@ export let messageHeading = '';
 export let generationDisableReason = '';
 export let isGenerating = false;
 export let hasSelectedImages = false;
+export let selectedImageCount = 0;
 export let draft = '';
 export let imagingMode: ImagingMode = 'schnell';
 export let generationType: 'image' | 'video' = 'image';
@@ -355,6 +356,7 @@ $: if (angleModeActive && showMoreOptions) {
                 disabled={false}
                 {imageSize}
                 placement="top"
+                {selectedImageCount}
               />
             </div>
           {/if}

@@ -13,10 +13,12 @@
 
   export let imageSize: { width: number; height: number } | undefined = DEFAULT_IMAGE_SIZE;
   export let comment: string = '';
-  export let width: number = 270;
+  export let width: number = 300;
   export let disabled = false;
   export let forceInclude: ImagingMode[] = [];
   export let placement: 'auto' | 'top' | 'bottom' = 'auto';
+  export let hasSelectedImages: boolean | undefined = undefined;
+  export let selectedImageCount: number | undefined = undefined;
 
   const preference = createPreference<ImagingMode>('imaging', 'mode');
 
@@ -67,8 +69,19 @@
   $: allOptions = unifiedModeOptions
     .filter(o => {
       const val = o.value as ImagingMode;
-      // 通常のグループ条件 or 強制表示 or 現在選択中のモードは必ず残す
-      return filterByGroup()(o) || forceInclude.includes(val) || same(val, internalMode) || same(val, mode);
+      // 現在選択中のモードは必ず残す
+      if (same(val, internalMode) || same(val, mode)) return true;
+      // 強制表示
+      if (forceInclude.includes(val)) return true;
+      // グループ条件
+      if (!filterByGroup()(o)) return false;
+      // 選択枚数によるフィルタ
+      if (selectedImageCount !== undefined) {
+        return o.refRange.min <= selectedImageCount && selectedImageCount <= o.refRange.max;
+      }
+      // 選択状態によるフィルタ（枚数不明の場合のフォールバック）
+      if (hasSelectedImages === undefined) return true;
+      return hasSelectedImages ? o.refRange.max > 0 : o.refRange.min === 0;
     })
     .map(o => ({
       value: o.value as ImagingMode,
