@@ -16,7 +16,6 @@
   export let comment: string = '';
   export let width: number = 300;
   export let disabled = false;
-  export let forceInclude: ImagingMode[] = [];
   export let placement: 'auto' | 'top' | 'bottom' = 'auto';
   export let hasSelectedImages: boolean | undefined = undefined;
   export let selectedImageCount: number | undefined = undefined;
@@ -46,6 +45,12 @@
     return opts.some(op => same(op.value, choice));
   }
 
+  /**
+   * group propによるフィルタ条件
+   * - imaging: 参照画像なしで生成可能なモード (refRange.min === 0)
+   * - textedit: テキスト編集対応モード
+   * - ref: 参照画像を受け取れるモード (refRange.max > 0)
+   */
   function filterByGroup() {
     switch (group) {
       case 'imaging':
@@ -64,15 +69,16 @@
     return imageSize ?? DEFAULT_IMAGE_SIZE;
   }
 
-  // フィルタを適用してModeOptionを変換
+  /**
+   * フィルタの優先順位:
+   * 1. 現在選択中のモード → 常に表示（選択が消えると困るため）
+   * 2. group条件 → filterByGroup()参照
+   * 3. 参照画像枚数条件 → refRange.min <= 枚数 <= refRange.max
+   */
   function filterModeOption(o: ModeOption): DisplayModeOption | null {
     const val = o.value as ImagingMode;
     // 現在選択中のモードは必ず残す
     if (same(val, internalMode) || same(val, mode)) {
-      return toDisplayOption(o);
-    }
-    // 強制表示
-    if (forceInclude.includes(val)) {
       return toDisplayOption(o);
     }
     // グループ条件
@@ -117,7 +123,7 @@
   // 依存変数を明示的に参照してリアクティブに更新
   $: {
     // 依存変数を明示（Svelteが追跡できるようにする）
-    const _deps = [group, selectedImageCount, hasSelectedImages, forceInclude, internalMode, mode, imageSize];
+    const _deps = [group, selectedImageCount, hasSelectedImages, internalMode, mode, imageSize];
     void _deps;
 
     const tree: FilteredTreeItem[] = [];
