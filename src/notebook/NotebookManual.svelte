@@ -634,7 +634,7 @@
     </div>
     <div class="section">
       <h2>{$_('notebook.manual.imageGeneration')}</h2>
-      <ImagingModes bind:mode={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')}/>
+      <ImagingModes bind:mode={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top"/>
       <p class="text-xs mt-1 mb-4">☆マークは登場人物画像を参照します</p>
       <div class="flex flex-row mt-2 justify-center align-center gap-2">
         <span class="w-18">{$_('notebook.manual.style')}</span>

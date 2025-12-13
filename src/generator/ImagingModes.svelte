@@ -49,7 +49,7 @@
    * group propによるフィルタ条件
    * - imaging: 参照画像なしで生成可能なモード (refRange.min === 0)
    * - textedit: テキスト編集対応モード
-   * - ref: 参照画像を受け取れるモード (refRange.max > 0)
+   * - ref: キャラ参照用途。参照画像なしでも実行可能なのでフィルタなし
    */
   function filterByGroup() {
     switch (group) {
@@ -58,7 +58,8 @@
       case 'textedit':
         return (o: ModeOption) => !!o.textedit;
       case 'ref':
-        return (o: ModeOption) => o.refRange.max > 0;
+        // 参照画像なしで説明だけでも実行可能なのでフィルタしない
+        return (_o: ModeOption) => true;
       case 'all':
       default:
         return (_o: ModeOption) => true;
@@ -99,9 +100,12 @@
 
   function toDisplayOption(o: ModeOption): DisplayModeOption {
     const effectiveSize = getEffectiveImageSize();
+    // ☆マークは4枚以上参照可能なモデルにのみ表示（キャラ参照対応の目安）
+    // 1枚のみのモデルは基本的にi2iでありキャラ参照ではない
+    const supportsCharacterRef = o.refRange.max >= 4;
     return {
       value: o.value as ImagingMode,
-      label: group === 'ref' && o.refRange.max > 0 && o.textedit ? `☆ ${o.name}` : o.name,
+      label: group === 'ref' && supportsCharacterRef ? `☆ ${o.name}` : o.name,
       cost: calculateImagingCost(o.value as ImagingMode, effectiveSize, []),
       uiType: o.uiType as ImagingProvider,
       supportsGenerate: o.refRange.min === 0,
