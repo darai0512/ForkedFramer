@@ -630,7 +630,7 @@
       <button class="btn variant-filled-warning" on:click={reset} use:toolTip={"入力したものをクリア"}>{$_('notebook.manual.reset')}</button>
       <span class="flex-grow"></span>
       <button class="btn variant-filled-primary" on:click={onBuildStoryboard} use:toolTip={"1コマずつ画像生成する方式でページを作成"}>{$_('notebook.manual.createStoryboard')}</button>
-      <button class="btn variant-filled-primary" on:click={onCreatePages} use:toolTip={"1ページずつ直接画像生成"}>{$_('notebook.manual.createPages')}</button>
+      <!-- <button class="btn variant-filled-primary" on:click={onCreatePages} use:toolTip={"1ページずつ直接画像生成"}>{$_('notebook.manual.createPages')}</button> -->
     </div>
     <div class="section">
       <h2>{$_('notebook.manual.imageGeneration')}</h2>
