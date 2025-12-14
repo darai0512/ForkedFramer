@@ -89,8 +89,8 @@
   <h3>コマと画像</h3>
   <p>画像をドロップ: はめこみ</p>
   <p>Q+Click: 削除</p>
-  <p>W+Click: 横に分割</p> 
-  <p>S+Click: 縦に分割</p> 
+  <p>W+Click: 左右に分割</p> 
+  <p>S+Click: 上下に分割</p> 
   <p>D+Click: 画像削除</p>
   <p>T+Click: 画像左右反転</p>
   <p>Y+Click: 画像上下反転</p>

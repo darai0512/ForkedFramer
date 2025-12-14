@@ -624,5 +624,68 @@
       "height": "height",
       "imageCount": "image count"
     }
+  },
+  "hint": {
+    "frame": {
+      "splitHorizontal": "左右に分割",
+      "splitVertical": "上下に分割",
+      "delete": "削除",
+      "duplicate": "複製",
+      "shiftImage": "画像のシフト",
+      "unshiftImage": "画像のアンシフト",
+      "resetPadding": "パディングのリセット",
+      "zplus": "手前に",
+      "zminus": "奥に",
+      "visibility": "不可視/背景と絵/枠線も",
+      "zvalue": "z値",
+      "dragToScale": "ドラッグでスケール",
+      "dragToRotate": "ドラッグで回転",
+      "addTransparentLayer": "透明レイヤを追加",
+      "scribbleOnTop": "一番上のレイヤに落書き",
+      "flipHorizontal": "左右反転",
+      "flipVertical": "上下反転",
+      "fit": "フィット",
+      "changeWidth": "幅を変更",
+      "slant": "傾き",
+      "insertFrame": "コマ挿入",
+      "swapSelected": "選択コマと\n中身を入れ替え",
+      "dragTail": "ドラッグでしっぽ",
+      "dragTailCurve": "ドラッグでしっぽのカーブ",
+      "dragCircle": "ドラッグで円定義",
+      "dragRadius": "ドラッグで円半径",
+      "dragToMove": "ドラッグで移動",
+      "dragToChangePadding": "ドラッグでパディング変更",
+      "clickToSelect": "クリックで選択",
+      "dropImage": "画像をドロップ"
+    },
+    "bubble": {
+      "dragToCreate": "ドラッグで作成",
+      "dragToMove": "ドラッグで移動",
+      "dragToAdjustPosition": "ドラッグで位置調整",
+      "bubbleZPlus": "フキダシ順で手前",
+      "bubbleZMinus": "フキダシ順で奥",
+      "delete": "削除",
+      "dragLeftRightToRotate": "左右ドラッグで回転",
+      "scaleSync": "スケール同期",
+      "dragToScale": "ドラッグでスケール",
+      "addTransparentLayer": "透明レイヤを追加",
+      "scribbleOnTop": "一番上のレイヤに落書き",
+      "dragTail": "ドラッグでしっぽ",
+      "dragTailCurve": "ドラッグでしっぽのカーブ",
+      "dragToLinkBubble": "ドラッグで他のフキダシと結合",
+      "dragCircle": "ドラッグで円定義",
+      "dragRadius": "ドラッグで円半径",
+      "altDragToMoveClickToSelect": "Alt+ドラッグで移動、クリックで選択"
+    },
+    "array": {
+      "deletePage": "ページ削除",
+      "markPage": "ページマーク",
+      "batchImaging": "バッチ画像生成",
+      "editBubbles": "吹き出し一括編集",
+      "copyToClipboard": "クリップボードにコピー",
+      "tweakPage": "ページ調整",
+      "insertNewPage": "新しいページを挿入",
+      "moveMarkedPages": "マークしたページをここに移動\nCtrlを押しているとコピー"
+    }
   }
 }

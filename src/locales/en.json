@@ -622,5 +622,68 @@
       "height": "height",
       "imageCount": "image count"
     }
+  },
+  "hint": {
+    "frame": {
+      "splitHorizontal": "Split horizontally",
+      "splitVertical": "Split vertically",
+      "delete": "Delete",
+      "duplicate": "Duplicate",
+      "shiftImage": "Shift image",
+      "unshiftImage": "Unshift image",
+      "resetPadding": "Reset padding",
+      "zplus": "Bring forward",
+      "zminus": "Send backward",
+      "visibility": "Invisible/Background & image/Border too",
+      "zvalue": "Z value",
+      "dragToScale": "Drag to scale",
+      "dragToRotate": "Drag to rotate",
+      "addTransparentLayer": "Add transparent layer",
+      "scribbleOnTop": "Scribble on top layer",
+      "flipHorizontal": "Flip horizontal",
+      "flipVertical": "Flip vertical",
+      "fit": "Fit",
+      "changeWidth": "Change width",
+      "slant": "Slant",
+      "insertFrame": "Insert frame",
+      "swapSelected": "Swap contents with\nselected frame",
+      "dragTail": "Drag for tail",
+      "dragTailCurve": "Drag for tail curve",
+      "dragCircle": "Drag to define circle",
+      "dragRadius": "Drag for circle radius",
+      "dragToMove": "Drag to move",
+      "dragToChangePadding": "Drag to change padding",
+      "clickToSelect": "Click to select",
+      "dropImage": "Drop image"
+    },
+    "bubble": {
+      "dragToCreate": "Drag to create",
+      "dragToMove": "Drag to move",
+      "dragToAdjustPosition": "Drag to adjust position",
+      "bubbleZPlus": "Bring bubble forward",
+      "bubbleZMinus": "Send bubble backward",
+      "delete": "Delete",
+      "dragLeftRightToRotate": "Drag left/right to rotate",
+      "scaleSync": "Scale sync",
+      "dragToScale": "Drag to scale",
+      "addTransparentLayer": "Add transparent layer",
+      "scribbleOnTop": "Scribble on top layer",
+      "dragTail": "Drag for tail",
+      "dragTailCurve": "Drag for tail curve",
+      "dragToLinkBubble": "Drag to link with another bubble",
+      "dragCircle": "Drag to define circle",
+      "dragRadius": "Drag for circle radius",
+      "altDragToMoveClickToSelect": "Alt+drag to move, click to select"
+    },
+    "array": {
+      "deletePage": "Delete page",
+      "markPage": "Mark page",
+      "batchImaging": "Batch image generation",
+      "editBubbles": "Batch bubble editing",
+      "copyToClipboard": "Copy to clipboard",
+      "tweakPage": "Tweak page",
+      "insertNewPage": "Insert new page",
+      "moveMarkedPages": "Move marked pages here\nHold Ctrl to copy"
+    }
   }
 }

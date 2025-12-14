@@ -61,24 +61,24 @@ export class ArrayLayer extends LayerBase {
 
     const mp = () => this.paper.matrix;
     for (let i = 0; i < this.array.papers.length; i++) {
-      const trashIcon = new ClickableIcon(["page-trash.webp"],[32,32],[0.5,0],"ページ削除", () => 1 < this.array.papers.length, mp);
+      const trashIcon = new ClickableIcon(["page-trash.webp"],[32,32],[0.5,0],"hint.array.deletePage", () => 1 < this.array.papers.length, mp);
       this.trashIcons.push(trashIcon);
-      const markIcon = new ClickableIcon(["page-mark.webp", "page-mark-on.webp"],[32,32],[0.5,0],"ページマーク", null, mp);
+      const markIcon = new ClickableIcon(["page-mark.webp", "page-mark-on.webp"],[32,32],[0.5,0],"hint.array.markPage", null, mp);
       this.markIcons.push(markIcon);
-      const imagingIcon = new ClickableIcon(["page-imaging.webp"],[32,32],[0.5,0],"バッチ画像生成", null, mp);
+      const imagingIcon = new ClickableIcon(["page-imaging.webp"],[32,32],[0.5,0],"hint.array.batchImaging", null, mp);
       this.imagingIcons.push(imagingIcon);
-      const editBubblesIcon = new ClickableIcon(["page-bubbles.webp"],[32,32],[0.5,0],"吹き出し一括編集", null, mp);
+      const editBubblesIcon = new ClickableIcon(["page-bubbles.webp"],[32,32],[0.5,0],"hint.array.editBubbles", null, mp);
       this.bubblesIcons.push(editBubblesIcon);
-      const copyIcon = new ClickableIcon(["page-clipboard.webp"],[32,32],[0.5,0],"クリップボードにコピー", null, mp);
+      const copyIcon = new ClickableIcon(["page-clipboard.webp"],[32,32],[0.5,0],"hint.array.copyToClipboard", null, mp);
       this.copyIcons.push(copyIcon);
-      const tweakIcon = new ClickableIcon(["page-tweak.webp"],[32,32],[0.5,0],"ページ調整", null, mp);
+      const tweakIcon = new ClickableIcon(["page-tweak.webp"],[32,32],[0.5,0],"hint.array.tweakPage", null, mp);
       this.tweakIcons.push(tweakIcon);
       this.markFlags[i] = false;
     }
     for (let i = 0; i <= this.array.papers.length; i++) {
       const insertIcon = new ClickableIcon(
         ["page-insert.webp", "page-insert-vertical.webp", "page-paste.webp"],[24,24],[0.5,0],
-        ["新しいページを挿入", "新しいページを挿入", "マークしたページをここに移動\nCtrlを押しているとコピー"], null, mp);
+        ["hint.array.insertNewPage", "hint.array.insertNewPage", "hint.array.moveMarkedPages"], null, mp);
       this.insertIcons.push(insertIcon);
     }
     this.calculateIconPositions();

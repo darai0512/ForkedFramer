@@ -2,6 +2,7 @@
   import { toolTipRequest } from "./passiveToolTipStore";
   import { tick } from "svelte";
   import FeathralCost from '../utils/FeathralCost.svelte';
+  import { _ } from 'svelte-i18n';
 
   let tooltip: HTMLDivElement;
   let upper = true;
@@ -45,7 +46,7 @@
   >
   <div class="tooltip">
     {#if $toolTipRequest}
-      {$toolTipRequest.message}
+      {$toolTipRequest.message.split('\n').map(line => $_(line)).join('\n')}
       {#if $toolTipRequest.cost}
         <div class="flex flex-row justify-end">
           <FeathralCost cost={$toolTipRequest.cost}/>

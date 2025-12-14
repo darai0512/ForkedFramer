@@ -118,16 +118,16 @@ export class FrameLayer extends LayerBase {
     const spinUnit: Vector = [unit[0], unit[1] * 1 / 6];
     const mp = () => this.paper.matrix;
     const isFrameActiveAndVisible = () => this.interactable && 0 < (this.selectedLayout?.element.visibility ?? 0);
-    this.splitHorizontalIcon = new ClickableIcon(["frameLayer/split-horizontal.webp"],unit,[0,1],"横に分割", isFrameActiveAndVisible, mp);
-    this.splitVerticalIcon = new ClickableIcon(["frameLayer/split-vertical.webp"],unit,[0,1],"縦に分割", isFrameActiveAndVisible, mp);
-    this.deleteIcon = new ClickableIcon(["frameLayer/delete.webp"],unit,[1,0],"削除", isFrameActiveAndVisible, mp);
-    this.duplicateIcon = new ClickableIcon(["frameLayer/duplicate.webp"],unit,[1,0],"複製", isFrameActiveAndVisible, mp);
-    this.shiftIcon = new ClickableIcon(["frameLayer/shift.webp"],unit,[1,0],"画像のシフト", isFrameActiveAndVisible, mp);
-    this.unshiftIcon = new ClickableIcon(["frameLayer/unshift.webp"],unit,[1,0],"画像のアンシフト", isFrameActiveAndVisible, mp);
-    this.resetPaddingIcon = new ClickableIcon(["frameLayer/reset-padding.webp"],unit,[1,0],"パディングのリセット", isFrameActiveAndVisible, mp);
-    this.zplusIcon = new ClickableIcon(["frameLayer/increment.webp"],spinUnit,[0,0],"手前に", isFrameActiveAndVisible, mp);
-    this.zminusIcon = new ClickableIcon(["frameLayer/decrement.webp"],spinUnit,[0,0],"奥に", isFrameActiveAndVisible, mp);
-    this.visibilityIcon = new ClickableIcon(["frameLayer/visibility1.webp","frameLayer/visibility2.webp","frameLayer/visibility3.webp"],unit,[0,0], ["不可視/背景と絵/枠線も","不可視/背景と絵/枠線も","不可視/背景と絵/枠線も"], isFrameActiveAndVisible, mp);
+    this.splitHorizontalIcon = new ClickableIcon(["frameLayer/split-horizontal.webp"],unit,[0,1],"hint.frame.splitHorizontal", isFrameActiveAndVisible, mp);
+    this.splitVerticalIcon = new ClickableIcon(["frameLayer/split-vertical.webp"],unit,[0,1],"hint.frame.splitVertical", isFrameActiveAndVisible, mp);
+    this.deleteIcon = new ClickableIcon(["frameLayer/delete.webp"],unit,[1,0],"hint.frame.delete", isFrameActiveAndVisible, mp);
+    this.duplicateIcon = new ClickableIcon(["frameLayer/duplicate.webp"],unit,[1,0],"hint.frame.duplicate", isFrameActiveAndVisible, mp);
+    this.shiftIcon = new ClickableIcon(["frameLayer/shift.webp"],unit,[1,0],"hint.frame.shiftImage", isFrameActiveAndVisible, mp);
+    this.unshiftIcon = new ClickableIcon(["frameLayer/unshift.webp"],unit,[1,0],"hint.frame.unshiftImage", isFrameActiveAndVisible, mp);
+    this.resetPaddingIcon = new ClickableIcon(["frameLayer/reset-padding.webp"],unit,[1,0],"hint.frame.resetPadding", isFrameActiveAndVisible, mp);
+    this.zplusIcon = new ClickableIcon(["frameLayer/increment.webp"],spinUnit,[0,0],"hint.frame.zplus", isFrameActiveAndVisible, mp);
+    this.zminusIcon = new ClickableIcon(["frameLayer/decrement.webp"],spinUnit,[0,0],"hint.frame.zminus", isFrameActiveAndVisible, mp);
+    this.visibilityIcon = new ClickableIcon(["frameLayer/visibility1.webp","frameLayer/visibility2.webp","frameLayer/visibility3.webp"],unit,[0,0], ["hint.frame.visibility","hint.frame.visibility","hint.frame.visibility"], isFrameActiveAndVisible, mp);
     this.visibilityIcon.index = 2;
     this.zvalue = new ClickableSelfRenderer(
       (ctx: CanvasRenderingContext2D, csr: ClickableSelfRenderer) => {
@@ -145,28 +145,28 @@ export class FrameLayer extends LayerBase {
         ctx.fillStyle = "#86C8FF";
         ctx.fillText((l!.element.z + 3).toString(), ...c);
       },
-      unit, [0,0], "z値", isFrameActiveAndVisible, mp);
+      unit, [0,0], "hint.frame.zvalue", isFrameActiveAndVisible, mp);
 
     const isImageActiveDraggable = () => this.interactable && 0 < (this.selectedLayout?.element.filmStack.films.length ?? 0);
     const isImageActive = () => this.interactable && 0 < (this.selectedLayout?.element.filmStack.films.length ?? 0) && !this.pointerHandler;
-    this.scaleIcon = new ClickableIcon(["frameLayer/scale.webp"],unit,[1,1],"ドラッグでスケール", isImageActiveDraggable, mp);
-    this.rotateIcon = new ClickableIcon(["frameLayer/rotate.webp"],unit,[1,1],"ドラッグで回転", isImageActiveDraggable, mp);
-    this.coverIcon = new ClickableIcon(["frameLayer/newlayer.webp"],unit,[1,1],"透明レイヤを追加", () => this.interactable, mp);
-    this.scribbleIcon = new ClickableIcon(["frameLayer/scribble.webp"],unit,[1,1],"一番上のレイヤに落書き", isImageActive, mp);
-    this.flipHorizontalIcon = new ClickableIcon(["frameLayer/flip-horizontal.webp"],unit,[1,1],"左右反転", isImageActive, mp);
-    this.flipVerticalIcon = new ClickableIcon(["frameLayer/flip-vertical.webp"],unit,[1,1],"上下反転", isImageActive, mp);
-    this.fitIcon = new ClickableIcon(["frameLayer/fit.webp"],unit,[1,1],"フィット", isImageActive, mp);
+    this.scaleIcon = new ClickableIcon(["frameLayer/scale.webp"],unit,[1,1],"hint.frame.dragToScale", isImageActiveDraggable, mp);
+    this.rotateIcon = new ClickableIcon(["frameLayer/rotate.webp"],unit,[1,1],"hint.frame.dragToRotate", isImageActiveDraggable, mp);
+    this.coverIcon = new ClickableIcon(["frameLayer/newlayer.webp"],unit,[1,1],"hint.frame.addTransparentLayer", () => this.interactable, mp);
+    this.scribbleIcon = new ClickableIcon(["frameLayer/scribble.webp"],unit,[1,1],"hint.frame.scribbleOnTop", isImageActive, mp);
+    this.flipHorizontalIcon = new ClickableIcon(["frameLayer/flip-horizontal.webp"],unit,[1,1],"hint.frame.flipHorizontal", isImageActive, mp);
+    this.flipVerticalIcon = new ClickableIcon(["frameLayer/flip-vertical.webp"],unit,[1,1],"hint.frame.flipVertical", isImageActive, mp);
+    this.fitIcon = new ClickableIcon(["frameLayer/fit.webp"],unit,[1,1],"hint.frame.fit", isImageActive, mp);
 
     const isBorderActive = (dir: 'h' | 'v') => this.interactable && this.selectedBorder?.layout.dir === dir;
-    this.expandHorizontalIcon = new ClickableIcon(["frameLayer/expand-horizontal.webp"],unit,[0.5,1],"幅を変更", () => isBorderActive('h'), mp);
-    this.slantHorizontalIcon = new ClickableIcon(["frameLayer/slant-horizontal.webp"], unit,[0.5,0],"傾き", () => isBorderActive('h'), mp);
-    this.insertHorizontalIcon = new ClickableIcon(["frameLayer/insert-horizontal.webp"],unit,[0.5,0],"コマ挿入", () => isBorderActive('h'), mp);
-    this.expandVerticalIcon = new ClickableIcon(["frameLayer/expand-vertical.webp"],unit,[1,0.5],"幅を変更", () => isBorderActive('v'), mp);
-    this.slantVerticalIcon = new ClickableIcon(["frameLayer/slant-vertical.webp"], unit,[0,0.5],"傾き", () => isBorderActive('v'), mp);
-    this.insertVerticalIcon = new ClickableIcon(["frameLayer/insert-vertical.webp"],unit,[0,0.5],"コマ挿入", () => isBorderActive('v'), mp);
+    this.expandHorizontalIcon = new ClickableIcon(["frameLayer/expand-horizontal.webp"],unit,[0.5,1],"hint.frame.changeWidth", () => isBorderActive('h'), mp);
+    this.slantHorizontalIcon = new ClickableIcon(["frameLayer/slant-horizontal.webp"], unit,[0.5,0],"hint.frame.slant", () => isBorderActive('h'), mp);
+    this.insertHorizontalIcon = new ClickableIcon(["frameLayer/insert-horizontal.webp"],unit,[0.5,0],"hint.frame.insertFrame", () => isBorderActive('h'), mp);
+    this.expandVerticalIcon = new ClickableIcon(["frameLayer/expand-vertical.webp"],unit,[1,0.5],"hint.frame.changeWidth", () => isBorderActive('v'), mp);
+    this.slantVerticalIcon = new ClickableIcon(["frameLayer/slant-vertical.webp"], unit,[0,0.5],"hint.frame.slant", () => isBorderActive('v'), mp);
+    this.insertVerticalIcon = new ClickableIcon(["frameLayer/insert-vertical.webp"],unit,[0,0.5],"hint.frame.insertFrame", () => isBorderActive('v'), mp);
 
     const isSwapVisible = () => this.interactable && this.litLayout != null && this.selectedLayout != null && this.litLayout.element !== this.selectedLayout.element && !this.pointerHandler && 0 < this.litLayout.element.visibility;
-    this.swapIcon = new ClickableIcon(["frameLayer/swap.webp"],unit,[0.5,0],"選択コマと\n中身を入れ替え", isSwapVisible, mp);
+    this.swapIcon = new ClickableIcon(["frameLayer/swap.webp"],unit,[0.5,0],"hint.frame.swapSelected", isSwapVisible, mp);
 
     this.frameIcons = [this.splitHorizontalIcon, this.splitVerticalIcon, this.deleteIcon, this.duplicateIcon, this.shiftIcon, this.unshiftIcon, this.resetPaddingIcon, this.zplusIcon, this.zminusIcon, this.visibilityIcon, this.scaleIcon, this.rotateIcon, this.coverIcon, this.scribbleIcon, this.flipHorizontalIcon, this.flipVerticalIcon, this.fitIcon, this.zvalue];
     this.borderIcons = [this.slantVerticalIcon, this.expandVerticalIcon, this.slantHorizontalIcon, this.expandHorizontalIcon, this.insertHorizontalIcon, this.insertVerticalIcon];
@@ -180,10 +180,10 @@ export class FrameLayer extends LayerBase {
       return !!effect && effect.type === type;
     };
     this.proceduralOptionIcons = {
-      tail: new ClickableIcon(["bubbleLayer/tail-tip.webp"], iconUnit, [0.5, 0.5], "ドラッグでしっぽ", handleVisibleFor('speed-lines'), mp),
-      curve: new ClickableIcon(["bubbleLayer/tail-mid.webp"], iconUnit, [0.5, 0.5], "ドラッグでしっぽのカーブ", handleVisibleFor('speed-lines'), mp),
-      circle: new ClickableIcon(["bubbleLayer/circle.webp"], iconUnit, [0.5, 0.5], "ドラッグで円定義", handleVisibleFor('motion-lines'), mp),
-      radius: new ClickableIcon(["bubbleLayer/radius.webp"], iconUnit, [0.5, 0.5], "ドラッグで円半径", handleVisibleFor('motion-lines'), mp),
+      tail: new ClickableIcon(["bubbleLayer/tail-tip.webp"], iconUnit, [0.5, 0.5], "hint.frame.dragTail", handleVisibleFor('speed-lines'), mp),
+      curve: new ClickableIcon(["bubbleLayer/tail-mid.webp"], iconUnit, [0.5, 0.5], "hint.frame.dragTailCurve", handleVisibleFor('speed-lines'), mp),
+      circle: new ClickableIcon(["bubbleLayer/circle.webp"], iconUnit, [0.5, 0.5], "hint.frame.dragCircle", handleVisibleFor('motion-lines'), mp),
+      radius: new ClickableIcon(["bubbleLayer/radius.webp"], iconUnit, [0.5, 0.5], "hint.frame.dragRadius", handleVisibleFor('motion-lines'), mp),
     };
     this.proceduralOptionEditActive = { focal: false, tail: false };
     this.proceduralHandleState = null;
@@ -576,7 +576,7 @@ export class FrameLayer extends LayerBase {
         return this;
       }
       if (isPointInTrapezoid(position, this.selectedBorder.corners)) {
-        this.hint([...trapezoidCenter(this.selectedBorder.corners), 0, 0], "ドラッグで移動");
+        this.hint([...trapezoidCenter(this.selectedBorder.corners), 0, 0], "hint.frame.dragToMove");
         this.litBorder = this.selectedBorder;
         return this;
       }
@@ -601,7 +601,7 @@ export class FrameLayer extends LayerBase {
           const padding = findPaddingOn(this.selectedLayout, position, PADDING_HANDLE_INNER_WIDTH, PADDING_HANDLE_OUTER_WIDTH);
           this.litPadding = padding;
           if (padding) {
-            this.hint(r, "ドラッグでパディング変更");
+            this.hint(r, "hint.frame.dragToChangePadding");
             return this;
           }           
         }
@@ -622,7 +622,7 @@ export class FrameLayer extends LayerBase {
     this.litBorder = border;
     if (border) {
       if (isPointInTrapezoid(position, border.corners)) {
-        this.hint([...trapezoidCenter(border.corners), 0, 0], "クリックで選択");
+        this.hint([...trapezoidCenter(border.corners), 0, 0], "hint.frame.clickToSelect");
       }
       return this;
     }
@@ -636,7 +636,7 @@ export class FrameLayer extends LayerBase {
       }
       if (0 < layout.element.visibility) {
         const r = trapezoidBoundingRect(layout.corners);
-        this.hint(r, "画像をドロップ");
+        this.hint(r, "hint.frame.dropImage");
       }
       return this;
     }
