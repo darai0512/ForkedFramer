@@ -10,24 +10,22 @@
   import { toolTip } from '../utils/passiveToolTipStore';
   import { developmentFlag } from '../utils/developmentFlagStore';
   import { mainBook } from '../bookeditor/workspaceStore';
+  import { _ } from 'svelte-i18n';
 
-  const buttons = [
-    {icon: downloadIcon, label: "ダウンロード", onClick: download, hint: "画像としてダウンロードします\n対象ページが複数の場合はzipファイルになります"},
-    {icon: clipboardIcon, label: "クリップボードにコピー", onClick: copyToClipboard, hint: "クリップボードにコピーします\n対象ページが複数の場合は最初のページのみ"},
-    {icon: downloadIcon, label: "アップスケールして\nダウンロード", onClick: downloadAfterUpscale, hint: "画像としてダウンロードします\n対象ページが複数の場合はzipファイルになります\nアップスケールコスト 枚数x1"},
-    {icon: clipboardIcon, label: "アップスケールして\nクリップボードにコピー", onClick: copyToClipboardAfterUpscale, hint: "クリップボードにコピーします\n対象ページが複数の場合は最初のページのみ\nアップスケールコスト 枚数x1"},
+  $: buttons = [
+    {icon: downloadIcon, label: $_('downloader.download'), onClick: download, hint: $_('downloader.downloadHint')},
+    {icon: clipboardIcon, label: $_('downloader.copyToClipboard'), onClick: copyToClipboard, hint: $_('downloader.copyToClipboardHint')},
+    {icon: downloadIcon, label: $_('downloader.upscaleAndDownload'), onClick: downloadAfterUpscale, hint: $_('downloader.upscaleAndDownloadHint')},
+    {icon: clipboardIcon, label: $_('downloader.upscaleAndCopy'), onClick: copyToClipboardAfterUpscale, hint: $_('downloader.upscaleAndCopyHint')},
     // {icon: aiPictorsIcon, label: "に投稿", onClick: postAIPictors, hint: "aiPictorsに投稿します"},
-    {label: "PSDでエクスポート", onClick: downloadPSD, hint: "PSDファイルとしてダウンロードします\n対象ページが複数の場合はzipファイルになります"},
-    {label: "シェア", onClick: shareBook, hint: "ドキュメントのコピーを\n編集できる形でアップロードします"},
-    {label: "パッケージ", onClick: downloadEnvelop, hint: "ドキュメントを1つのファイルとして\nダウンロードします"},
-    {label: "プロンプトをクリップボードにコピー", onClick: exportPrompts, hint: "各コマのプロンプトを集めてクリップボードにコピーします"},
-    {label: "まんがファームに投稿！", onClick: publishEnvelope, hint: "ドキュメントをまんがファームに公開し、\n誰でも閲覧できるようにします"},
+    {label: $_('downloader.exportPSD'), onClick: downloadPSD, hint: $_('downloader.exportPSDHint')},
+    // {label: $_('downloader.share'), onClick: shareBook, hint: $_('downloader.shareHint')},
+    {label: $_('downloader.package'), onClick: downloadEnvelop, hint: $_('downloader.packageHint')},
+    {label: $_('downloader.exportPrompts'), onClick: exportPrompts, hint: $_('downloader.exportPromptsHint')},
+    {label: $_('downloader.publishToMangaFarm'), onClick: publishEnvelope, hint: $_('downloader.publishToMangaFarmHint')},
     // {label: "test", onClick: testIt }
-  ];  
-
-  if ($developmentFlag) {
-    buttons.push({label: "テスト: 投稿用ダウンロード", onClick: downloadPublicationFiles, hint: "テスト：投稿用データのダウンロード"});
-  }
+    ...($developmentFlag ? [{label: $_('downloader.testDownload'), onClick: downloadPublicationFiles, hint: $_('downloader.testDownloadHint')}] : [])
+  ];
 
   function archive(op: BookArchiveOperation) {
     $bookArchiver.push(op);
@@ -77,7 +75,7 @@
   async function exportPrompts() {
     analyticsEvent('export_prompts');
     archive('export-prompts');
-    toastStore.trigger({ message: 'クリップボードにコピーしました', timeout: 1500});
+    toastStore.trigger({ message: $_('downloader.copiedToClipboard'), timeout: 1500});
   }
 
   async function publishEnvelope() {
@@ -120,12 +118,12 @@
         {/each}
       </div>
       <span class="text-xs text-slate-800">
-      ※対象ページとは、マークされたページがある場合はそれを、ない場合はすべてのページを指します。対象ページが複数の場合の挙動は機能によって違うので、ヒントを参照してください。
+      {$_('downloader.targetPagesNote')}
       </span>
 
       {#if $mainBook?.attributes.publishUrl != null}
         <div>
-          <a target="_blank" href={$mainBook.attributes.publishUrl}>公開済みURL</a>
+          <a target="_blank" href={$mainBook.attributes.publishUrl}>{$_('downloader.publishedUrl')}</a>
         </div>
       {/if}
     </div>

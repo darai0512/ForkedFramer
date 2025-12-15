@@ -1,8 +1,10 @@
+import { get } from 'svelte/store';
 import type { Page } from '../../lib/book/book';
 import { renderPage } from './renderPage';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { canvasToBlob } from '../../lib/layeredCanvas/tools/imageUtil';
 import { upscaleCanvas } from '../upscaleImage';
+import { _ } from 'svelte-i18n';
 
 export async function copyToClipboard(page: Page, upscales: boolean) {
   try {
@@ -10,7 +12,7 @@ export async function copyToClipboard(page: Page, upscales: boolean) {
     console.log("copyToClipboard", canvas.width, canvas.height);
 
     if (upscales) {
-      const newCanvas = await upscaleCanvas(canvas, "アップスケールを行います。待機中にタブやウィンドウを切り替えてフォーカスを失うと、クリップボードへのコピーに失敗しますので、そのままでお待ち下さい。");
+      const newCanvas = await upscaleCanvas(canvas, get(_)('upscale.clipboardWarning'));
       if (!newCanvas) {return;}
       canvas = newCanvas;
     }
@@ -21,7 +23,7 @@ export async function copyToClipboard(page: Page, upscales: boolean) {
       new ClipboardItem({ [blob.type]: blob }),
     ]);
     console.log(`Canvas content copied to clipboard. ${blob.type}`);
-    toastStore.trigger({ message: 'クリップボードにコピーしました', timeout: 1500});
+    toastStore.trigger({ message: get(_)('upscale.copiedToClipboard'), timeout: 1500});
   } catch (err) {
     console.error("Failed to copy canvas content to clipboard:", err);
   }

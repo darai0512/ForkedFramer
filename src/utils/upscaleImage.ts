@@ -10,11 +10,12 @@ import { onlineStatus } from './accountStore.js';
 import { analyticsEvent } from "./analyticsEvent.js";
 import { upscale, pollMediaStatus } from "../supabase.js";
 import { loading } from './loadingStore.js';
+import { _ } from 'svelte-i18n';
 
 export async function upscaleFilm(film: Film) {
-  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
-    toastStore.trigger({ message: `内部エラー: アップスケールは画像に対してしか使えません`, timeout: 3000});
-    return; 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) {
+    toastStore.trigger({ message: get(_)('upscale.imageOnlyError'), timeout: 3000});
+    return;
   }
   const imageMedia = film.content.media as ImageMedia;
 
@@ -28,7 +29,7 @@ export async function upscaleFilm(film: Film) {
 
 export async function upscaleCanvas(canvas: HTMLCanvasElement, warning: string | null = null): Promise<HTMLCanvasElement | null> {
   if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `アップスケールはサインインしてないと使えません`, timeout: 3000});
+    toastStore.trigger({ message: get(_)('upscale.signInRequired'), timeout: 3000});
     return null;
   }
 
@@ -53,7 +54,7 @@ export async function upscaleCanvas(canvas: HTMLCanvasElement, warning: string |
 
 export async function upscaleCanvasWithoutDialog(canvas: HTMLCanvasElement): Promise<HTMLCanvasElement | null> {
   if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `アップスケールはサインインしてないと使えません`, timeout: 3000});
+    toastStore.trigger({ message: get(_)('upscale.signInRequired'), timeout: 3000});
     return null;
   }
 

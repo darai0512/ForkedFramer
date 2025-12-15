@@ -22,6 +22,7 @@
   import { waitDialog } from "./waitDialog";
   import { canvasToBlob } from "../lib/layeredCanvas/tools/imageUtil";
   import { ulid } from "ulid";
+  import { _ } from 'svelte-i18n';
 
   $: onTask($bookArchiver);
   async function onTask(ba: BookArchiveOperation[]) {
@@ -75,7 +76,7 @@
             $progress = 1;
             saveAs(blob, "manga.envelope");
             $progress = null;
-            toastStore.trigger({ message: 'パッケージをダウンロードしました。ファイルマネージャにドロップすると読み込むことができます。', timeout: 3000});
+            toastStore.trigger({ message: $_('bookArchiver.packageDownloaded'), timeout: 3000});
             break;
           case 'export-prompts':
             await exportPrompts(targetPages);
@@ -111,15 +112,15 @@
   async function publishEnvelope() {
     console.log("publishEnvelope", $mainBook!.revision);
     if ($onlineStatus !== 'signed-in') {
-      toastStore.trigger({ message: "まんがファーム！への公開にはサインインが必要です", timeout: 1500});
+      toastStore.trigger({ message: $_('bookArchiver.signInRequiredForPublish'), timeout: 1500});
       return;
     }
 
     if ($onlineProfile === null) {
-      toastStore.trigger({ message: "まんがファーム！への公開にはユーザー情報の登録が必要です", timeout: 1500});
+      toastStore.trigger({ message: $_('bookArchiver.profileRequiredForPublish'), timeout: 1500});
       const r = await waitDialog<boolean>('userProfile');
       if (!r) {
-        toastStore.trigger({ message: "公開をとりやめました", timeout: 1500});
+        toastStore.trigger({ message: $_('bookArchiver.publishCancelled'), timeout: 1500});
         return;
       }
     }
@@ -127,7 +128,7 @@
     const r =
       await waitDialog<{title:string, description: string, related_url: string, is_public: boolean}>('publication');
     if (!r) {
-      toastStore.trigger({ message: "公開をとりやめました", timeout: 1500});
+      toastStore.trigger({ message: $_('bookArchiver.publishCancelled'), timeout: 1500});
       return;
     }
     const { title, description, related_url, is_public } = r;
@@ -136,7 +137,7 @@
 
     const r2 = await waitDialog<{socialCard: Blob}>('socialCard');
     if (!r2) {
-      toastStore.trigger({ message: "公開をとりやめました", timeout: 1500});
+      toastStore.trigger({ message: $_('bookArchiver.publishCancelled'), timeout: 1500});
       return;
     }
     const { socialCard } = r2;
@@ -202,11 +203,11 @@
       try {
         // localhost及びhttps以外では失敗する
         await navigator.clipboard.writeText(downloadUrl);
-        toastStore.trigger({ message: `<a target="_blank" href="${downloadUrl}"><span class="text-yellow-200">公開URL</span></a>がクリップボードにコピーされました`, timeout: 10000});
+        toastStore.trigger({ message: `<a target="_blank" href="${downloadUrl}"><span class="text-yellow-200">${$_('bookArchiver.publicUrl')}</span></a>${$_('bookArchiver.urlCopiedToClipboard')}`, timeout: 10000});
       }
       catch(e) {
         console.log(e);
-        toastStore.trigger({ message: `<a target="_blank" href="${downloadUrl}"><span class="text-yellow-200">公開URL</span></a>をクリップボードにコピーできませんでした。タブがアクティブでなかったためかもしれません。`});
+        toastStore.trigger({ message: `<a target="_blank" href="${downloadUrl}"><span class="text-yellow-200">${$_('bookArchiver.publicUrl')}</span></a>${$_('bookArchiver.urlCopyFailed')}`});
       }
     }
     catch(e: any) {
@@ -231,7 +232,7 @@
     // ソーシャルカードの取得
     const r2 = await waitDialog<{socialCard: Blob}>('socialCard');
     if (!r2) {
-      toastStore.trigger({ message: "ダウンロードをとりやめました", timeout: 1500});
+      toastStore.trigger({ message: $_('bookArchiver.downloadCancelled'), timeout: 1500});
       return;
     }
     const { socialCard } = r2;
@@ -265,7 +266,7 @@
       }
       $progress = 1.0;
 
-      toastStore.trigger({ message: "4つのファイルがダウンロードされました", timeout: 3000});
+      toastStore.trigger({ message: $_('bookArchiver.filesDownloaded'), timeout: 3000});
     }
     catch(e: any) {
       console.log(e);
@@ -307,7 +308,7 @@
       });
       console.log(response);
       if (!response.ok) {
-        throw new Error("ドキュメントのアップロードに失敗しました");
+        throw new Error($_('bookArchiver.uploadFailed'));
       }
 
       content_url = `${apiUrl}/file/FramePlannerPublished/${filename}`;
@@ -315,7 +316,7 @@
 
       // URLをコピー
       navigator.clipboard.writeText(content_url);
-      toastStore.trigger({ message: `クリップボードにコピーされました`, timeout: 10000});
+      toastStore.trigger({ message: $_('bookArchiver.copiedToClipboard'), timeout: 10000});
     }
     catch(e: any) {
       console.log(e);
@@ -347,7 +348,7 @@
     // await notifyShare(shareUrl);
 
     $loading = false;
-    toastStore.trigger({ message: "クリップボードにシェアURLをコピーしました<br/>この機能は共有を目的としたもので、<br/>一定時間後消去される可能性があります", timeout: 4500});
+    toastStore.trigger({ message: $_('bookArchiver.shareUrlCopied'), timeout: 4500});
   }
 
   async function postFile(sourceFilename: string, blob: Blob) {
@@ -369,7 +370,7 @@
     });
     console.log(response);
     if (!response.ok) {
-      throw new Error("ドキュメントのアップロードに失敗しました");
+      throw new Error($_('bookArchiver.uploadFailed'));
     }
 
     return `${apiUrl}/file/FramePlannerPublished/${filename}`;

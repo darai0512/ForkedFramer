@@ -623,6 +623,51 @@
       "imageCount": "image count"
     }
   },
+  "downloader": {
+    "download": "Download",
+    "downloadHint": "Download as image\nMultiple pages will be zipped",
+    "copyToClipboard": "Copy to Clipboard",
+    "copyToClipboardHint": "Copy to clipboard\nOnly first page if multiple",
+    "upscaleAndDownload": "Upscale and\nDownload",
+    "upscaleAndDownloadHint": "Download as image\nMultiple pages will be zipped\nUpscale cost: pages x 1",
+    "upscaleAndCopy": "Upscale and\nCopy to Clipboard",
+    "upscaleAndCopyHint": "Copy to clipboard\nOnly first page if multiple\nUpscale cost: pages x 1",
+    "exportPSD": "Export as PSD",
+    "exportPSDHint": "Download as PSD file\nMultiple pages will be zipped",
+    "share": "Share",
+    "shareHint": "Upload a copy of the document\nin editable form",
+    "package": "Package",
+    "packageHint": "Download document\nas a single file",
+    "exportPrompts": "Copy Prompts to Clipboard",
+    "exportPromptsHint": "Collect prompts from each panel and copy to clipboard",
+    "publishToMangaFarm": "Post to Manga Farm!",
+    "publishToMangaFarmHint": "Publish document to Manga Farm\nfor public viewing",
+    "testDownload": "Test: Download for Posting",
+    "testDownloadHint": "Test: Download publication data",
+    "copiedToClipboard": "Copied to clipboard",
+    "targetPagesNote": "※Target pages refer to marked pages if any, otherwise all pages. Behavior for multiple target pages varies by function, see hints for details.",
+    "publishedUrl": "Published URL"
+  },
+  "bookArchiver": {
+    "packageDownloaded": "Package downloaded. Drop it into the file manager to load.",
+    "signInRequiredForPublish": "Sign-in required to publish to Manga Farm!",
+    "profileRequiredForPublish": "User profile registration required to publish to Manga Farm!",
+    "publishCancelled": "Publication cancelled",
+    "downloadCancelled": "Download cancelled",
+    "publicUrl": "Public URL",
+    "urlCopiedToClipboard": " copied to clipboard",
+    "urlCopyFailed": " could not be copied to clipboard. The tab may not have been active.",
+    "filesDownloaded": "4 files have been downloaded",
+    "uploadFailed": "Document upload failed",
+    "copiedToClipboard": "Copied to clipboard",
+    "shareUrlCopied": "Share URL copied to clipboard<br/>This feature is for sharing purposes,<br/>and may be deleted after a period of time"
+  },
+  "upscale": {
+    "imageOnlyError": "Internal error: Upscale can only be used on images",
+    "signInRequired": "Sign-in required to use upscale",
+    "clipboardWarning": "Upscaling in progress. Do not switch tabs or windows during the process, as it may cause the clipboard copy to fail.",
+    "copiedToClipboard": "Copied to clipboard"
+  },
   "hint": {
     "frame": {
       "splitHorizontal": "Split horizontally",

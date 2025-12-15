@@ -625,6 +625,51 @@
       "imageCount": "image count"
     }
   },
+  "downloader": {
+    "download": "ダウンロード",
+    "downloadHint": "画像としてダウンロードします\n対象ページが複数の場合はzipファイルになります",
+    "copyToClipboard": "クリップボードにコピー",
+    "copyToClipboardHint": "クリップボードにコピーします\n対象ページが複数の場合は最初のページのみ",
+    "upscaleAndDownload": "アップスケールして\nダウンロード",
+    "upscaleAndDownloadHint": "画像としてダウンロードします\n対象ページが複数の場合はzipファイルになります\nアップスケールコスト 枚数x1",
+    "upscaleAndCopy": "アップスケールして\nクリップボードにコピー",
+    "upscaleAndCopyHint": "クリップボードにコピーします\n対象ページが複数の場合は最初のページのみ\nアップスケールコスト 枚数x1",
+    "exportPSD": "PSDでエクスポート",
+    "exportPSDHint": "PSDファイルとしてダウンロードします\n対象ページが複数の場合はzipファイルになります",
+    "share": "シェア",
+    "shareHint": "ドキュメントのコピーを\n編集できる形でアップロードします",
+    "package": "パッケージ",
+    "packageHint": "ドキュメントを1つのファイルとして\nダウンロードします",
+    "exportPrompts": "プロンプトをクリップボードにコピー",
+    "exportPromptsHint": "各コマのプロンプトを集めてクリップボードにコピーします",
+    "publishToMangaFarm": "まんがファームに投稿！",
+    "publishToMangaFarmHint": "ドキュメントをまんがファームに公開し、\n誰でも閲覧できるようにします",
+    "testDownload": "テスト: 投稿用ダウンロード",
+    "testDownloadHint": "テスト：投稿用データのダウンロード",
+    "copiedToClipboard": "クリップボードにコピーしました",
+    "targetPagesNote": "※対象ページとは、マークされたページがある場合はそれを、ない場合はすべてのページを指します。対象ページが複数の場合の挙動は機能によって違うので、ヒントを参照してください。",
+    "publishedUrl": "公開済みURL"
+  },
+  "bookArchiver": {
+    "packageDownloaded": "パッケージをダウンロードしました。ファイルマネージャにドロップすると読み込むことができます。",
+    "signInRequiredForPublish": "まんがファーム！への公開にはサインインが必要です",
+    "profileRequiredForPublish": "まんがファーム！への公開にはユーザー情報の登録が必要です",
+    "publishCancelled": "公開をとりやめました",
+    "downloadCancelled": "ダウンロードをとりやめました",
+    "publicUrl": "公開URL",
+    "urlCopiedToClipboard": "がクリップボードにコピーされました",
+    "urlCopyFailed": "をクリップボードにコピーできませんでした。タブがアクティブでなかったためかもしれません。",
+    "filesDownloaded": "4つのファイルがダウンロードされました",
+    "uploadFailed": "ドキュメントのアップロードに失敗しました",
+    "copiedToClipboard": "クリップボードにコピーされました",
+    "shareUrlCopied": "クリップボードにシェアURLをコピーしました<br/>この機能は共有を目的としたもので、<br/>一定時間後消去される可能性があります"
+  },
+  "upscale": {
+    "imageOnlyError": "内部エラー: アップスケールは画像に対してしか使えません",
+    "signInRequired": "アップスケールはサインインしてないと使えません",
+    "clipboardWarning": "アップスケールを行います。待機中にタブやウィンドウを切り替えてフォーカスを失うと、クリップボードへのコピーに失敗しますので、そのままでお待ち下さい。",
+    "copiedToClipboard": "クリップボードにコピーしました"
+  },
   "hint": {
     "frame": {
       "splitHorizontal": "左右に分割",
