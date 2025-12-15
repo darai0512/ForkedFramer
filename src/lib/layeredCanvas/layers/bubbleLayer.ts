@@ -1516,8 +1516,9 @@ export class BubbleLayer extends LayerBase {
       const [cx,cy] = bubble.getPhysicalCenter(paperSize);
       bubble.n_p0 = Bubble.normalizedPosition(paperSize, [cx - w/2, cy - h/2]);
       bubble.n_p1 = Bubble.normalizedPosition(paperSize, [cx + w/2, cy + h/2]);
+      // filmsの中心を原点（吹き出しの中心）に移動させるため、moveを減算
       bubble.filmStack.films.forEach((film, i) => {
-        film.setShiftedTranslation(paperSize, [origins[i][0] + move[0], origins[i][1] + move[1]]);
+        film.setShiftedTranslation(paperSize, [origins[i][0] - move[0], origins[i][1] - move[1]]);
       });
       {
         const transformer = new FilmStackTransformer(paperSize, bubble.filmStack.films);
