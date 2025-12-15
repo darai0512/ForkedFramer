@@ -1,5 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { _ } from 'svelte-i18n';
+  import { toastStore } from '@skeletonlabs/skeleton';
   import MediaFrame from '../gallery/MediaFrame.svelte';
   import MediaActionMenu from './MediaActionMenu.svelte';
   import {
@@ -8,9 +10,11 @@
     type MessageItem
   } from './timelineTypes';
   import * as mediaActions from './mediaActions';
+  import { toolTip } from '../utils/passiveToolTipStore';
 
   import dropIcon from '../assets/drop.webp';
   import telescopeIcon from '../assets/telescope.webp';
+  import clipboardIcon from '../assets/clipboard.webp';
 
   export let messageItem: MessageItem | null = null;
   export let mediaItems: MediaItem[] | null = null;
@@ -113,6 +117,15 @@
       dispatch('deleteGroup', { messageId: messageItem.id });
     }
   }
+
+  async function copyPromptToClipboard(content: string) {
+    try {
+      await navigator.clipboard.writeText(content);
+      toastStore.trigger({ message: $_('dolphinRoom.copiedToClipboard'), timeout: 1500 });
+    } catch (err) {
+      console.error('Failed to copy prompt to clipboard:', err);
+    }
+  }
 </script>
 
 {#if showCombined}
@@ -127,7 +140,18 @@
         <img src={dropIcon} alt="delete" />
       </button>
       {#if messageItem?.content}
-        <p class="combined-message">{messageItem.content}</p>
+        <div class="combined-message-container">
+          <p class="combined-message">{messageItem.content}</p>
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+          <img
+            class="copy-prompt-icon"
+            src={clipboardIcon}
+            alt={$_('dolphinRoom.copyPrompt')}
+            on:click={() => copyPromptToClipboard(messageItem?.content || '')}
+            use:toolTip={$_('dolphinRoom.copyPrompt')}
+          />
+        </div>
       {/if}
       <div class="media-grid">
         {#each groupItems as mediaItem (mediaItem.id)}
@@ -659,5 +683,31 @@
   p {
     font-family: '源暎アンチック';
     margin-left: 32px;
+  }
+
+  .combined-message-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .combined-message-container .combined-message {
+    flex: 1;
+    margin-left: 0;
+  }
+
+  .copy-prompt-icon {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .copy-prompt-icon:hover {
+    opacity: 1;
+    transform: scale(1.1);
   }
 </style>

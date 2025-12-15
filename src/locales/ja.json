@@ -567,6 +567,8 @@
       "clearAll": "全て解除",
       "clickToDeselect": "クリックで選択解除"
     },
+    "copyPrompt": "プロンプトをクリップボードにコピー",
+    "copiedToClipboard": "プロンプトをクリップボードにコピーしました",
     "generation": {
       "image": "画像",
       "video": "動画",

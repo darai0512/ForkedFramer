@@ -565,6 +565,8 @@
       "clearAll": "Clear All",
       "clickToDeselect": "Click to deselect"
     },
+    "copyPrompt": "Copy prompt to clipboard",
+    "copiedToClipboard": "Prompt copied to clipboard",
     "generation": {
       "image": "Image",
       "video": "Video",
