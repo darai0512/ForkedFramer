@@ -1,8 +1,7 @@
 <script lang="ts">
 import { createEventDispatcher, onDestroy, tick } from 'svelte';
 import { get } from 'svelte/store';
-import { _, locale, isLoading } from 'svelte-i18n';
-import { toastStore } from '@skeletonlabs/skeleton';
+import { _, isLoading } from 'svelte-i18n';
 import { dolphinRoomOpen } from './dolphinRoomStore';
 import { createMediaLoaders } from './mediaLoaders';
 import {
@@ -29,10 +28,6 @@ import {
 import { createObjectUrlManager } from './objectUrlManager';
 import { supportsRefImages, getRefRangeForMode } from '../utils/feathralImaging';
 import {
-  createPlaceholderMediaItems,
-  removeMediaItems as removeTimelineMediaItems,
-  hydratePlaceholdersWithCanvases,
-  hydratePlaceholdersWithVideos,
   toggleMediaSelection as toggleSelectionMutation,
   deleteMediaItem as deleteTimelineMediaItem,
   deleteMessageGroup as deleteTimelineMessageGroup,
@@ -45,7 +40,6 @@ import type { AllocateId } from './types';
 import { createGenerationActions } from './generationActions';
 import DolphinRoomView from './DolphinRoomView.svelte';
 import { DEFAULT_IMAGE_SIZE } from './constants';
-import { persistentText } from '../utils/persistentText';
 
 const dispatch = createEventDispatcher<{ dragstart: Media }>();
 const ANGLE_EDIT_MODE: ImagingMode = 'qwen-image-edit/multiple-angles';

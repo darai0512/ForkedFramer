@@ -6,7 +6,7 @@ export function hint(
   p: [number, number, number, number] | null,
   s: string | null
 ) {
-  if (p === null || s === null) {
+  if (p == null || s == null) {
     toolTipRequest.set(null);
   } else {
     const q0 = convertPointFromNodeToPage(canvas, p[0], p[1]);

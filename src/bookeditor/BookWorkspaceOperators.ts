@@ -88,7 +88,7 @@ export class BookWorkspaceOperators implements BookOperators {
   }
 
   hint(r: Rect | null, s: string | null): void {
-    if (r === null || s === null) {
+    if (r == null || s == null) {
       toolTipRequest.set(null);
     } else {
       const q0 = convertPointFromNodeToPage(this.canvas, r[0], r[1]);
