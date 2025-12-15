@@ -79,6 +79,7 @@
             break;
           case 'export-prompts':
             await exportPrompts(targetPages);
+            break;
           case 'publish':
             await publishEnvelope();
             break;
