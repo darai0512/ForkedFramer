@@ -28,6 +28,9 @@ const COST_SPEC: Record<ImagingMode, CostSpec> = {
     "gpt-image-1/low": { kind: 'perMP', value: 2 },
     "gpt-image-1/medium": { kind: 'perMP', value: 7 },
     "gpt-image-1/high": { kind: 'perMP', value: 30 },
+    "gpt-image-1.5/low": { kind: 'perMP', value: 2 },
+    "gpt-image-1.5/medium": { kind: 'perMP', value: 5 },
+    "gpt-image-1.5/high": { kind: 'perMP', value: 20 },
     // Qwen
     "qwen-image": { kind: 'perMP', value: 4 },
     "qwen-image-edit/multiple-angles": { kind: 'perMP', value: 5 },

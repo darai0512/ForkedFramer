@@ -12,6 +12,9 @@ const legacyPerMp: Record<ImagingMode, number> = {
   'gpt-image-1/low': 2,
   'gpt-image-1/medium': 7,
   'gpt-image-1/high': 30,
+  'gpt-image-1.5/low': 2,
+  'gpt-image-1.5/medium': 5,
+  'gpt-image-1.5/high': 20,
   'qwen-image': 4,
   'qwen-image-edit/multiple-angles': 5,
   'kontext/inscene': 7,
@@ -51,7 +54,9 @@ describe('calculateImagingCost unified equals legacy behavior', () => {
 
   const modes: ImagingMode[] = [
     'schnell','pro','chibi','comibg','manga',
-    'gpt-image-1/low','gpt-image-1/medium','gpt-image-1/high','qwen-image',
+    'gpt-image-1/low','gpt-image-1/medium','gpt-image-1/high',
+    'gpt-image-1.5/low','gpt-image-1.5/medium','gpt-image-1.5/high',
+    'qwen-image',
     'kontext/pro','kontext/max','kontext/inscene','nano-banana','nano-banana-pro','chrono-edit','seedream/v4',
   ];
 

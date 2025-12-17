@@ -13,6 +13,9 @@ export const ImagingModeSchema = z.enum([
   "gpt-image-1/low",
   "gpt-image-1/medium",
   "gpt-image-1/high",
+  "gpt-image-1.5/low",
+  "gpt-image-1.5/medium",
+  "gpt-image-1.5/high",
   "qwen-image",
   // TextEditMode から統合
   "kontext/pro",
@@ -32,7 +35,7 @@ export const ImagingModeSchema = z.enum([
 ]);
 export type ImagingMode = z.infer<typeof ImagingModeSchema>;
 
-export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "qwen", "seedream", "decart"]);
+export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "gpt-image-1.5", "qwen", "seedream", "decart"]);
 export type ImagingProvider = z.infer<typeof ImagingProviderSchema>;
 
 // TextEditMode は ImagingMode に統合したため削除

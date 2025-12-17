@@ -89,6 +89,7 @@ export function buildImageDataUrlsForPrompt(
 
 export function inferProvider(m: ImagingMode): ImagingProvider {
   if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
+  if (m.startsWith('gpt-image-1.5/')) return 'gpt-image-1.5';
   if (m.startsWith('qwen-image')) return 'qwen';
   if (m === 'seedream/v4') return 'seedream';
   return 'flux';
@@ -260,13 +261,13 @@ function calculateGPTCost(mode: Mode): number {
  */
 export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number };
 
-// 階層構造用の型定義
+// 階層構造用の型定義（再帰的）
+export type ModeTreeItem = ModeOption | ModeGroup;
 export type ModeGroup = {
   readonly groupId: string;
   readonly groupName: string;
-  readonly children: readonly ModeOption[];
+  readonly children: readonly ModeTreeItem[];
 };
-export type ModeTreeItem = ModeOption | ModeGroup;
 
 export function isModeGroup(item: ModeTreeItem): item is ModeGroup {
   return 'groupId' in item && 'children' in item;
@@ -304,14 +305,14 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
       { value: 'kontext/inscene', name: 'Kontext [InScene]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
     ] as const,
   },
-  // GPT-image-1 グループ
+  // GPT-image-1.5 グループ
   {
-    groupId: 'gpt-image-1',
-    groupName: 'gpt-image-1',
+    groupId: 'gpt-image-1.5',
+    groupName: 'gpt-image-1.5',
     children: [
-      { value: 'gpt-image-1/low', name: 'Low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
-      { value: 'gpt-image-1/medium', name: 'Medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
-      { value: 'gpt-image-1/high', name: 'High', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+      { value: 'gpt-image-1.5/low', name: 'gpt-image-1.5 Low', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 15 },
+      { value: 'gpt-image-1.5/medium', name: 'gpt-image-1.5 Medium', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 22 },
+      { value: 'gpt-image-1.5/high', name: 'gpt-image-1.5 High', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 40 },
     ] as const,
   },
   // レガシーグループ
@@ -319,18 +320,28 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
     groupId: 'legacy',
     groupName: 'レガシー',
     children: [
+      // GPT-image-1 サブグループ
+      {
+        groupId: 'gpt-image-1',
+        groupName: 'gpt-image-1',
+        children: [
+          { value: 'gpt-image-1/low', name: 'gpt-image-1 Low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+          { value: 'gpt-image-1/medium', name: 'gpt-image-1 Medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+          { value: 'gpt-image-1/high', name: 'gpt-image-1 High', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+        ] as const,
+      },
       { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
       { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
-    ] as const,
+    ],
   },
 ] as const;
 
-// フラット化されたモードオプション（後方互換性のため）
+// フラット化されたモードオプション（後方互換性のため、再帰対応）
 function flattenModeOptions(tree: readonly ModeTreeItem[]): ModeOption[] {
   const result: ModeOption[] = [];
   for (const item of tree) {
     if (isModeGroup(item)) {
-      result.push(...item.children);
+      result.push(...flattenModeOptions(item.children));
     } else {
       result.push(item);
     }

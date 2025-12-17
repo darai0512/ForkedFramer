@@ -69,7 +69,7 @@
   function onChangeMode(mode: ImagingMode, st: string) {
     // allowTextEdit is false here, so we assume imaging
     uiType = unifiedModeOptions.find(m => m.value === mode)?.uiType;
-    if (uiType == 'gpt-image-1') {
+    if (uiType == 'gpt-image-1' || uiType == 'gpt-image-1.5') {
       width = st == "1536x1024" ? 1536 : 1024;
       height = st == "1024x1536" ? 1536 : 1024;
       console.log(width, height);
@@ -198,7 +198,7 @@
         <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
       </div>
     {/if}
-    {#if uiType == 'gpt-image-1'}
+    {#if uiType == 'gpt-image-1' || uiType == 'gpt-image-1.5'}
       <select class="select h-8 p-0 w-64" bind:value={sizeText}>
         <option value="1024x1024">{$_('generator.square')}</option>
         <option value="1536x1024">{$_('generator.landscape')}</option>

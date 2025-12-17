@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ImagingMode, ImagingProvider } from '$protocolTypes/imagingTypes';
-  import { modeOptionsTree, isModeGroup, type ModeOption } from '../utils/feathralImaging';
+  import { modeOptionsTree, isModeGroup, type ModeOption, type ModeTreeItem } from '../utils/feathralImaging';
   import { calculateImagingCost } from '../utils/edgeFunctions/calculateCost';
   import { onMount } from 'svelte';
   import { fly } from 'svelte/transition';
@@ -114,9 +114,9 @@
     };
   }
 
-  // 階層構造のフィルタ済みツリー
-  type FilteredGroup = { groupId: string; groupName: string; children: DisplayModeOption[] };
+  // 階層構造のフィルタ済みツリー（再帰的）
   type FilteredTreeItem = DisplayModeOption | FilteredGroup;
+  type FilteredGroup = { groupId: string; groupName: string; children: FilteredTreeItem[] };
   function isFilteredGroup(item: FilteredTreeItem): item is FilteredGroup {
     return 'groupId' in item && 'children' in item;
   }
@@ -124,35 +124,34 @@
   let filteredTree: FilteredTreeItem[] = [];
   let allOptions: DisplayModeOption[] = [];
 
+  // ツリーを再帰的にフィルタリングする関数
+  function filterTree(items: readonly ModeTreeItem[], flat: DisplayModeOption[]): FilteredTreeItem[] {
+    const result: FilteredTreeItem[] = [];
+    for (const item of items) {
+      if (isModeGroup(item)) {
+        const children = filterTree(item.children, flat);
+        if (children.length > 0) {
+          result.push({ groupId: item.groupId, groupName: item.groupName, children });
+        }
+      } else {
+        const filtered = filterModeOption(item);
+        if (filtered) {
+          result.push(filtered);
+          flat.push(filtered);
+        }
+      }
+    }
+    return result;
+  }
+
   // 依存変数を明示的に参照してリアクティブに更新
   $: {
     // 依存変数を明示（Svelteが追跡できるようにする）
     const _deps = [group, selectedImageCount, hasSelectedImages, internalMode, mode, imageSize];
     void _deps;
 
-    const tree: FilteredTreeItem[] = [];
     const flat: DisplayModeOption[] = [];
-    for (const item of modeOptionsTree) {
-      if (isModeGroup(item)) {
-        const children: DisplayModeOption[] = [];
-        for (const child of item.children) {
-          const filtered = filterModeOption(child);
-          if (filtered) {
-            children.push(filtered);
-            flat.push(filtered);
-          }
-        }
-        if (children.length > 0) {
-          tree.push({ groupId: item.groupId, groupName: item.groupName, children });
-        }
-      } else {
-        const filtered = filterModeOption(item);
-        if (filtered) {
-          tree.push(filtered);
-          flat.push(filtered);
-        }
-      }
-    }
+    const tree = filterTree(modeOptionsTree, flat);
     filteredTree = tree;
     allOptions = flat;
   }
@@ -162,26 +161,27 @@
   let currentPath: string[] = []; // グループIDのパス
   let drillDirection: 'forward' | 'back' = 'forward'; // アニメーション方向
 
-  // currentPath と filteredTree に依存してリアクティブに更新
+  // パスを辿ってグループを見つけるヘルパー関数
+  function findGroupByPath(items: FilteredTreeItem[], path: string[]): FilteredGroup | null {
+    if (path.length === 0) return null;
+    const [first, ...rest] = path;
+    const grp = items.find(item => isFilteredGroup(item) && item.groupId === first);
+    if (!grp || !isFilteredGroup(grp)) return null;
+    if (rest.length === 0) return grp;
+    return findGroupByPath(grp.children, rest);
+  }
+
+  // currentPath と filteredTree に依存してリアクティブに更新（再帰対応）
   $: currentItems = (() => {
     if (currentPath.length === 0) return filteredTree;
-    // 現在は1階層のみ想定
-    const groupId = currentPath[0];
-    const grp = filteredTree.find(item => isFilteredGroup(item) && item.groupId === groupId);
-    if (grp && isFilteredGroup(grp)) {
-      return grp.children;
-    }
-    return [];
+    const grp = findGroupByPath(filteredTree, currentPath);
+    return grp ? grp.children : [];
   })();
 
   $: currentGroupName = (() => {
     if (currentPath.length === 0) return null;
-    const groupId = currentPath[0];
-    const grp = filteredTree.find(item => isFilteredGroup(item) && item.groupId === groupId);
-    if (grp && isFilteredGroup(grp)) {
-      return grp.groupName;
-    }
-    return null;
+    const grp = findGroupByPath(filteredTree, currentPath);
+    return grp ? grp.groupName : null;
   })();
 
   let coercedOnce = false;
@@ -213,7 +213,7 @@
 
   function handleGroupClick(groupId: string) {
     drillDirection = 'forward';
-    currentPath = [groupId];
+    currentPath = [...currentPath, groupId];
   }
 
   function handleBackClick() {
