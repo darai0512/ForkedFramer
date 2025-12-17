@@ -689,6 +689,7 @@
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
+    padding-right: 32px;
   }
 
   .combined-message-container .combined-message {
