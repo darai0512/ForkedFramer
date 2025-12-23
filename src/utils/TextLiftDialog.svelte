@@ -9,6 +9,9 @@
   import FeathralCost from './FeathralCost.svelte';
   import textLiftIcon from '../assets/filmlist/textlift.webp';
   import { fitCanvasToRange } from '../lib/layeredCanvas/tools/imageUtil';
+  import { drawSelectionFrame } from '../lib/layeredCanvas/tools/draw/selectionFrame';
+  import { rectToTrapezoid } from '../lib/layeredCanvas/tools/geometry/trapezoid';
+  import type { Rect, Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 
   const CANVAS_WIDTH = 800;
   const CANVAS_HEIGHT = 600;
@@ -30,6 +33,19 @@
   let recognitionState: RecognitionState = 'idle';
   let errorMessage = '';
   let enabledCount = 0;
+
+  // 選択とドラッグ状態
+  let selectedLayerId: number | null = null;
+  type DragMode = 'none' | 'move' | 'corner';
+  type CornerType = 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight';
+  type DragState = {
+    mode: DragMode;
+    corner: CornerType | null;
+    startMouse: Vector;
+    startBox: { x: number; y: number; width: number; height: number };
+  };
+  let dragState: DragState = { mode: 'none', corner: null, startMouse: [0, 0], startBox: { x: 0, y: 0, width: 0, height: 0 } };
+  const CORNER_HIT_RADIUS = 12; // コーナーのヒット判定半径（キャンバス座標）
 
   type DrawInfo = {
     offsetX: number;
@@ -225,19 +241,30 @@
       const dw = layer.displayBox.width * drawInfo.scale;
       const dh = layer.displayBox.height * drawInfo.scale;
 
+      const isSelected = layer.id === selectedLayerId;
+
       if (layer.enabled) {
         ctx.fillStyle = 'rgba(128, 0, 128, 0.25)';
         ctx.fillRect(dx, dy, dw, dh);
       }
 
-      ctx.save();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = layer.enabled ? 'yellow' : 'rgba(200,200,200,0.9)';
-      if (!layer.enabled) {
-        ctx.setLineDash([6, 4]);
+      if (isSelected) {
+        // 選択中のレイヤーは selectionFrame で描画
+        const rect: Rect = [dx, dy, dw, dh];
+        const trapezoid = rectToTrapezoid(rect);
+        const color = layer.enabled ? 'rgba(255, 200, 0, 1)' : 'rgba(180, 180, 180, 1)';
+        drawSelectionFrame(ctx, color, trapezoid, 3, 5, true, 0, [10, 10]);
+      } else {
+        // 選択されていないレイヤーは従来の描画
+        ctx.save();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = layer.enabled ? 'yellow' : 'rgba(200,200,200,0.9)';
+        if (!layer.enabled) {
+          ctx.setLineDash([6, 4]);
+        }
+        ctx.strokeRect(dx, dy, dw, dh);
+        ctx.restore();
       }
-      ctx.strokeRect(dx, dy, dw, dh);
-      ctx.restore();
     }
   }
 
@@ -248,7 +275,74 @@
     redrawOverlay();
   }
 
-  function handleOverlayClick(event: MouseEvent) {
+  // キャンバス座標からソース画像座標に変換
+  function canvasToSource(canvasX: number, canvasY: number): Vector | null {
+    if (!drawInfo) return null;
+    return [
+      (canvasX - drawInfo.offsetX) / drawInfo.scale,
+      (canvasY - drawInfo.offsetY) / drawInfo.scale
+    ];
+  }
+
+  // ソース画像座標からキャンバス座標に変換
+  function sourceToCanvas(sourceX: number, sourceY: number): Vector | null {
+    if (!drawInfo) return null;
+    return [
+      drawInfo.offsetX + sourceX * drawInfo.scale,
+      drawInfo.offsetY + sourceY * drawInfo.scale
+    ];
+  }
+
+  // レイヤーの四隅のキャンバス座標を取得
+  function getLayerCorners(layer: MaskLayer): { topLeft: Vector; topRight: Vector; bottomLeft: Vector; bottomRight: Vector } | null {
+    const box = layer.displayBox;
+    const tl = sourceToCanvas(box.x, box.y);
+    const tr = sourceToCanvas(box.x + box.width, box.y);
+    const bl = sourceToCanvas(box.x, box.y + box.height);
+    const br = sourceToCanvas(box.x + box.width, box.y + box.height);
+    if (!tl || !tr || !bl || !br) return null;
+    return { topLeft: tl, topRight: tr, bottomLeft: bl, bottomRight: br };
+  }
+
+  // コーナーのヒットテスト
+  function hitTestCorner(canvasX: number, canvasY: number, layer: MaskLayer): CornerType | null {
+    const corners = getLayerCorners(layer);
+    if (!corners) return null;
+
+    const testCorner = (p: Vector, name: CornerType): CornerType | null => {
+      const dx = canvasX - p[0];
+      const dy = canvasY - p[1];
+      if (Math.sqrt(dx * dx + dy * dy) <= CORNER_HIT_RADIUS) {
+        return name;
+      }
+      return null;
+    };
+
+    return testCorner(corners.topLeft, 'topLeft')
+      ?? testCorner(corners.topRight, 'topRight')
+      ?? testCorner(corners.bottomLeft, 'bottomLeft')
+      ?? testCorner(corners.bottomRight, 'bottomRight');
+  }
+
+  // 矩形内のヒットテスト
+  function hitTestBox(sourceX: number, sourceY: number, layer: MaskLayer): boolean {
+    const box = layer.displayBox;
+    return sourceX >= box.x && sourceX <= box.x + box.width &&
+           sourceY >= box.y && sourceY <= box.y + box.height;
+  }
+
+  // イベントからキャンバス座標を取得
+  function getCanvasCoords(event: MouseEvent): Vector {
+    const rect = overlayCanvas.getBoundingClientRect();
+    const scaleX = overlayCanvas.width / rect.width;
+    const scaleY = overlayCanvas.height / rect.height;
+    return [
+      (event.clientX - rect.left) * scaleX,
+      (event.clientY - rect.top) * scaleY
+    ];
+  }
+
+  function handleMouseDown(event: MouseEvent) {
     if (!drawInfo) return;
     if (recognitionState === 'loading') return;
     if (recognitionState !== 'ready') {
@@ -256,23 +350,198 @@
       return;
     }
 
-    const rect = overlayCanvas.getBoundingClientRect();
-    const scaleX = overlayCanvas.width / rect.width;
-    const scaleY = overlayCanvas.height / rect.height;
-    const canvasX = (event.clientX - rect.left) * scaleX;
-    const canvasY = (event.clientY - rect.top) * scaleY;
+    const [canvasX, canvasY] = getCanvasCoords(event);
+    const source = canvasToSource(canvasX, canvasY);
+    if (!source) return;
+    const [sourceX, sourceY] = source;
 
-    const sourceX = (canvasX - drawInfo.offsetX) / drawInfo.scale;
-    const sourceY = (canvasY - drawInfo.offsetY) / drawInfo.scale;
+    // 選択中のレイヤーがあれば、まずコーナーをチェック
+    if (selectedLayerId !== null) {
+      const selectedLayer = maskLayers.find(l => l.id === selectedLayerId);
+      if (selectedLayer) {
+        const corner = hitTestCorner(canvasX, canvasY, selectedLayer);
+        if (corner) {
+          // コーナードラッグ開始
+          dragState = {
+            mode: 'corner',
+            corner,
+            startMouse: [canvasX, canvasY],
+            startBox: { ...selectedLayer.displayBox }
+          };
+          return;
+        }
+      }
+    }
 
+    // レイヤーを探す（上から順に）
     for (let i = maskLayers.length - 1; i >= 0; i--) {
-      const box = maskLayers[i].displayBox;
-      if (
-        sourceX >= box.x &&
-        sourceX <= box.x + box.width &&
-        sourceY >= box.y &&
-        sourceY <= box.y + box.height
-      ) {
+      const layer = maskLayers[i];
+      if (hitTestBox(sourceX, sourceY, layer)) {
+        if (selectedLayerId === layer.id) {
+          // 既に選択中なら移動ドラッグ開始
+          dragState = {
+            mode: 'move',
+            corner: null,
+            startMouse: [canvasX, canvasY],
+            startBox: { ...layer.displayBox }
+          };
+        } else {
+          // 新しいレイヤーを選択
+          selectedLayerId = layer.id;
+          redrawOverlay();
+        }
+        return;
+      }
+    }
+
+    // 何もない場所をクリックしたら選択解除
+    selectedLayerId = null;
+    redrawOverlay();
+  }
+
+  function handleMouseMove(event: MouseEvent) {
+    if (dragState.mode === 'none') {
+      updateCursor(event);
+      return;
+    }
+    if (!drawInfo) return;
+
+    const [canvasX, canvasY] = getCanvasCoords(event);
+    const dx = (canvasX - dragState.startMouse[0]) / drawInfo.scale;
+    const dy = (canvasY - dragState.startMouse[1]) / drawInfo.scale;
+
+    const layer = maskLayers.find(l => l.id === selectedLayerId);
+    if (!layer) return;
+
+    if (dragState.mode === 'move') {
+      layer.displayBox = {
+        x: dragState.startBox.x + dx,
+        y: dragState.startBox.y + dy,
+        width: dragState.startBox.width,
+        height: dragState.startBox.height
+      };
+      // rawBoxも更新
+      layer.rawBox = {
+        x0: layer.displayBox.x,
+        y0: layer.displayBox.y,
+        x1: layer.displayBox.x + layer.displayBox.width,
+        y1: layer.displayBox.y + layer.displayBox.height
+      };
+    } else if (dragState.mode === 'corner' && dragState.corner) {
+      const startBox = dragState.startBox;
+      let newX = startBox.x;
+      let newY = startBox.y;
+      let newWidth = startBox.width;
+      let newHeight = startBox.height;
+
+      switch (dragState.corner) {
+        case 'topLeft':
+          newX = startBox.x + dx;
+          newY = startBox.y + dy;
+          newWidth = startBox.width - dx;
+          newHeight = startBox.height - dy;
+          break;
+        case 'topRight':
+          newY = startBox.y + dy;
+          newWidth = startBox.width + dx;
+          newHeight = startBox.height - dy;
+          break;
+        case 'bottomLeft':
+          newX = startBox.x + dx;
+          newWidth = startBox.width - dx;
+          newHeight = startBox.height + dy;
+          break;
+        case 'bottomRight':
+          newWidth = startBox.width + dx;
+          newHeight = startBox.height + dy;
+          break;
+      }
+
+      // 最小サイズを保証
+      const MIN_SIZE = 10;
+      if (newWidth < MIN_SIZE) {
+        if (dragState.corner === 'topLeft' || dragState.corner === 'bottomLeft') {
+          newX = startBox.x + startBox.width - MIN_SIZE;
+        }
+        newWidth = MIN_SIZE;
+      }
+      if (newHeight < MIN_SIZE) {
+        if (dragState.corner === 'topLeft' || dragState.corner === 'topRight') {
+          newY = startBox.y + startBox.height - MIN_SIZE;
+        }
+        newHeight = MIN_SIZE;
+      }
+
+      layer.displayBox = { x: newX, y: newY, width: newWidth, height: newHeight };
+      layer.rawBox = {
+        x0: newX,
+        y0: newY,
+        x1: newX + newWidth,
+        y1: newY + newHeight
+      };
+    }
+
+    maskLayers = [...maskLayers]; // リアクティブ更新
+    redrawOverlay();
+  }
+
+  function handleMouseUp(_event: MouseEvent) {
+    if (dragState.mode !== 'none') {
+      dragState = { mode: 'none', corner: null, startMouse: [0, 0], startBox: { x: 0, y: 0, width: 0, height: 0 } };
+    }
+  }
+
+  function updateCursor(event: MouseEvent) {
+    if (!overlayCanvas) return;
+    const [canvasX, canvasY] = getCanvasCoords(event);
+    const source = canvasToSource(canvasX, canvasY);
+
+    // 選択中のレイヤーがあればコーナーチェック
+    if (selectedLayerId !== null) {
+      const selectedLayer = maskLayers.find(l => l.id === selectedLayerId);
+      if (selectedLayer) {
+        const corner = hitTestCorner(canvasX, canvasY, selectedLayer);
+        if (corner) {
+          if (corner === 'topLeft' || corner === 'bottomRight') {
+            overlayCanvas.style.cursor = 'nwse-resize';
+          } else {
+            overlayCanvas.style.cursor = 'nesw-resize';
+          }
+          return;
+        }
+        // 選択中レイヤー内なら移動カーソル
+        if (source && hitTestBox(source[0], source[1], selectedLayer)) {
+          overlayCanvas.style.cursor = 'move';
+          return;
+        }
+      }
+    }
+
+    // どこかのレイヤー内ならポインター
+    if (source) {
+      for (let i = maskLayers.length - 1; i >= 0; i--) {
+        if (hitTestBox(source[0], source[1], maskLayers[i])) {
+          overlayCanvas.style.cursor = 'pointer';
+          return;
+        }
+      }
+    }
+
+    overlayCanvas.style.cursor = recognitionState === 'ready' ? 'default' : 'pointer';
+  }
+
+  function handleDoubleClick(event: MouseEvent) {
+    if (!drawInfo) return;
+    if (recognitionState !== 'ready') return;
+
+    const [canvasX, canvasY] = getCanvasCoords(event);
+    const source = canvasToSource(canvasX, canvasY);
+    if (!source) return;
+    const [sourceX, sourceY] = source;
+
+    // ダブルクリックでトグル
+    for (let i = maskLayers.length - 1; i >= 0; i--) {
+      if (hitTestBox(sourceX, sourceY, maskLayers[i])) {
         toggleMask(maskLayers[i].id);
         break;
       }
@@ -350,12 +619,17 @@
             height={CANVAS_HEIGHT}
             class="base-canvas"
           />
+          <!-- svelte-ignore a11y-no-static-element-interactions -->
           <canvas
             bind:this={overlayCanvas}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
             class="overlay-canvas"
-          on:click={handleOverlayClick}
+            on:mousedown={handleMouseDown}
+            on:mousemove={handleMouseMove}
+            on:mouseup={handleMouseUp}
+            on:mouseleave={handleMouseUp}
+            on:dblclick={handleDoubleClick}
           />
           {#if recognitionState === 'loading'}
             <div class="loading-overlay">

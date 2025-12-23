@@ -484,7 +484,7 @@
       "loading": "Detecting text regions...",
       "empty": "No text regions were found",
       "error": "Failed to run text lift",
-      "hint": "Click masks to toggle enable/disable",
+      "hint": "Click to select, drag to move/resize, double-click to toggle",
       "listTitle": "Detected masks",
       "enabledLabel": "Enabled",
       "disabledLabel": "Disabled",
