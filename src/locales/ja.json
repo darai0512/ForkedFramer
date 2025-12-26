@@ -277,7 +277,8 @@
       "sendToMaterialCollection": "素材集に送る",
       "sendVideoFrameToMaterialCollection": "このフレームを画像として素材集に送る",
       "download": "ダウンロード",
-      "textlift": "フキダシ化"
+      "textlift": "フキダシ化",
+      "layerize": "レイヤー化"
     },
     "procedural": {
       "settings": "プロシージャル設定"
@@ -493,6 +494,10 @@
       "noImage": "画像が読み込めませんでした",
       "notStarted": "画像をクリックしてテキスト認識を開始してください",
       "eraseOption": "ソース画像で選択された文字を消しゴム"
+    },
+    "layerize": {
+      "numLayers": "レイヤー数",
+      "resolutionWarning": "レイヤー化では解像度が低下することがあります"
     },
     "angleEdit": {
       "model": "モデル",

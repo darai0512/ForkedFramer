@@ -277,7 +277,8 @@
       "sendToMaterialCollection": "Send to Material Collection",
       "sendVideoFrameToMaterialCollection": "Send this frame as image to Material Collection",
       "download": "Download",
-      "textlift": "Text Lifting"
+      "textlift": "Text Lifting",
+      "layerize": "Layerize"
     },
     "procedural": {
       "settings": "Procedural Settings"
@@ -491,6 +492,10 @@
       "noImage": "Image source is missing",
       "notStarted": "Click the image to start text recognition",
       "eraseOption": "Erase selected text on the source image"
+    },
+    "layerize": {
+      "numLayers": "Number of Layers",
+      "resolutionWarning": "Layerization may reduce image resolution"
     },
     "angleEdit": {
       "model": "Model",

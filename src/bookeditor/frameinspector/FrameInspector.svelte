@@ -87,6 +87,9 @@
       case "sendToMaterialCollection":
         onSendToMaterialCollection(film);
         break;
+      case "layerize":
+        onLayerize(film);
+        break;
     }
   }
 
@@ -147,6 +150,11 @@
   function onSendToMaterialCollection(film: Film) {
     $frameInspectorTarget!.commandTargetFilm = film;
     $frameInspectorTarget!.command = "sendToMaterialCollection";
+  }
+
+  function onLayerize(film: Film) {
+    $frameInspectorTarget!.commandTargetFilm = film;
+    $frameInspectorTarget!.command = "layerize";
   }
 
   function onTextLift(e: CustomEvent<Film>) {

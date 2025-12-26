@@ -70,6 +70,7 @@
   import TextEditDialog from './utils/TextEditDialog.svelte';
   import TextLiftDialog from './utils/TextLiftDialog.svelte';
   import AngleEditDialog from './utils/AngleEditDialog.svelte';
+  import LayerizeDialog from './utils/LayerizeDialog.svelte';
   import Upscaler from './generator/Upscaler.svelte';
   import Dump from './transfer/Dump.svelte';
   import Undump from './transfer/Undump.svelte';
@@ -127,6 +128,9 @@
     },
     angleedit: {
       ref: AngleEditDialog,
+    },
+    layerize: {
+      ref: LayerizeDialog,
     },
     upscaler: {
       ref: Upscaler,

@@ -17,6 +17,7 @@ import { textEditFilm } from "../../utils/textEditFilm";
 import { angleEditFilm } from "../../utils/angleEditFilm";
 import { mainBook } from '../workspaceStore'; // デバッグ用
 import { textLiftFilm } from "../../utils/textLiftFilm";
+import { layerizeFilm } from "../../utils/layerizeFilm";
 import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
 import type { FrameElement } from "../../lib/layeredCanvas/dataModels/frameTree";
 
@@ -245,6 +246,28 @@ export async function handleTextLiftCommand<T extends FilmOperationTarget & { fr
     commit(null);
   }
   loading.set(false);
+}
+
+export async function handleLayerizeCommand<T extends FilmOperationTarget>(
+  target: T
+): Promise<void> {
+  const film = target.commandTargetFilm!;
+
+  try {
+    const newFilms = await layerizeFilm(film);
+    if (newFilms.length > 0) {
+      const index = target.filmStack.films.indexOf(film);
+      const insertIndex = index >= 0 ? index + 1 : target.filmStack.films.length;
+      target.filmStack.films.splice(insertIndex, 0, ...newFilms);
+      commit(null);
+      toastStore.trigger({ message: `${newFilms.length}枚のレイヤーに分解しました`, timeout: 3000});
+    }
+  } catch (e) {
+    console.error(e);
+    toastStore.trigger({ message: `レイヤー化に失敗しました`, timeout: 3000});
+  } finally {
+    loading.set(false);
+  }
 }
 
 // コマンド処理の共通フロー

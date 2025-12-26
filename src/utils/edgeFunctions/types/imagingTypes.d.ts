@@ -241,3 +241,15 @@ export const TextEraserResponseSchema = z.object({
   model: z.string().describe("model name"),
 });
 export type TextEraserResponse = z.infer<typeof TextEraserResponseSchema>;
+
+export const LayerizeRequestSchema = z.object({
+  dataUrl: z.string(),
+  numLayers: z.number().min(1).max(4),
+});
+export type LayerizeRequest = z.infer<typeof LayerizeRequestSchema>;
+
+export const LayerizeResponseSchema = z.object({
+  requestId: z.string().describe("request id"),
+  model: z.string().describe("model name"),
+});
+export type LayerizeResponse = z.infer<typeof LayerizeResponseSchema>;

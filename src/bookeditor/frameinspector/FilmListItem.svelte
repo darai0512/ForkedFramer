@@ -33,6 +33,7 @@
   import angleeditIcon from '../../assets/filmlist/angleedit.webp';
   import downloadIcon from '../../assets/download.webp';
   import textLiftIcon from '../../assets/filmlist/textlift.webp';
+  import layerizeIcon from '../../assets/filmlist/layerize.webp';
   import stampIcon from '../../assets/stamp.webp';
   import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
   import { tick } from 'svelte';
@@ -165,6 +166,10 @@
 
   function onDuplicate(ev: MouseEvent) {
     dispatchFilmTool('duplicate');
+  }
+
+  function onLayerize(ev: MouseEvent) {
+    dispatchFilmTool('layerize');
   }
 
   function onOutPainting(ev: MouseEvent) {
@@ -461,6 +466,9 @@
           </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
             <img draggable={false} src={textLiftIcon} alt={$_('frame.actions.textlift')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={`${$_('frame.actions.layerize')}[8]`} on:click={onLayerize}>
+            <img draggable={false} src={layerizeIcon} alt={$_('frame.actions.layerize')}/>
           </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
             <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
