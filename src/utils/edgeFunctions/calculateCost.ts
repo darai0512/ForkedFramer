@@ -135,14 +135,14 @@ export function calculateOutPaintingCost(size: { width: number; height: number }
     };
 
     // outpainting costの算出
-    // $0.05 per mega pixel (1feathral ≒ $0.01)
-    return calculateCostFromMegapixels(expandedSize, 8);
+    // $0.01 per mega pixel (1feathral ≒ $0.01)
+    return calculateCostFromMegapixels(expandedSize, 5);
 }
 
 export function calculateInPaintingCost(size: { width: number; height: number }) {
     // inpainting costの算出
-    // $0.05 per mega pixel (1feathral ≒ $0.01)
-    return calculateCostFromMegapixels(size, 8);
+    // $0.01 per mega pixel (1feathral ≒ $0.01)
+    return calculateCostFromMegapixels(size, 5);
 }
 
 export type ImageSize = { width: number; height: number };
