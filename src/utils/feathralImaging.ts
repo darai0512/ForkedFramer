@@ -285,7 +285,7 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
   // Kling
   { value: 'kling-image/o1', name: 'Kling Image O1', uiType: 'flux', textedit: true, refRange: { min: 1, max: 4 }, timeFactor: 12 },
   // Qwen
-  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
+  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 3 }, timeFactor: 12 },
   { value: 'qwen-image-edit/multiple-angles', name: 'アングル編集', uiType: 'flux', textedit: false, refRange: { min: 1, max: 1 }, timeFactor: 12 },
   // FLUX グループ
   {
