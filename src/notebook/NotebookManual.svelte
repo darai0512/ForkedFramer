@@ -34,6 +34,7 @@
   import { _ } from 'svelte-i18n';
   import ThinkerSelector from './ThinkerSelector.svelte';
   import { toolTip } from '../utils/passiveToolTipStore';
+  import bellIcon from '../assets/bell.webp';
 
   let notebook: NotebookLocal | null;
   $: notebook = $mainBook?.notebook ?? null;
@@ -66,6 +67,7 @@
   
   let enablePageNumber: boolean = false;
   let pageNumberValue: number = 1;
+  let drawingMode: number | null = null; // null: 未選択, 0: コマごとに作画, 1: ページごとに作画
 
   // Reactive translations for non-component contexts
   $: aiErrorMessage = $_('notebook.errors.aiError');
@@ -513,6 +515,7 @@
 <div class="drawer-content">
   <div class="header">
     <h1>{$_('notebook.manual.title')}</h1>
+    <p class="text-sm">ベルボタンを押しながら作品を作っていきましょう。フルオートなら全部自動で進めるよ！</p>
     <div class="flex justify-between gap-2 items-center mr-4">
       <Feathral/>
       <!-- <ThinkerSelector bind:thinker={thinker}/> -->
@@ -573,7 +576,11 @@
       </div>
     </div>
     {#if !fullAutoRunning}
-      <button class="btn variant-filled-primary" on:click={onStartFullAuto}>{$_('notebook.manual.fullAuto')}</button>
+      <div class="flex flex-row gap-2">
+        <button class="btn variant-filled-primary" on:click={onStartFullAuto} use:toolTip={"すべてオートで進める"}>{$_('notebook.manual.fullAuto')}</button>
+        <span class="flex-grow"></span>
+        <button class="btn variant-filled-warning" on:click={reset} use:toolTip={"入力したものをクリア"}>{$_('notebook.manual.reset')}</button>
+      </div>
     {/if}
   </div>
     <div class="section">
@@ -623,34 +630,51 @@
         <NotebookTextarea bind:value={notebook.scenario} cost={2} waiting={scenarioWaiting} on:advise={onScenarioAdvise} minHeight={240}/>
       </div>
     </div>
-    <!-- <div class="section">
-      <h2 class="warning">Sorry, storyboard creation is under adjustment due to AI issues</h2>
-    </div> -->
-    <div class="flex flex-row gap-4 mb-4">
-      <button class="btn variant-filled-warning" on:click={reset} use:toolTip={"入力したものをクリア"}>{$_('notebook.manual.reset')}</button>
-      <span class="flex-grow"></span>
-      <button class="btn variant-filled-primary" on:click={onBuildStoryboard} use:toolTip={"1コマずつ画像生成する方式でページを作成"}>{$_('notebook.manual.createStoryboard')}</button>
-      <!-- <button class="btn variant-filled-primary" on:click={onCreatePages} use:toolTip={"1ページずつ直接画像生成"}>{$_('notebook.manual.createPages')}</button> -->
+    <div class="drawing-mode-selector">
+      <button
+        class="mode-btn mode-btn-0"
+        class:selected={drawingMode === 0}
+        on:click={() => drawingMode = drawingMode === 0 ? null : 0}
+      >コマごとに作画</button>
+      <button
+        class="mode-btn mode-btn-1"
+        class:selected={drawingMode === 1}
+        on:click={() => drawingMode = drawingMode === 1 ? null : 1}
+      >ページごとに作画</button>
     </div>
-    <div class="section">
-      <h2>{$_('notebook.manual.imageGeneration')}</h2>
-      <ImagingModes bind:mode={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top"/>
-      <p class="text-xs mt-1 mb-4">☆マークは登場人物画像を参照します</p>
-      <div class="flex flex-row mt-2 justify-center align-center gap-2">
-        <span class="w-18">{$_('notebook.manual.style')}</span>
-        <input type="text" class="input portrait-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}/>
-        <span class="flex-grow"></span>
-        <button disabled={notebook.storyboard == null} class="btn variant-filled-primary" on:click={onGenerateImages}>{$_('notebook.manual.generateImage')}</button>
-      </div>
-    </div>
-    {#if notebook.storyboard}
-      <div class="section">
-        <h2>{$_('notebook.manual.howAboutStoryboard')}</h2>
-        <div class="w-full">
-          <NotebookTextarea bind:value={notebook.critique} cost={2} waiting={critiqueWaiting} on:advise={onCritiqueAdvise} minHeight={240}/>
+    <div class="drawing-panel">
+      {#if drawingMode === 0}
+        <div class="section">
+          <h2>{$_('notebook.manual.createStoryboard')}</h2>
+          <div class="flex justify-center">
+            <button class="btn variant-filled-primary action-btn" on:click={onBuildStoryboard} use:toolTip={"1コマずつ画像生成する方式でページを作成"}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.createStoryboard')}</button>
+          </div>
         </div>
-      </div>
-    {/if}
+        <div class="section">
+          <h2>{$_('notebook.manual.imageGeneration')}</h2>
+          <div class="ml-4">
+            <ImagingModes bind:mode={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top" width={350}/>
+            <p class="text-xs mt-1 mb-2">☆マークは登場人物画像を参照します</p>
+            <div class="flex flex-row mt-2 align-center gap-2">
+              <span class="w-18">{$_('notebook.manual.style')}</span>
+              <input type="text" class="input portrait-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}/>
+            </div>
+          </div>
+          <div class="flex justify-center mt-4">
+            <button disabled={notebook.storyboard == null} class="btn variant-filled-primary action-btn" on:click={onGenerateImages}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.generateImage')}</button>
+          </div>
+        </div>
+      {:else if drawingMode === 1}
+        <div class="section">
+          <h2>{$_('notebook.manual.createPages')}</h2>
+          <div class="flex justify-center">
+            <button class="btn variant-filled-primary action-btn" on:click={onCreatePages} use:toolTip={"1ページずつ直接画像生成"}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.createPages')}</button>
+          </div>
+        </div>
+      {:else}
+        <p class="text-center text-surface-500">作画モードを選択してください</p>
+      {/if}
+    </div>
   </div>
 </div>
 {/if}
@@ -714,4 +738,67 @@
   /* .warning {
     color: #d1b826;
   } */
+  .drawing-mode-selector {
+    display: flex;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .mode-btn {
+    flex: 1;
+    font-family: '源暎エムゴ';
+    font-size: 20px;
+    height: auto;
+    padding: 24px 24px;
+    border-radius: 8px;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mode-btn-0 {
+    background-color: #e8f4fc;
+    border-color: #3498db;
+    color: #2471a3;
+  }
+  .mode-btn-0:hover {
+    background-color: #d4e9f7;
+  }
+  .mode-btn-0.selected {
+    background-color: #3498db;
+    color: white;
+  }
+  .mode-btn-1 {
+    background-color: #fdedec;
+    border-color: #e74c3c;
+    color: #c0392b;
+  }
+  .mode-btn-1:hover {
+    background-color: #f9dbd9;
+  }
+  .mode-btn-1.selected {
+    background-color: #e74c3c;
+    color: white;
+  }
+  .drawing-panel {
+    margin-top: 16px;
+    padding: 16px;
+    border: 1px solid rgb(var(--color-surface-400));
+    border-radius: 8px;
+    background-color: rgb(var(--color-surface-100));
+    min-height: 360px;
+  }
+  .action-btn {
+    font-size: 18px;
+    padding: 12px 24px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bell-icon {
+    width: 24px;
+    height: 24px;
+  }
 </style>
