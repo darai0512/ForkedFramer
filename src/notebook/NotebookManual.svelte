@@ -60,7 +60,9 @@
     maxRefImages: 4,
   };
   let imagingMode: ImagingMode = 'schnell';
+  let pageImagingMode: ImagingMode = 'nano-banana-pro';
   let plotInstruction: string = '';
+  let pagePostfix: string = '';
 
   let rootFolder: Folder;
   let aiFolder: Folder;
@@ -74,6 +76,9 @@
   $: alreadyRegisteredMessage = $_('notebook.errors.alreadyRegistered');
   $: imageGeneratedMessage = $_('generator.imageGenerated');
   $: characterRegisteredMessage = $_('notebook.errors.characterRegistered');
+
+  // ページ作画用のpaperSize（newPagePropertyから取得）
+  $: newPagePaperSize = $mainBook?.newPageProperty?.paperSize ?? [1024, 1024] as [number, number];
 
   $: onNotebookChanged(notebook);
   function onNotebookChanged(notebook: NotebookLocal | null) {
@@ -386,12 +391,12 @@
         succeeded: 0,
         failed: 0,
         refImages: {},
-        maxRefImages: getRefMaxForMode(imagingMode),
+        maxRefImages: getRefMaxForMode(pageImagingMode),
       };
       imagingContext.refImages = portraitsRecordFromNotebook(notebook ?? null);
 
-      const lastPage = $mainBook!.pages[$mainBook!.pages.length - 1];
-      const paperSize = lastPage.paperSize;
+      const npp = $mainBook!.newPageProperty;
+      const paperSize = npp.paperSize;
       const primaryPrompt = "セリフの言語は維持すること。日本語なら日本語で。日本語縦書きの場合は先に読むコマが右、後に読むコマが左。idは出力しない。";
 
       // 各ページを処理
@@ -399,7 +404,7 @@
         const storyboardPage = storyboard.pages[pageIndex];
 
         // ページのJSONをそのままプロンプトに
-        const pagePrompt = `${postfix}\n${primaryPrompt}\n${JSON.stringify(storyboardPage)}`;
+        const pagePrompt = `${pagePostfix}\n${primaryPrompt}\n${JSON.stringify(storyboardPage)}`;
         console.log('Page prompt:', pagePrompt);
 
         try {
@@ -407,7 +412,7 @@
           const canvases = await generateImage(
             pagePrompt,
             { width: paperSize[0], height: paperSize[1] },
-            imagingMode,
+            pageImagingMode,
             1,
             "opaque",
             []
@@ -422,9 +427,9 @@
 
             const page = newPage(rootFrameTree, []);
             page.paperSize = [...paperSize];
-            page.paperColor = lastPage.paperColor;
-            page.frameColor = lastPage.frameColor;
-            page.frameWidth = lastPage.frameWidth;
+            page.paperColor = npp.paperColor;
+            page.frameColor = npp.frameColor;
+            page.frameWidth = npp.frameWidth;
             page.source = storyboardPage;
 
             const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
@@ -655,9 +660,9 @@
           <div class="ml-4">
             <ImagingModes bind:mode={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top" width={350}/>
             <p class="text-xs mt-1 mb-2">☆マークは登場人物画像を参照します</p>
-            <div class="flex flex-row mt-2 align-center gap-2">
-              <span class="w-18">{$_('notebook.manual.style')}</span>
-              <input type="text" class="input portrait-style w-96" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}/>
+            <div class="flex flex-col mt-2 gap-1">
+              <span>{$_('notebook.manual.style')}</span>
+              <textarea class="textarea portrait-style" rows="2" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}></textarea>
             </div>
           </div>
           <div class="flex justify-center mt-4">
@@ -665,6 +670,16 @@
           </div>
         </div>
       {:else if drawingMode === 1}
+        <div class="section">
+          <h2>{$_('notebook.manual.imageGeneration')}</h2>
+          <div class="ml-4">
+            <ImagingModes bind:mode={pageImagingMode} group="page" preferenceKey="pageMode" imageSize={{width: newPagePaperSize[0], height: newPagePaperSize[1]}} placement="top" width={350}/>
+            <div class="flex flex-col mt-2 gap-1">
+              <span>{$_('notebook.manual.style')}</span>
+              <textarea class="textarea portrait-style" rows="2" bind:value={pagePostfix} use:persistentText={{store:'imaging', key:'pageStyle', defaultValue: '右から左に読むマンガ。縦書き。コマの中の絵のスタイルは日本アニメ風のイラスト', onLoad: (v) => pagePostfix = v}}></textarea>
+            </div>
+          </div>
+        </div>
         <div class="section">
           <h2>{$_('notebook.manual.createPages')}</h2>
           <div class="flex justify-center">
@@ -787,7 +802,7 @@
     border: 1px solid rgb(var(--color-surface-400));
     border-radius: 8px;
     background-color: rgb(var(--color-surface-100));
-    min-height: 360px;
+    min-height: 420px;
   }
   .action-btn {
     font-size: 18px;

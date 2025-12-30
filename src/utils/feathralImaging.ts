@@ -259,7 +259,7 @@ function calculateGPTCost(mode: Mode): number {
  *   - max>0: 編集モードで使用可能（参照画像を受け取れる）
  * timeFactor: 生成時間の推定係数（プログレスバー用、大きいほど遅い）
  */
-export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number };
+export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean };
 
 // 階層構造用の型定義（再帰的）
 export type ModeTreeItem = ModeOption | ModeGroup;
@@ -274,35 +274,36 @@ export function isModeGroup(item: ModeTreeItem): item is ModeGroup {
 }
 
 // 階層化されたモードオプション
+// pageImaging: ページ単位の出力に耐える性能があるかどうか（人間がテストして判断）
 export const modeOptionsTree: readonly ModeTreeItem[] = [
   // Z Image
-  { value: 'z-image', name: 'Z Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12 },
+  { value: 'z-image', name: 'Z Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12, pageImaging: false },
   // Nano Banana Pro
-  { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+  { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
   // Seedream
-  { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
-  { value: 'seedream/v4.5', name: 'Seedream v4.5', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+  { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
+  { value: 'seedream/v4.5', name: 'Seedream v4.5', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
   // Kling
-  { value: 'kling-image/o1', name: 'Kling Image O1', uiType: 'flux', textedit: true, refRange: { min: 1, max: 4 }, timeFactor: 12 },
+  { value: 'kling-image/o1', name: 'Kling Image O1', uiType: 'flux', textedit: true, refRange: { min: 1, max: 4 }, timeFactor: 12, pageImaging: false },
   // Qwen
-  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 3 }, timeFactor: 12 },
-  { value: 'qwen-image-edit/multiple-angles', name: 'アングル編集', uiType: 'flux', textedit: false, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+  { value: 'qwen-image', name: 'Qwen Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 3 }, timeFactor: 12, pageImaging: false },
+  { value: 'qwen-image-edit/multiple-angles', name: 'アングル編集', uiType: 'flux', textedit: false, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
   // FLUX グループ
   {
     groupId: 'flux',
     groupName: 'FLUX',
     children: [
-      { value: 'schnell', name: 'Schnell', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 5 },
-      { value: 'pro', name: 'Pro', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12 },
-      { value: 'chibi', name: 'ちび', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
-      { value: 'manga', name: 'まんが', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
-      { value: 'comibg', name: 'シンプル背景', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12 },
-      { value: 'flux-2-dev', name: 'Flux 2 Dev', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12 },
-      { value: 'flux-2-pro', name: 'Flux 2 Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12 },
-      { value: 'flux-2-flex', name: 'Flux 2 Flex', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12 },
-      { value: 'kontext/pro', name: 'Kontext [Pro]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
-      { value: 'kontext/max', name: 'Kontext [Max]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
-      { value: 'kontext/inscene', name: 'Kontext [InScene]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12 },
+      { value: 'schnell', name: 'Schnell', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 5, pageImaging: false },
+      { value: 'pro', name: 'Pro', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12, pageImaging: false },
+      { value: 'chibi', name: 'ちび', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12, pageImaging: false },
+      { value: 'manga', name: 'まんが', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12, pageImaging: false },
+      { value: 'comibg', name: 'シンプル背景', uiType: 'flux', textedit: false, refRange: { min: 0, max: 1 }, timeFactor: 12, pageImaging: false },
+      { value: 'flux-2-dev', name: 'Flux 2 Dev', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: false },
+      { value: 'flux-2-pro', name: 'Flux 2 Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: false },
+      { value: 'flux-2-flex', name: 'Flux 2 Flex', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: false },
+      { value: 'kontext/pro', name: 'Kontext [Pro]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
+      { value: 'kontext/max', name: 'Kontext [Max]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
+      { value: 'kontext/inscene', name: 'Kontext [InScene]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
     ] as const,
   },
   // GPT-image-1.5 グループ
@@ -310,9 +311,9 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
     groupId: 'gpt-image-1.5',
     groupName: 'gpt-image-1.5',
     children: [
-      { value: 'gpt-image-1.5/low', name: 'gpt-image-1.5 Low', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 15 },
-      { value: 'gpt-image-1.5/medium', name: 'gpt-image-1.5 Medium', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 22 },
-      { value: 'gpt-image-1.5/high', name: 'gpt-image-1.5 High', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 40 },
+      { value: 'gpt-image-1.5/low', name: 'gpt-image-1.5 Low', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 15, pageImaging: true },
+      { value: 'gpt-image-1.5/medium', name: 'gpt-image-1.5 Medium', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 22, pageImaging: true },
+      { value: 'gpt-image-1.5/high', name: 'gpt-image-1.5 High', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 40, pageImaging: true },
     ] as const,
   },
   // レガシーグループ
@@ -325,13 +326,13 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
         groupId: 'gpt-image-1',
         groupName: 'gpt-image-1',
         children: [
-          { value: 'gpt-image-1/low', name: 'gpt-image-1 Low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
-          { value: 'gpt-image-1/medium', name: 'gpt-image-1 Medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
-          { value: 'gpt-image-1/high', name: 'gpt-image-1 High', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30 },
+          { value: 'gpt-image-1/low', name: 'gpt-image-1 Low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false },
+          { value: 'gpt-image-1/medium', name: 'gpt-image-1 Medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false },
+          { value: 'gpt-image-1/high', name: 'gpt-image-1 High', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false },
         ] as const,
       },
-      { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
-      { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12 },
+      { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: false },
+      { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: false },
     ],
   },
 ] as const;

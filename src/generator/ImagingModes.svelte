@@ -9,7 +9,8 @@
   import { clickOutside } from '../utils/clickOutside';
 
   export let mode: ImagingMode;
-  export let group: 'imaging' | 'textedit' | 'ref' | 'all' = 'imaging';
+  export let group: 'imaging' | 'textedit' | 'ref' | 'page' | 'all' = 'imaging';
+  export let preferenceKey: string = 'mode';
   const DEFAULT_IMAGE_SIZE = { width: 1024, height: 1024 };
 
   export let imageSize: { width: number; height: number } | undefined = DEFAULT_IMAGE_SIZE;
@@ -20,7 +21,7 @@
   export let hasSelectedImages: boolean | undefined = undefined;
   export let selectedImageCount: number | undefined = undefined;
 
-  const preference = createPreference<ImagingMode>('imaging', 'mode');
+  const preference = createPreference<ImagingMode>('imaging', preferenceKey);
 
   function coerceMode(v: unknown): ImagingMode {
     if (typeof v === 'string') return v as ImagingMode;
@@ -50,6 +51,7 @@
    * - imaging: 参照画像なしで生成可能なモード (refRange.min === 0)
    * - textedit: テキスト編集対応モード
    * - ref: キャラ参照用途。参照画像なしでも実行可能なのでフィルタなし
+   * - page: ページ単位の出力に対応したモード (pageImaging === true)
    */
   function filterByGroup() {
     switch (group) {
@@ -60,6 +62,8 @@
       case 'ref':
         // 参照画像なしで説明だけでも実行可能なのでフィルタしない
         return (_o: ModeOption) => true;
+      case 'page':
+        return (o: ModeOption) => o.pageImaging;
       case 'all':
       default:
         return (_o: ModeOption) => true;
