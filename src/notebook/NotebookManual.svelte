@@ -80,6 +80,9 @@
   // ページ作画用のpaperSize（newPagePropertyから取得）
   $: newPagePaperSize = $mainBook?.newPageProperty?.paperSize ?? [1024, 1024] as [number, number];
 
+  // 選択ページの有無（redrawTokenで再評価をトリガー）
+  $: hasMarkedPages = ($redrawToken, $bookOperators?.getMarks().some(m => m) ?? false);
+
   $: onNotebookChanged(notebook);
   function onNotebookChanged(notebook: NotebookLocal | null) {
     if (!notebook) {return;}
@@ -665,8 +668,11 @@
               <textarea class="textarea portrait-style" rows="2" bind:value={postfix} use:persistentText={{store:'imaging', key:'style', defaultValue: 'Japanese anime style', onLoad: (v) => postfix = v}}></textarea>
             </div>
           </div>
-          <div class="flex justify-center mt-4">
-            <button disabled={notebook.storyboard == null} class="btn variant-filled-primary action-btn" on:click={onGenerateImages}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.generateImage')}</button>
+          <div class="flex flex-col items-center mt-4 gap-2">
+            {#if !hasMarkedPages}
+              <p class="text-sm text-error-600">選択されているページがありません ネームを生成してください</p>
+            {/if}
+            <button disabled={!hasMarkedPages} class="btn variant-filled-primary action-btn" on:click={onGenerateImages}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.generateImage')}</button>
           </div>
         </div>
       {:else if drawingMode === 1}
