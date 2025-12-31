@@ -297,3 +297,51 @@ export function resizeCanvas(canvas: HTMLCanvasElement, targetWidth: number, tar
   return outputCanvas;
 }
 
+export type SizePair = { width: number; height: number };
+
+/**
+ * 与えられたサイズに最も近いサイズを候補配列から選択する
+ * アスペクト比の類似度とサイズ（面積）の類似度を組み合わせて判定
+ * @param target 目標サイズ
+ * @param candidates 候補サイズの配列
+ * @param aspectWeight アスペクト比の重み（0-1、デフォルト0.5）
+ * @returns 最も近い候補サイズ
+ */
+export function findClosestSize(
+  target: SizePair,
+  candidates: SizePair[],
+  aspectWeight: number
+): SizePair {
+  if (candidates.length === 0) {
+    throw new Error('候補サイズの配列が空です');
+  }
+
+  const targetAspect = target.width / target.height;
+  const targetArea = target.width * target.height;
+
+  let bestCandidate = candidates[0];
+  let bestScore = Infinity;
+
+  for (const candidate of candidates) {
+    const candidateAspect = candidate.width / candidate.height;
+    const candidateArea = candidate.width * candidate.height;
+
+    // アスペクト比の差（対数スケールで比較することで、2:1と1:2を同等に扱う）
+    const aspectDiff = Math.abs(Math.log(targetAspect) - Math.log(candidateAspect));
+
+    // 面積の差（対数スケールで比較することで、相対的なサイズ差を評価）
+    const areaDiff = Math.abs(Math.log(targetArea) - Math.log(candidateArea));
+
+    // 重み付きスコア（小さいほど良い）
+    const sizeWeight = 1 - aspectWeight;
+    const score = aspectDiff * aspectWeight + areaDiff * sizeWeight;
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestCandidate = candidate;
+    }
+  }
+
+  return bestCandidate;
+}
+

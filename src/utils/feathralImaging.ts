@@ -5,6 +5,7 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import type { Page, NotebookLocal } from '../lib/book/book';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
+import { findClosestSize, type SizePair } from '../lib/layeredCanvas/tools/imageUtil';
 import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
 import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
@@ -102,7 +103,7 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
 
     const perf = performance.now();
     const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: req.mode, requestId, model });
-    console.log('submitImagingRequest', performance.now() - perf);
+    console.log('submitImagingRequest', (performance.now() - perf) / 1000.0, 'seconds');
     return mediaResources as HTMLCanvasElement[];
   } catch (error: any) {
     if (isContentsPolicyViolationError(error)) {
@@ -259,7 +260,7 @@ function calculateGPTCost(mode: Mode): number {
  *   - max>0: 編集モードで使用可能（参照画像を受け取れる）
  * timeFactor: 生成時間の推定係数（プログレスバー用、大きいほど遅い）
  */
-export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean };
+export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean; readonly supportedSizes?: readonly SizePair[] };
 
 // 階層構造用の型定義（再帰的）
 export type ModeTreeItem = ModeOption | ModeGroup;
@@ -311,9 +312,9 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
     groupId: 'gpt-image-1.5',
     groupName: 'gpt-image-1.5',
     children: [
-      { value: 'gpt-image-1.5/low', name: 'gpt-image-1.5 Low', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 15, pageImaging: true },
-      { value: 'gpt-image-1.5/medium', name: 'gpt-image-1.5 Medium', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 22, pageImaging: true },
-      { value: 'gpt-image-1.5/high', name: 'gpt-image-1.5 High', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 40, pageImaging: true },
+      { value: 'gpt-image-1.5/low', name: 'gpt-image-1.5 Low', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 15, pageImaging: true, supportedSizes: [{ width: 1024, height: 1024 }, { width: 1536, height: 1024 }, { width: 1024, height: 1536 }] },
+      { value: 'gpt-image-1.5/medium', name: 'gpt-image-1.5 Medium', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 22, pageImaging: true, supportedSizes: [{ width: 1024, height: 1024 }, { width: 1536, height: 1024 }, { width: 1024, height: 1536 }] },
+      { value: 'gpt-image-1.5/high', name: 'gpt-image-1.5 High', uiType: 'gpt-image-1.5', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 40, pageImaging: true, supportedSizes: [{ width: 1024, height: 1024 }, { width: 1536, height: 1024 }, { width: 1024, height: 1536 }] },
     ] as const,
   },
   // レガシーグループ
@@ -379,4 +380,28 @@ export function supportsRefImages(mode: ImagingMode): boolean {
 
 export function getTimeFactorForMode(mode: ImagingMode): number {
   return modeOptions.find(o => o.value === mode)?.timeFactor ?? 12;
+}
+
+export function getSupportedSizesForMode(mode: ImagingMode): readonly SizePair[] | null {
+  return modeOptions.find(o => o.value === mode)?.supportedSizes ?? null;
+}
+
+/**
+ * 指定モードの対応サイズから最も近いサイズを選択する
+ * 対応サイズが定義されていない場合は元のサイズをそのまま返す
+ * @param targetSize 目標サイズ
+ * @param mode イメージングモード
+ * @param aspectWeight アスペクト比の重み（デフォルト0.7）
+ * @returns 最も近いサイズ
+ */
+export function selectClosestSupportedSize(
+  targetSize: SizePair,
+  mode: ImagingMode,
+  aspectWeight: number
+): SizePair {
+  const supportedSizes = getSupportedSizesForMode(mode);
+  if (!supportedSizes || supportedSizes.length === 0) {
+    return targetSize;
+  }
+  return findClosestSize(targetSize, [...supportedSizes], aspectWeight);
 }

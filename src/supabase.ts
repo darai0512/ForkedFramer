@@ -17,7 +17,7 @@ import {
 } from "./utils/edgeFunctions/types/imagingTypes.d";
 import { EraseFileResponseSchema, GetDownloadUrlResponseSchema, GetUploadUrlResponseSchema } from "$protocolTypes/cloudFileTypes.d";
 import { type ListMaterialsRequest, ListMaterialsRequestSchema, ListMaterialsResponseSchema, type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes.d";
-import { NotebookRequestSchema, NotebookWithInstructionRequestSchema, type NotebookRequest, type NotebookWithInstructionRequest, AdviseThemeResponseSchema, type AdviseThemeResponse } from "$protocolTypes/adviseTypes.d";
+import { NotebookRequestSchema, NotebookWithInstructionRequestSchema, type NotebookRequest, type NotebookWithInstructionRequest, AdviseThemeResponseSchema, type AdviseThemeResponse, AdvisePageGenerationResponseSchema } from "$protocolTypes/adviseTypes.d";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 
 // リクエストスキーマの定義
@@ -140,6 +140,10 @@ export async function adviseCritique(req: NotebookRequest) {
 
 export async function adviseStoryboard(req: NotebookRequest) {
   return await invoke("charged/advise/storyboard", req, NotebookRequestSchema, StoryboardSchema);
+}
+
+export async function advisePageGeneration(req: NotebookRequest) {
+  return await invoke("charged/advise/pageGeneration", req, NotebookRequestSchema, AdvisePageGenerationResponseSchema);
 }
 
 export async function getUploadUrl(filename: string) {

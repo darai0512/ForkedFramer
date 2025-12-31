@@ -6,7 +6,7 @@
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError, portraitsRecordFromNotebook } from '../utils/feathralImaging';
+  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
@@ -22,7 +22,7 @@
   import { ProgressBar } from '@skeletonlabs/skeleton';
   import ImagingModes from '../generator/ImagingModes.svelte';
   import { modeOptions, getRefMaxForMode } from '../utils/feathralImaging';
-  import { adviseTheme, adviseCharacters, advisePlot, adviseScenario, adviseStoryboard, adviseCritique } from '../supabase';
+  import { adviseTheme, adviseCharacters, advisePlot, adviseScenario, adviseStoryboard, adviseCritique, advisePageGeneration } from '../supabase';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import { type Folder } from '../lib/filesystem/fileSystem';
   import { rosterOpen, rosterSelectedCharacter, saveCharacterToRoster } from './rosterStore';
@@ -379,18 +379,15 @@
     console.log('onCreatePages called');
     try {
       storyboardWaiting = true;
-      const result = await adviseStoryboard(makeRequest());
-      const storyboard = result as Storyboard;
-      notebook!.storyboard = storyboard;
+      const pages = await advisePageGeneration(makeRequest());
       storyboardWaiting = false;
-      console.log(storyboard);
 
       // 画像生成の準備
       imageProgress = 0.001;
       imagingContext = {
         awakeWarningToken: false,
         errorToken: false,
-        total: storyboard.pages.length,
+        total: pages.pages.length,
         succeeded: 0,
         failed: 0,
         refImages: {},
@@ -400,21 +397,25 @@
 
       const npp = $mainBook!.newPageProperty;
       const paperSize = npp.paperSize;
-      const primaryPrompt = "セリフの言語は維持すること。日本語なら日本語で。日本語縦書きの場合は先に読むコマが右、後に読むコマが左。idは出力しない。";
+
+      // モードに応じたサイズを選択（対応サイズが定義されていれば最も近いものを選択）
+      const targetSize = { width: paperSize[0], height: paperSize[1] };
+      const selectedSize = selectClosestSupportedSize(targetSize, pageImagingMode, 0.7);
+      console.log('Target size:', targetSize, 'Selected size:', selectedSize);
 
       // 各ページを処理
-      for (let pageIndex = 0; pageIndex < storyboard.pages.length; pageIndex++) {
-        const storyboardPage = storyboard.pages[pageIndex];
+      for (let pageIndex = 0; pageIndex < pages.pages.length; pageIndex++) {
+        const storyboardPage = pages.pages[pageIndex];
 
         // ページのJSONをそのままプロンプトに
-        const pagePrompt = `${pagePostfix}\n${primaryPrompt}\n${JSON.stringify(storyboardPage)}`;
+        const pagePrompt = `${pagePostfix}\n${storyboardPage}`;
         console.log('Page prompt:', pagePrompt);
 
         try {
           // 画像生成
           const canvases = await generateImage(
             pagePrompt,
-            { width: paperSize[0], height: paperSize[1] },
+            selectedSize,
             pageImagingMode,
             1,
             "opaque",
@@ -452,7 +453,7 @@
           }
         }
 
-        imageProgress = (pageIndex + 1) / storyboard.pages.length;
+        imageProgress = (pageIndex + 1) / pages.pages.length;
         imagingContext = imagingContext;
       }
 

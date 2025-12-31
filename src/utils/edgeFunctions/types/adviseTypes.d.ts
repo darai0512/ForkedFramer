@@ -44,3 +44,8 @@ export const AdviseThemeResponseSchema = z.object({
 });
 export type AdviseThemeResponse = z.infer<typeof AdviseThemeResponseSchema>;
 
+
+export const AdvisePageGenerationResponseSchema = z.object({
+  pages: z.array(z.string()).describe("各ページの画像生成用マークダウンプロンプト"),
+});
+export type AdvisePageGenerationResponse = z.infer<typeof AdvisePageGenerationResponseSchema>;
