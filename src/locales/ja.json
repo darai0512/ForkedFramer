@@ -398,7 +398,11 @@
       "style": "スタイル",
       "generateImage": "画像生成",
       "creatingStoryboard": "ネーム作成中",
-      "generatingImage": "画像生成中"
+      "generatingImage": "画像生成中",
+      "fourPanelTemplate": "4コマテンプレート",
+      "templateNormal": "ノーマル",
+      "templateWide": "ワイド",
+      "templateSplash": "右ぶちぬき"
     },
     "errors": {
       "aiError": "AIエラー",

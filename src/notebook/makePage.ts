@@ -27,7 +27,9 @@ function whitenColor(s: string, ratio: number): string {
     b.toString(16).padStart(2, '0');
 }
 
-export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard) {
+export type FourPanelTemplate = '4koma' | '4koma-wide' | '4koma-splash';
+
+export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourPanelTemplate: FourPanelTemplate) {
   console.log(JSON.stringify(storyboard));
   console.log(storyboard.format);
   const paperSize = get(mainBook)!.newPageProperty.paperSize;
@@ -38,7 +40,7 @@ export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard) {
 
     let sample: ConvertedLayout;
     if (storyboard.format == '4koma') {
-      sample = frameExamples["4koma"];
+      sample = frameExamples[fourPanelTemplate];
     } else {
       sample = makePageTemplateFromLightLayout(storyboardPage.layout!);
     }

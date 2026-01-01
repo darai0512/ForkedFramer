@@ -396,7 +396,11 @@
       "style": "Style",
       "generateImage": "Generate Image",
       "creatingStoryboard": "Creating Storyboard",
-      "generatingImage": "Generating Image"
+      "generatingImage": "Generating Image",
+      "fourPanelTemplate": "4-Panel Template",
+      "templateNormal": "Normal",
+      "templateWide": "Wide",
+      "templateSplash": "Right Splash"
     },
     "errors": {
       "aiError": "AI Error",

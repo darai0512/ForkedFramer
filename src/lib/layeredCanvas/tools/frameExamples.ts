@@ -272,7 +272,121 @@ export const frameExamples: Record<string, any> = {
       borderWidth: 0,
     },
     bubbles: []
-  }
+  },
+  "4koma-wide": {
+    frameTree: { // 4コマ(ワイド)
+      bgColor: "white",
+      height: 100,
+      column: [
+        { height: 4, visibility: 0  },
+        {
+          height: 100,
+          row: [
+            { width: 1, visibility: 0  },
+            { 
+              width: 10,
+              column: [
+                {
+                  height: 5,
+                  column: [
+                    { height: 2, pseudo: true, divider: { spacing: 1, slant: 0 }  },
+                  ],
+                  divider: { spacing: 2, slant: 0 }
+                },
+                {
+                  height: 100,
+                  column: [
+                    {
+                      height: 8, divider: { spacing: 1, slant: 0 }, 
+                    },
+                    {
+                      height: 8, divider: { spacing: 1, slant: 0 }, 
+                    },
+                    {
+                      height: 8, divider: { spacing: 1, slant: 0 }, 
+                    },
+                    {
+                      height: 8,
+                    },
+                  ],
+                },
+              ],
+            },
+            { width: 1, visibility: 0  },
+          ]
+        },
+        { height: 4, visibility: 0  },
+      ]
+    },
+    bubbles: [
+      {
+        n_p0: [0.25,0.026],
+        n_p1: [0.75,0.089],
+        text: "タイトル",
+        shape: "none",
+        direction: "h",
+        autoNewline: false,
+        embedded: true,
+      }
+    ]
+  },
+  "4koma-splash": {
+    frameTree: { // 4コマ(右がぶち抜き)
+      bgColor: "white",
+      height: 100,
+      column: [
+        { height: 4, visibility: 0  },
+        {
+          height: 100,
+          row: [
+            { width: 11, visibility: 0  },
+            { 
+              width: 10,
+              column: [
+                {
+                  height: 5,
+                  column: [
+                    { height: 2, pseudo: true, divider: { spacing: 1, slant: 0 }  },
+                  ],
+                  divider: { spacing: 2, slant: 0 }
+                },
+                {
+                  height: 100,
+                  column: [
+                    {
+                      height: 8, divider: { spacing: 1, slant: 0 }, 
+                    },
+                    {
+                      height: 8, divider: { spacing: 1, slant: 0 }, 
+                    },
+                    {
+                      height: 8, divider: { spacing: 1, slant: 0 }, 
+                    },
+                    {
+                      height: 8,
+                    },
+                  ],
+                },
+              ],
+            },
+            { width: 1, visibility: 0  },
+          ]
+        },
+        { height: 4, visibility: 0  },
+      ]
+    },
+    bubbles: [
+      {
+        n_p0: [0.05,0.026],
+        n_p1: [0.5,0.089],
+        text: "タイトル",
+        shape: "none",
+        direction: "h",
+        autoNewline: false,
+        embedded: true,
+      }
+    ]
+  },
 };
 
 export const aiTemplates = [

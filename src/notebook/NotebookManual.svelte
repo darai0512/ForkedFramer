@@ -11,7 +11,7 @@
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
   import { onMount, tick } from 'svelte';
-  import {makePagesFromStoryboard} from './makePage';
+  import {makePagesFromStoryboard, type FourPanelTemplate} from './makePage';
   import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
   import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
   import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
@@ -70,6 +70,7 @@
   let enablePageNumber: boolean = false;
   let pageNumberValue: number = 1;
   let drawingMode: number | null = null; // null: 未選択, 0: コマごとに作画, 1: ページごとに作画
+  let fourPanelTemplate: FourPanelTemplate = '4koma'; // 4コマテンプレート選択
 
   // Reactive translations for non-component contexts
   $: aiErrorMessage = $_('notebook.errors.aiError');
@@ -292,7 +293,7 @@
       notebook!.storyboard = result as Storyboard;
       storyboardWaiting = false;
       console.log(result);
-      const receivedPages = makePagesFromStoryboard(result as Storyboard);
+      const receivedPages = makePagesFromStoryboard(result as Storyboard, fourPanelTemplate);
       let marks = $bookOperators!.getMarks();
       const newPages = $mainBook!.pages.filter((_p, i) => !marks[i]);
       const oldLength = newPages.length;
@@ -586,6 +587,16 @@
         {/if}
       </div>
     </div>
+    {#if notebook.format === '4koma'}
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-sm">{$_('notebook.manual.fourPanelTemplate')}</span>
+        <select bind:value={fourPanelTemplate} class="select text-sm py-1 px-2" style="width: auto;">
+          <option value="4koma">{$_('notebook.manual.templateNormal')}</option>
+          <option value="4koma-wide">{$_('notebook.manual.templateWide')}</option>
+          <option value="4koma-splash">{$_('notebook.manual.templateSplash')}</option>
+        </select>
+      </div>
+    {/if}
     {#if !fullAutoRunning}
       <div class="flex flex-row gap-2">
         <button class="btn variant-filled-primary" on:click={onStartFullAuto} use:toolTip={"すべてオートで進める"}>{$_('notebook.manual.fullAuto')}</button>
