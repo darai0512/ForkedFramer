@@ -587,16 +587,6 @@
         {/if}
       </div>
     </div>
-    {#if notebook.format === '4koma'}
-      <div class="flex items-center gap-2 mb-2">
-        <span class="text-sm">{$_('notebook.manual.fourPanelTemplate')}</span>
-        <select bind:value={fourPanelTemplate} class="select text-sm py-1 px-2" style="width: auto;">
-          <option value="4koma">{$_('notebook.manual.templateNormal')}</option>
-          <option value="4koma-wide">{$_('notebook.manual.templateWide')}</option>
-          <option value="4koma-splash">{$_('notebook.manual.templateSplash')}</option>
-        </select>
-      </div>
-    {/if}
     {#if !fullAutoRunning}
       <div class="flex flex-row gap-2">
         <button class="btn variant-filled-primary" on:click={onStartFullAuto} use:toolTip={"すべてオートで進める"}>{$_('notebook.manual.fullAuto')}</button>
@@ -668,6 +658,16 @@
       {#if drawingMode === 0}
         <div class="section">
           <h2>{$_('notebook.manual.createStoryboard')}</h2>
+          {#if notebook.format === '4koma'}
+            <div class="flex items-center gap-2 mb-2 ml-4">
+              <span class="text-sm">{$_('notebook.manual.fourPanelTemplate')}</span>
+              <select bind:value={fourPanelTemplate} class="select text-sm py-1 px-2" style="width: auto;">
+                <option value="4koma">{$_('notebook.manual.templateNormal')}</option>
+                <option value="4koma-wide">{$_('notebook.manual.templateWide')}</option>
+                <option value="4koma-splash">{$_('notebook.manual.templateSplash')}</option>
+              </select>
+            </div>
+          {/if}
           <div class="flex justify-center">
             <button class="btn variant-filled-primary action-btn" on:click={onBuildStoryboard} use:toolTip={"1コマずつ画像生成する方式でページを作成"}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.createStoryboard')}</button>
           </div>

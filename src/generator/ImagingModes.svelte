@@ -106,7 +106,7 @@
     const effectiveSize = getEffectiveImageSize();
     // ☆マークは4枚以上参照可能なモデルにのみ表示（キャラ参照対応の目安）
     // 1枚のみのモデルは基本的にi2iでありキャラ参照ではない
-    const supportsCharacterRef = o.refRange.max >= 4;
+    const supportsCharacterRef = o.refRange.max >= 3;
     return {
       value: o.value as ImagingMode,
       label: group === 'ref' && supportsCharacterRef ? `☆ ${o.name}` : o.name,

@@ -336,9 +336,9 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
         groupId: 'gpt-image-1',
         groupName: 'gpt-image-1',
         children: [
-          { value: 'gpt-image-1/low', name: 'gpt-image-1 Low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false },
-          { value: 'gpt-image-1/medium', name: 'gpt-image-1 Medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false },
-          { value: 'gpt-image-1/high', name: 'gpt-image-1 High', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false },
+          { value: 'gpt-image-1/low', name: 'gpt-image-1 Low', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false, supportedSizes: [{ width: 1024, height: 1024 }, { width: 1536, height: 1024 }, { width: 1024, height: 1536 }] },
+          { value: 'gpt-image-1/medium', name: 'gpt-image-1 Medium', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false, supportedSizes: [{ width: 1024, height: 1024 }, { width: 1536, height: 1024 }, { width: 1024, height: 1536 }] },
+          { value: 'gpt-image-1/high', name: 'gpt-image-1 High', uiType: 'gpt-image-1', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 30, pageImaging: false, supportedSizes: [{ width: 1024, height: 1024 }, { width: 1536, height: 1024 }, { width: 1024, height: 1536 }] },
         ] as const,
       },
       { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: false },
