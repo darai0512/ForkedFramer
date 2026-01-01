@@ -5,7 +5,7 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import type { Page, NotebookLocal } from '../lib/book/book';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
-import { findClosestSize, type SizePair } from '../lib/layeredCanvas/tools/imageUtil';
+import { findClosestSize, calculateAspectPreservingSize, type SizePair } from '../lib/layeredCanvas/tools/imageUtil';
 import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
 import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
@@ -208,7 +208,16 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
       imagingContext.refImages,
       imagingContext.maxRefImages
     );
-    const canvases = await generateImage(composedPrompt, {width:1024,height:1024}, mode, 1, 'opaque', imageDataUrls);
+
+    // コマのサイズに基づいて画像生成サイズを決定
+    const [frameWidth, frameHeight] = leafLayout.size;
+    const targetSize: SizePair = { width: frameWidth, height: frameHeight };
+    const supportedSizes = getSupportedSizesForMode(mode);
+    const imageSize = supportedSizes && supportedSizes.length > 0
+      ? findClosestSize(targetSize, [...supportedSizes], 0.7)
+      : calculateAspectPreservingSize(targetSize, 1024, 64);
+
+    const canvases = await generateImage(composedPrompt, imageSize, mode, 1, 'opaque', imageDataUrls);
 
     const media = new ImageMedia(canvases[0]);
     const film = Film.fromMedia(media);

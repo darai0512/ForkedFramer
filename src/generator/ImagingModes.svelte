@@ -60,8 +60,8 @@
       case 'textedit':
         return (o: ModeOption) => !!o.textedit;
       case 'ref':
-        // 参照画像なしで説明だけでも実行可能なのでフィルタしない
-        return (_o: ModeOption) => true;
+        // 参照画像なしでも生成可能なモードのみ（キャラ参照は任意）
+        return (o: ModeOption) => o.refRange.min === 0;
       case 'page':
         return (o: ModeOption) => o.pageImaging;
       case 'all':

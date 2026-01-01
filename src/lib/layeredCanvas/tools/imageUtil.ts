@@ -300,11 +300,46 @@ export function resizeCanvas(canvas: HTMLCanvasElement, targetWidth: number, tar
 export type SizePair = { width: number; height: number };
 
 /**
+ * アスペクト比を維持しながら、短辺を基準サイズに、長辺を指定単位で丸めたサイズを計算する
+ * @param target 目標サイズ
+ * @param shortSide 短辺の基準サイズ（デフォルト1024）
+ * @param roundUnit 長辺の丸め単位（デフォルト64）
+ * @returns 計算されたサイズ
+ */
+export function calculateAspectPreservingSize(
+  target: SizePair,
+  shortSide: number,
+  roundUnit: number
+): SizePair {
+  const { width, height } = target;
+
+  // 正方形または同サイズの場合
+  if (width === height) {
+    return { width: shortSide, height: shortSide };
+  }
+
+  const isLandscape = width > height;
+  const aspectRatio = width / height;
+
+  if (isLandscape) {
+    // 横長: 高さを短辺(1024)に、幅を丸める
+    const rawWidth = shortSide * aspectRatio;
+    const roundedWidth = Math.round(rawWidth / roundUnit) * roundUnit;
+    return { width: Math.max(roundedWidth, roundUnit), height: shortSide };
+  } else {
+    // 縦長: 幅を短辺(1024)に、高さを丸める
+    const rawHeight = shortSide / aspectRatio;
+    const roundedHeight = Math.round(rawHeight / roundUnit) * roundUnit;
+    return { width: shortSide, height: Math.max(roundedHeight, roundUnit) };
+  }
+}
+
+/**
  * 与えられたサイズに最も近いサイズを候補配列から選択する
  * アスペクト比の類似度とサイズ（面積）の類似度を組み合わせて判定
  * @param target 目標サイズ
  * @param candidates 候補サイズの配列
- * @param aspectWeight アスペクト比の重み（0-1、デフォルト0.5）
+ * @param aspectWeight アスペクト比の重み（0-1）
  * @returns 最も近い候補サイズ
  */
 export function findClosestSize(

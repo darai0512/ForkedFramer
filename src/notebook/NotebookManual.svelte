@@ -81,7 +81,7 @@
   $: newPagePaperSize = $mainBook?.newPageProperty?.paperSize ?? [1024, 1024] as [number, number];
 
   // 選択ページの有無（redrawTokenで再評価をトリガー）
-  $: hasMarkedPages = ($redrawToken, $bookOperators?.getMarks().some(m => m) ?? false);
+  $: hasMarkedPages = (void $redrawToken, $bookOperators?.getMarks().some(m => m) ?? false);
 
   $: onNotebookChanged(notebook);
   function onNotebookChanged(notebook: NotebookLocal | null) {
@@ -513,9 +513,11 @@
 {:else if 0 < imageProgress && imageProgress < 1}
 <div class="h-full flex flex-col justify-center items-center">
   <h2>{$_('notebook.manual.generatingImage')}</h2>
-  <div class="w-full pl-4 items-center mb-2">
-    <ProgressBar label="Progress Bar" value={imagingContext.succeeded + imagingContext.failed} max={imagingContext.total || 1} />
-  </div>
+  {#if drawingMode !== 1}
+    <div class="w-full pl-4 items-center mb-2">
+      <ProgressBar label="Progress Bar" value={imagingContext.succeeded + imagingContext.failed} max={imagingContext.total || 1} />
+    </div>
+  {/if}
   <div class="w-full pl-4 items-center mb-2">
     <ProgressBar label="Progress Bar" value={imageProgress} max={1} />
   </div>
