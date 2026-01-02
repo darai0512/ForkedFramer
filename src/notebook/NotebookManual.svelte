@@ -6,7 +6,7 @@
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize, buildImageDataUrlsForPrompt } from '../utils/feathralImaging';
+  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
@@ -413,12 +413,10 @@
         console.log('Page prompt:', pagePrompt);
 
         try {
-          // 参照画像を構築
-          const imageDataUrls = buildImageDataUrlsForPrompt(
-            pagePrompt,
-            imagingContext.refImages,
-            imagingContext.maxRefImages
-          );
+          // 参照画像を構築（全てのポートレートを渡す）
+          const imageDataUrls = Object.values(imagingContext.refImages)
+            .slice(0, imagingContext.maxRefImages)
+            .map(canvas => canvas.toDataURL('image/png'));
 
           // 画像生成
           const canvases = await generateImage(
