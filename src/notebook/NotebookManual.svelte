@@ -293,7 +293,7 @@
       notebook!.storyboard = result as Storyboard;
       storyboardWaiting = false;
       console.log(result);
-      const receivedPages = makePagesFromStoryboard(result as Storyboard, fourPanelTemplate);
+      const receivedPages = makePagesFromStoryboard(result as Storyboard, fourPanelTemplate, notebook!.theme);
       let marks = $bookOperators!.getMarks();
       const newPages = $mainBook!.pages.filter((_p, i) => !marks[i]);
       const oldLength = newPages.length;

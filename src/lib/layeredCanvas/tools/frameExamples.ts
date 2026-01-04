@@ -124,6 +124,8 @@ export const frameExamples: Record<string, any> = {
         direction: "h",
         autoNewline: false,
         embedded: true,
+        semantics: "title",
+        fontFamily: "Kiwi Maru",
       }
     ]
   },
@@ -327,6 +329,8 @@ export const frameExamples: Record<string, any> = {
         direction: "h",
         autoNewline: false,
         embedded: true,
+        semantics: "title",
+        fontFamily: "Kiwi Maru",
       }
     ]
   },
@@ -384,6 +388,8 @@ export const frameExamples: Record<string, any> = {
         direction: "h",
         autoNewline: false,
         embedded: true,
+        semantics: "title",
+        fontFamily: "Kiwi Maru",
       }
     ]
   },

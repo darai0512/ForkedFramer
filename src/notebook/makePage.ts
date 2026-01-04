@@ -29,7 +29,7 @@ function whitenColor(s: string, ratio: number): string {
 
 export type FourPanelTemplate = '4koma' | '4koma-wide' | '4koma-splash';
 
-export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourPanelTemplate: FourPanelTemplate) {
+export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourPanelTemplate: FourPanelTemplate, theme: string) {
   console.log(JSON.stringify(storyboard));
   console.log(storyboard.format);
   const paperSize = get(mainBook)!.newPageProperty.paperSize;
@@ -105,6 +105,16 @@ export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourP
     });
 
     page.source = storyboardPage;
+
+    // semantics === 'title' の bubble にテーマを設定
+    if (theme) {
+      for (const bubble of page.bubbles) {
+        if (bubble.semantics === 'title') {
+          bubble.text = theme;
+        }
+      }
+    }
+
     pages.push(page);
   }
   return pages;

@@ -65,6 +65,7 @@ export class Bubble {
   hidesText?: boolean; // ムービー生成時に使うテキスト非表示フラグ
   prompt: string = '';
   gallery: Media[] = [];
+  semantics: string;
 
   renderInfo?: BubbleRenderInfo;
 
@@ -82,6 +83,7 @@ export class Bubble {
     this.fontRenderVersion = 0;
     this.gallery = [];
     this.displayName = '';
+    this.semantics = '';
   }
 
   reset() {
@@ -231,6 +233,10 @@ export class Bubble {
     b.optionContext = Bubble.getInitialOptions(b);
     Object.assign(b.optionContext, json.optionContext ?? {});
     b.forceEnoughSize(paperSize);
+
+    // 一時的
+    b.semantics = json.semantics ?? '';
+
     return b;
   }
 
