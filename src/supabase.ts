@@ -280,8 +280,12 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
         break;
       case "COMPLETED":
         urls = status.result;
+        console.log("[DEBUG pollMediaStatus] COMPLETED, urls:", urls);
         break;
-      } 
+      default:
+        console.warn("[DEBUG pollMediaStatus] Unhandled status:", status.status, status);
+        break;
+      }
     }
     return urls;
   }
@@ -305,21 +309,27 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
     {interval});
 
   // たまに次のfetchが失敗することがあるようなので、待ってみる
-  await new Promise(resolve => setTimeout(resolve, 1000)); 
+  await new Promise(resolve => setTimeout(resolve, 1000));
 
+  console.log("[DEBUG pollMediaStatus] Fetching images from urls:", urls);
   const mediaResources: (HTMLCanvasElement | HTMLVideoElement)[] = await Promise.all(
-    urls.map(async url => {
+    urls.map(async (url, i) => {
+      console.log(`[DEBUG pollMediaStatus] Fetching image ${i}:`, url.substring(0, 100));
       const response = await fetch(url);
+      console.log(`[DEBUG pollMediaStatus] Fetch response ${i}:`, response.status, response.ok);
       const blob = await response.blob();
+      console.log(`[DEBUG pollMediaStatus] Blob ${i}:`, blob.size, blob.type);
       if (isVideo) {
         const video = await createVideoFromBlob(blob);
         return video;
       } else {
         const image = await createCanvasFromBlob(blob);
+        console.log(`[DEBUG pollMediaStatus] Canvas ${i}:`, image.width, image.height);
         return image;
       }
     }));
 
+  console.log("[DEBUG pollMediaStatus] mediaResources count:", mediaResources.length);
   return { urls, mediaResources };
 }
 

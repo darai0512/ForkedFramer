@@ -475,6 +475,7 @@
   }
 
   async function onGenerateImages() {
+    console.log("[DEBUG onGenerateImages] Starting");
     imageProgress = 0.001;
     imagingContext = {
       awakeWarningToken: false,
@@ -487,15 +488,22 @@
     };
     // 参考画像として登場人物のポートレートを格納（feathralImaging に集約）
     imagingContext.refImages = portraitsRecordFromNotebook(notebook ?? null);
-    await generateMarkedPageImages(
-      imagingContext, 
-      postfix, 
-      imagingMode,
-      (x: number) => {
-        imageProgress = Math.max(0.001, x);
-        imagingContext = imagingContext;
-      });
+    console.log("[DEBUG onGenerateImages] refImages count:", Object.keys(imagingContext.refImages).length);
+    try {
+      await generateMarkedPageImages(
+        imagingContext,
+        postfix,
+        imagingMode,
+        (x: number) => {
+          imageProgress = Math.max(0.001, x);
+          imagingContext = imagingContext;
+        });
+      console.log("[DEBUG onGenerateImages] Completed successfully. succeeded:", imagingContext.succeeded, "failed:", imagingContext.failed);
+    } catch (e) {
+      console.error("[DEBUG onGenerateImages] Error:", e);
+    }
     imageProgress = 1;
+    console.log("[DEBUG onGenerateImages] Done, imageProgress set to 1");
   }
 
   onMount(async () => {
@@ -693,6 +701,10 @@
             {/if}
             <button disabled={!hasMarkedPages} class="btn variant-filled-primary action-btn" on:click={onGenerateImages}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.generateImage')}</button>
           </div>
+          <div class="w-full mt-4">
+            <h2>{$_('notebook.manual.howAboutStoryboard')}</h2>
+            <NotebookTextarea bind:value={notebook.critique} cost={2} waiting={critiqueWaiting} on:advise={onCritiqueAdvise} minHeight={240}/>            
+          </div>
         </div>
       {:else if drawingMode === 1}
         <div class="section">
@@ -827,7 +839,7 @@
     border: 1px solid rgb(var(--color-surface-400));
     border-radius: 8px;
     background-color: rgb(var(--color-surface-100));
-    min-height: 420px;
+    min-height: 800px;
   }
   .action-btn {
     font-size: 18px;

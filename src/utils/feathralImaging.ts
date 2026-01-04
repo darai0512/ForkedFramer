@@ -98,14 +98,17 @@ export function inferProvider(m: ImagingMode): ImagingProvider {
 
 async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvasElement[]> {
   try {
+    console.log("[DEBUG submitImagingRequest] Starting request, mode:", req.mode);
     const { requestId, model } = await text2Image(req);
+    console.log("[DEBUG submitImagingRequest] Got requestId:", requestId, "model:", model);
     await saveRequest(get(mainBookFileSystem)!, 'image', req.mode, requestId, model);
 
     const perf = performance.now();
     const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: req.mode, requestId, model });
-    console.log('submitImagingRequest', (performance.now() - perf) / 1000.0, 'seconds');
+    console.log('[DEBUG submitImagingRequest] Completed in', (performance.now() - perf) / 1000.0, 'seconds, canvases:', mediaResources.length);
     return mediaResources as HTMLCanvasElement[];
   } catch (error: any) {
+    console.error("[DEBUG submitImagingRequest] Error:", error);
     if (isContentsPolicyViolationError(error)) {
       toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
     } else {
@@ -140,8 +143,10 @@ export async function generateImage(
 }
 
 export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, onProgress: (progress: number) => void) {
+  console.log("[DEBUG generateMarkedPageImages] Starting");
   const marks = get(bookOperators)!.getMarks();
   const newPages = get(mainBook)!.pages.filter((p, i) => marks[i]);
+  console.log("[DEBUG generateMarkedPageImages] Marked pages:", newPages.length);
   if (newPages.length == 0) {
     console.log("no marks");
     toastStore.trigger({ message: `マークされたページが存在しません`, timeout: 3000});
@@ -150,25 +155,30 @@ export async function generateMarkedPageImages(imagingContext: ImagingContext, p
 
   let sum = 0;
   for (let i = 0; i < newPages.length; i++) {
-    const page = newPages[i];      
+    const page = newPages[i];
     const leaves = collectLeaves(page.frameTree);
     sum += leaves.length;
   }
+  console.log("[DEBUG generateMarkedPageImages] Total frames to generate:", sum);
 
   let progress = 0;
   function onProgress2() {
     progress++;
+    console.log(`[DEBUG generateMarkedPageImages] Progress: ${progress}/${sum}`);
     onProgress(progress / sum);
   }
 
   for (let i = 0; i < newPages.length; i++) {
     const page = newPages[i];
+    console.log(`[DEBUG generateMarkedPageImages] Processing page ${i + 1}/${newPages.length}`);
     imagingContext.total = 1;
     imagingContext.succeeded = 0;
     imagingContext.failed = 0;
     onProgress(progress / sum);
     await generatePageImages(imagingContext, postfix, mode, page, false, onProgress2);
+    console.log(`[DEBUG generateMarkedPageImages] Page ${i + 1} done. succeeded:`, imagingContext.succeeded, "failed:", imagingContext.failed);
   }
+  console.log("[DEBUG generateMarkedPageImages] All pages done. Final progress:", progress, "/", sum);
 }
 
 export async function generatePageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, page: Page, skipFilledFrame: boolean, onProgress: () => void) {
@@ -200,6 +210,8 @@ export async function generatePageImages(imagingContext: ImagingContext, postfix
 
 
 async function generateFrameImage(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, leafLayout: Layout, paperSize: Vector) {
+  const frameId = Math.random().toString(36).substring(7);
+  console.log(`[DEBUG generateFrameImage ${frameId}] Starting`);
   try {
     const frame = leafLayout.element;
     const composedPrompt = `${postfix}\n${frame.prompt}`;
@@ -217,22 +229,33 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
       ? findClosestSize(targetSize, [...supportedSizes], 0.7)
       : calculateAspectPreservingSize(targetSize, 1024, 64);
 
+    console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImage...`);
     const canvases = await generateImage(composedPrompt, imageSize, mode, 1, 'opaque', imageDataUrls);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Got canvases:`, canvases.length, canvases[0]?.width, canvases[0]?.height);
+
+    if (!canvases[0]) {
+      console.error(`[DEBUG generateFrameImage ${frameId}] canvases[0] is undefined!`);
+    }
 
     const media = new ImageMedia(canvases[0]);
     const film = Film.fromMedia(media);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Before push - films.length:`, frame.filmStack.films.length);
     frame.filmStack.films.push(film);
     frame.gallery.push(media);
+    console.log(`[DEBUG generateFrameImage ${frameId}] After push - films.length:`, frame.filmStack.films.length);
 
     const transformer = new FilmStackTransformer(paperSize, frame.filmStack.films);
     transformer.scale(0.01);
-    console.log("scaled");
+    console.log(`[DEBUG generateFrameImage ${frameId}] scaled`);
     constraintLeaf(paperSize, leafLayout);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Calling redrawToken.set(true)`);
     redrawToken.set(true);
 
     imagingContext.succeeded++;
-  } 
+    console.log(`[DEBUG generateFrameImage ${frameId}] Succeeded! Total succeeded:`, imagingContext.succeeded);
+  }
   catch(error) {
+    console.error(`[DEBUG generateFrameImage ${frameId}] Error:`, error);
     imagingContext.failed++;
     throw error;
   }
