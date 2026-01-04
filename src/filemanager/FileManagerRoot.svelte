@@ -82,6 +82,9 @@
 
   async function getRootFolders(fs: FileSystem): Promise<RootFolders> {
     const root = await fs.getRoot();
+    if (root == null) {
+      throw new Error(`Failed to get root folder of filesystem: ${fs.getFileSystemName()}`);
+    }
     const desktop = (await root.getEmbodiedEntryByName("デスクトップ"))!;
     const cabinet = (await root.getEmbodiedEntryByName("キャビネット"))!;
     const trash = (await root.getEmbodiedEntryByName("ごみ箱"))!;
