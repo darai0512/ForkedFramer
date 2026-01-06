@@ -1,7 +1,8 @@
 import type { Vector } from "../tools/geometry/geometry";
 
 export type MediaType = 'image' | 'video';
-export type RemoteMediaReference = { mediaType: MediaType, mode: string, requestId: string, model: string };
+export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
+export type RemoteMediaReference = { mediaType: MediaType, mode: RemoteMediaMode, requestId: string, model: string };
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;
 export type MediaResource = MaterializedType | RemoteMediaReference;
 
