@@ -413,8 +413,9 @@
         console.log('Page prompt:', pagePrompt);
 
         try {
-          // 参照画像を構築（全てのポートレートを渡す）
-          const imageDataUrls = Object.values(imagingContext.refImages)
+          // 参照画像を構築（全てのポートレートを渡す）- 重複排除
+          const uniqueCanvases = [...new Set(Object.values(imagingContext.refImages))];
+          const imageDataUrls = uniqueCanvases
             .slice(0, imagingContext.maxRefImages)
             .map(canvas => canvas.toDataURL('image/png'));
 
