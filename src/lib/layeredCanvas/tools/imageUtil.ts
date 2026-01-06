@@ -301,15 +301,20 @@ export type SizePair = { width: number; height: number };
 
 /**
  * アスペクト比を維持しながら、短辺を基準サイズに、長辺を指定単位で丸めたサイズを計算する
+ * さらに長辺が最大値を超える場合は縮小し、その結果短辺が最小値未満になる場合は最小値に強制する
  * @param target 目標サイズ
- * @param shortSide 短辺の基準サイズ（デフォルト1024）
- * @param roundUnit 長辺の丸め単位（デフォルト64）
+ * @param shortSide 短辺の基準サイズ
+ * @param roundUnit 長辺の丸め単位
+ * @param maxLongSide 長辺の最大値
+ * @param minShortSide 短辺の最小値
  * @returns 計算されたサイズ
  */
 export function calculateAspectPreservingSize(
   target: SizePair,
   shortSide: number,
-  roundUnit: number
+  roundUnit: number,
+  maxLongSide: number,
+  minShortSide: number
 ): SizePair {
   const { width, height } = target;
 
@@ -321,17 +326,42 @@ export function calculateAspectPreservingSize(
   const isLandscape = width > height;
   const aspectRatio = width / height;
 
+  let resultWidth: number;
+  let resultHeight: number;
+
   if (isLandscape) {
     // 横長: 高さを短辺(1024)に、幅を丸める
     const rawWidth = shortSide * aspectRatio;
     const roundedWidth = Math.round(rawWidth / roundUnit) * roundUnit;
-    return { width: Math.max(roundedWidth, roundUnit), height: shortSide };
+    resultWidth = Math.max(roundedWidth, roundUnit);
+    resultHeight = shortSide;
   } else {
     // 縦長: 幅を短辺(1024)に、高さを丸める
     const rawHeight = shortSide / aspectRatio;
     const roundedHeight = Math.round(rawHeight / roundUnit) * roundUnit;
-    return { width: shortSide, height: Math.max(roundedHeight, roundUnit) };
+    resultWidth = shortSide;
+    resultHeight = Math.max(roundedHeight, roundUnit);
   }
+
+  // 長辺が最大値を超える場合、縮小する
+  const longSide = Math.max(resultWidth, resultHeight);
+  if (longSide > maxLongSide) {
+    const scale = maxLongSide / longSide;
+    resultWidth = Math.round(resultWidth * scale);
+    resultHeight = Math.round(resultHeight * scale);
+  }
+
+  // 短辺が最小値未満の場合、最小値に強制（アスペクト比が崩れる）
+  const currentShortSide = Math.min(resultWidth, resultHeight);
+  if (currentShortSide < minShortSide) {
+    if (resultWidth < resultHeight) {
+      resultWidth = minShortSide;
+    } else {
+      resultHeight = minShortSide;
+    }
+  }
+
+  return { width: resultWidth, height: resultHeight };
 }
 
 /**

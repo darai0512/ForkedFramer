@@ -227,7 +227,7 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     const supportedSizes = getSupportedSizesForMode(mode);
     const imageSize = supportedSizes && supportedSizes.length > 0
       ? findClosestSize(targetSize, [...supportedSizes], 0.7)
-      : calculateAspectPreservingSize(targetSize, 1024, 64);
+      : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
 
     console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImage...`);
     const canvases = await generateImage(composedPrompt, imageSize, mode, 1, 'opaque', imageDataUrls);
