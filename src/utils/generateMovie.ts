@@ -32,7 +32,7 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
   const newFilm = Film.fromMedia(newMedia);
 
   // filmProcessorQueueに登録（ここでAPIが呼ばれ、ポーリングされる）
-  filmProcessorQueue.publish(newFilm);
+  filmProcessorQueue.publish({ film: newFilm });
 
   const index = filmStack.films.indexOf(film);
   filmStack.films.splice(index + 1, 0, newFilm);

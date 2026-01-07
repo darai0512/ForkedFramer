@@ -3,11 +3,11 @@ import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { text2Image, pollMediaStatus } from '../supabase';
 import { toastStore } from '@skeletonlabs/skeleton';
 import type { Page, NotebookLocal } from '../lib/book/book';
-import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
+import { ImageMedia, type FitParams } from '../lib/layeredCanvas/dataModels/media';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 import { findClosestSize, calculateAspectPreservingSize, type SizePair } from '../lib/layeredCanvas/tools/imageUtil';
-import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
-import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
+import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf } from '../lib/layeredCanvas/dataModels/frameTree';
+import { Film } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
 import { updateToken } from "../utils/accountStore";
 import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextToImageOption } from './edgeFunctions/types/imagingTypes';
@@ -146,6 +146,7 @@ export async function generateImage(
 /**
  * インライン画像生成 - リクエスト情報を埋め込んだFilmを返す（API呼び出しなし）
  * 実際のAPI呼び出しはfilmProcessorQueueで行われる
+ * @param fitParams メディアロード後にフィッティングするためのパラメータ（オプション）
  */
 export function generateImageInline(
   prompt: string,
@@ -153,7 +154,8 @@ export function generateImageInline(
   mode: ImagingMode,
   background: ImagingBackground,
   imageDataUrls: string[],
-  option: TextToImageOption = { kind: 'none' },
+  option: TextToImageOption,
+  fitParams?: FitParams
 ): Film {
   const request: TextToImageRequest = {
     provider: inferProvider(mode),
@@ -166,18 +168,19 @@ export function generateImageInline(
     option,
   };
 
-  console.log("[generateImageInline] Creating beforeRequest media, mode:", request.mode);
+  console.log("[generateImageInline] Creating beforeRequest media, mode:", request.mode, "fitParams:", fitParams);
 
   // beforeRequest形式でImageMediaを作成（API呼び出しなし）
   const newMedia = new ImageMedia({
     mediaType: 'image',
     mode: 'beforeRequest',
-    request
+    request,
+    fitParams
   });
   const newFilm = Film.fromMedia(newMedia);
 
   // filmProcessorQueueに登録（ここでAPIが呼ばれ、ポーリングされる）
-  filmProcessorQueue.publish(newFilm);
+  filmProcessorQueue.publish({ film: newFilm });
 
   return newFilm;
 }
@@ -231,12 +234,8 @@ export async function generatePageImages(imagingContext: ImagingContext, postfix
     if (skipFilledFrame && leaf.filmStack.films.length > 0) {continue;}
     promises.push(
       (async (): Promise<void> => {
+        // フィッティングはメディアロード後にfilmProcessorStoreで行われる
         await generateFrameImage(imagingContext, postfix, mode, findLayoutOf(pageLayout, leaf)!, page.paperSize);
-        const leafLayout = findLayoutOf(pageLayout, leaf);
-        const transformer = new FilmStackTransformer(page.paperSize, leaf.filmStack.films);
-        transformer.scale(0.01);
-        console.log("scaled");
-        constraintLeaf(page.paperSize, leafLayout!);
         onProgress();
       })());
   }
@@ -269,18 +268,21 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
       ? findClosestSize(targetSize, [...supportedSizes], 0.7)
       : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
 
+    // fitParams: メディアロード後にフィッティングするためのパラメータ
+    const fitParams: FitParams = {
+      frameSize: [frameWidth, frameHeight],
+      paperSize: paperSize
+    };
+
     console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImageInline...`);
     // インライン方式: リクエスト情報を埋め込んだFilmを返す（API呼び出しはfilmProcessorQueueで行われる）
-    const film = generateImageInline(composedPrompt, imageSize, mode, 'opaque', imageDataUrls);
+    // フィッティングはメディアロード後にfilmProcessorStoreで行われる
+    const film = generateImageInline(composedPrompt, imageSize, mode, 'opaque', imageDataUrls, { kind: 'none' }, fitParams);
     console.log(`[DEBUG generateFrameImage ${frameId}] Got film (beforeRequest), adding to filmStack`);
 
     frame.filmStack.films.push(film);
     console.log(`[DEBUG generateFrameImage ${frameId}] After push - films.length:`, frame.filmStack.films.length);
 
-    const transformer = new FilmStackTransformer(paperSize, frame.filmStack.films);
-    transformer.scale(0.01);
-    console.log(`[DEBUG generateFrameImage ${frameId}] scaled`);
-    constraintLeaf(paperSize, leafLayout);
     console.log(`[DEBUG generateFrameImage ${frameId}] Calling redrawToken.set(true)`);
     redrawToken.set(true);
 

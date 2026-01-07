@@ -78,7 +78,7 @@ function refreshFilms(book: Book) {
   // book内のfilmをすべてpublishする
   const films = collectAllFilms(book);
   for (const film of films) {
-    filmProcessorQueue.publish(film);
+    filmProcessorQueue.publish({ film });
   }
 }
 

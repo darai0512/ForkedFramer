@@ -12,8 +12,8 @@
   import { ulid } from 'ulid';
   import { onMount, tick } from 'svelte';
   import {makePagesFromStoryboard, type FourPanelTemplate} from './makePage';
-  import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
-  import { FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
+  import { FrameElement, calculatePhysicalLayout, findLayoutOf } from '../lib/layeredCanvas/dataModels/frameTree';
+  import type { FitParams } from '../lib/layeredCanvas/dataModels/media';
   import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
   import { toastStore } from '@skeletonlabs/skeleton';
   import NotebookTextarea from './NotebookTextarea.svelte';
@@ -417,18 +417,32 @@
             .slice(0, imagingContext.maxRefImages)
             .map(canvas => canvas.toDataURL('image/png'));
 
+          // 1枚絵ページを作成（先にレイアウト計算してフレームサイズを取得）
+          const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
+          const frameTree = rootFrameTree.children[0];
+
+          const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
+          const frameLayout = findLayoutOf(layout, frameTree)!;
+          const [frameWidth, frameHeight] = frameLayout.size;
+
+          // fitParams: メディアロード後にフィッティングするためのパラメータ
+          const fitParams: FitParams = {
+            frameSize: [frameWidth, frameHeight],
+            paperSize: paperSize
+          };
+
           // インライン画像生成 - リクエスト情報を埋め込んだFilmを返す（API呼び出しはfilmProcessorQueueで行われる）
+          // フィッティングはメディアロード後にfilmProcessorStoreで行われる
           const film = generateImageInline(
             pagePrompt,
             selectedSize,
             pageImagingMode,
             "opaque",
-            imageDataUrls
+            imageDataUrls,
+            { kind: 'none' },
+            fitParams
           );
 
-          // 1枚絵ページを作成
-          const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
-          const frameTree = rootFrameTree.children[0];
           frameTree.filmStack.films = [film];
 
           const page = newPage(rootFrameTree, []);
@@ -437,12 +451,6 @@
           page.frameColor = npp.frameColor;
           page.frameWidth = npp.frameWidth;
           page.source = storyboardPage;
-
-          const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
-          const frameLayout = findLayoutOf(layout, frameTree)!;
-          const transformer = new FilmStackTransformer(paperSize, frameTree.filmStack.films);
-          transformer.scale(0.01);
-          constraintLeaf(paperSize, frameLayout);
 
           $mainBook!.pages.push(page);
           imagingContext.succeeded++;

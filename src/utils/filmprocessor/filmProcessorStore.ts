@@ -1,5 +1,5 @@
-import type { Film } from "../../lib/layeredCanvas/dataModels/film";
-import { ImageMedia, VideoMedia, type RemoteMediaReference } from "../../lib/layeredCanvas/dataModels/media";
+import { type Film, fitFilms, FilmStackTransformer } from "../../lib/layeredCanvas/dataModels/film";
+import { ImageMedia, VideoMedia, type RemoteMediaReference, type FitParams } from "../../lib/layeredCanvas/dataModels/media";
 import { redrawToken, bookOperators } from "../../bookeditor/workspaceStore";
 import { PubSubQueue } from "../pubsub";
 import { text2Image, image2Video, pollMediaStatus } from '../../supabase';
@@ -7,9 +7,18 @@ import { get } from "svelte/store";
 import { toastStore } from '@skeletonlabs/skeleton';
 import { saveRequest } from '../../filemanager/warehouse';
 import { mainBookFileSystem } from '../../filemanager/fileManagerStore';
+import type { Rect } from "../../lib/layeredCanvas/tools/geometry/geometry";
 
-export const filmProcessorQueue = new PubSubQueue<Film>();
-filmProcessorQueue.subscribe(async (film: Film) => {
+// FilmProcessorTask: Filmと生成完了後のコールバックを含む
+export type FilmProcessorTask = {
+  film: Film;
+  onLoaded?: () => void;  // メディアがロードされた後に呼ばれるコールバック（フィッティング処理など）
+};
+
+export const filmProcessorQueue = new PubSubQueue<FilmProcessorTask>();
+filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
+  const { film, onLoaded } = task;
+
   if (film.content.kind !== 'media') {
     return;
   }
@@ -17,6 +26,12 @@ filmProcessorQueue.subscribe(async (film: Film) => {
   const media = film.content.media;
   if (!media.isLoaded) {
     const rmr = media.persistentSource as RemoteMediaReference;
+
+    // fitParams を保存（beforeRequest状態のときのみ存在、状態遷移後は消えるため）
+    let fitParams: FitParams | undefined;
+    if (rmr.mode === 'beforeRequest') {
+      fitParams = rmr.fitParams;
+    }
 
     // beforeRequest の場合: APIリクエストを発行
     if (rmr.mode === 'beforeRequest') {
@@ -54,6 +69,26 @@ filmProcessorQueue.subscribe(async (film: Film) => {
           media.setMedia(mediaResources[0]);
         }
         console.log("[filmProcessorQueue] media loaded successfully");
+
+        // メディアがロードされた後にフィッティング処理
+        if (fitParams) {
+          console.log("[filmProcessorQueue] applying fitParams:", fitParams);
+          const { frameSize, paperSize } = fitParams;
+          // フレームサイズからconstraintRectを作成（原点中心）
+          const constraintRect: Rect = [0, 0, frameSize[0], frameSize[1]];
+          // filmsを縮小してからフィッティング
+          const transformer = new FilmStackTransformer(paperSize, [film]);
+          transformer.scale(0.01);
+          fitFilms(paperSize, constraintRect, [film]);
+          console.log("[filmProcessorQueue] fitFilms applied");
+        }
+
+        // メディアがロードされた後にコールバックを呼ぶ（フィッティング処理など）
+        if (onLoaded) {
+          console.log("[filmProcessorQueue] calling onLoaded callback");
+          onLoaded();
+        }
+
         get(bookOperators)?.commit(null);
       } catch (e: any) {
         const msg = typeof e?.message === 'string' ? e.message : `${e}`;

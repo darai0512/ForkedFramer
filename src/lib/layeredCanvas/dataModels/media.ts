@@ -7,14 +7,21 @@ export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
 // beforeRequest: リクエスト情報を保持（API未呼び出し）
 // afterRequest: requestIdを保持（API呼び出し済み、ポーリング待ち）
 // failure: 失敗状態
+export type FitParams = {
+  frameSize: Vector;   // フレームのサイズ
+  paperSize: Vector;   // ページのサイズ
+};
+
 export type RemoteMediaReferenceBeforeRequest = {
   mediaType: 'image';
   mode: 'beforeRequest';
   request: TextToImageRequest;
+  fitParams?: FitParams;  // メディアロード後にフィッティングするパラメータ
 } | {
   mediaType: 'video';
   mode: 'beforeRequest';
   request: ImageToVideoRequest;
+  fitParams?: FitParams;  // メディアロード後にフィッティングするパラメータ
 };
 
 export type RemoteMediaReferenceAfterRequest = {
