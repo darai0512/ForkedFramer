@@ -15,6 +15,7 @@ import { saveRequest } from '../filemanager/warehouse';
 import { FunctionsHttpError } from '@supabase/supabase-js'
 // import { captureConsoleIntegration } from '@sentry/svelte';
 import { calculateImagingCost } from './edgeFunctions/calculateCost';
+import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 
 export type ImagingContext = {
   awakeWarningToken: boolean;
@@ -142,6 +143,54 @@ export async function generateImage(
   return submitImagingRequest(req);
 }
 
+/**
+ * インライン画像生成 - リクエストを投げた後、完了を待たずにFilmを返す
+ * 画像生成はfilmProcessorQueueで非同期に処理される
+ */
+export async function generateImageInline(
+  prompt: string,
+  image_size: {width: number, height: number},
+  mode: ImagingMode,
+  background: ImagingBackground,
+  imageDataUrls: string[],
+  option: TextToImageOption = { kind: 'none' },
+): Promise<Film> {
+  const req: TextToImageRequest = {
+    provider: inferProvider(mode),
+    prompt,
+    imageSize: image_size,
+    numImages: 1,
+    mode,
+    background,
+    imageDataUrls,
+    option,
+  };
+
+  try {
+    console.log("[DEBUG generateImageInline] Starting request, mode:", req.mode);
+    const { requestId, model } = await text2Image(req);
+    console.log("[DEBUG generateImageInline] Got requestId:", requestId, "model:", model);
+    await saveRequest(get(mainBookFileSystem)!, 'image', req.mode, requestId, model);
+
+    // remote形式でImageMediaを作成
+    const newMedia = new ImageMedia({ mediaType: 'image', mode: 'afterRequest', requestId, model });
+    const newFilm = Film.fromMedia(newMedia);
+
+    // filmProcessorQueueに登録して非同期で処理
+    filmProcessorQueue.publish(newFilm);
+
+    return newFilm;
+  } catch (error: any) {
+    console.error("[DEBUG generateImageInline] Error:", error);
+    if (isContentsPolicyViolationError(error)) {
+      toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
+    } else {
+      toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
+    }
+    throw error;
+  }
+}
+
 export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, onProgress: (progress: number) => void) {
   console.log("[DEBUG generateMarkedPageImages] Starting");
   const marks = get(bookOperators)!.getMarks();
@@ -211,7 +260,7 @@ export async function generatePageImages(imagingContext: ImagingContext, postfix
 
 async function generateFrameImage(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, leafLayout: Layout, paperSize: Vector) {
   const frameId = Math.random().toString(36).substring(7);
-  console.log(`[DEBUG generateFrameImage ${frameId}] Starting`);
+  console.log(`[DEBUG generateFrameImage ${frameId}] Starting (inline mode)`);
   try {
     const frame = leafLayout.element;
     const composedPrompt = `${postfix}\n${frame.prompt}`;
@@ -229,19 +278,12 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
       ? findClosestSize(targetSize, [...supportedSizes], 0.7)
       : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
 
-    console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImage...`);
-    const canvases = await generateImage(composedPrompt, imageSize, mode, 1, 'opaque', imageDataUrls);
-    console.log(`[DEBUG generateFrameImage ${frameId}] Got canvases:`, canvases.length, canvases[0]?.width, canvases[0]?.height);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImageInline...`);
+    // インライン方式: リクエストを投げた後、完了を待たずにFilmを返す
+    const film = await generateImageInline(composedPrompt, imageSize, mode, 'opaque', imageDataUrls);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Got film (inline), adding to filmStack`);
 
-    if (!canvases[0]) {
-      console.error(`[DEBUG generateFrameImage ${frameId}] canvases[0] is undefined!`);
-    }
-
-    const media = new ImageMedia(canvases[0]);
-    const film = Film.fromMedia(media);
-    console.log(`[DEBUG generateFrameImage ${frameId}] Before push - films.length:`, frame.filmStack.films.length);
     frame.filmStack.films.push(film);
-    frame.gallery.push(media);
     console.log(`[DEBUG generateFrameImage ${frameId}] After push - films.length:`, frame.filmStack.films.length);
 
     const transformer = new FilmStackTransformer(paperSize, frame.filmStack.films);
@@ -252,7 +294,7 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     redrawToken.set(true);
 
     imagingContext.succeeded++;
-    console.log(`[DEBUG generateFrameImage ${frameId}] Succeeded! Total succeeded:`, imagingContext.succeeded);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Request submitted! Total succeeded:`, imagingContext.succeeded);
   }
   catch(error) {
     console.error(`[DEBUG generateFrameImage ${frameId}] Error:`, error);

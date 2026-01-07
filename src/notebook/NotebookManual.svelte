@@ -6,14 +6,14 @@
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingMode } from '$protocolTypes/imagingTypes';
-  import { type ImagingContext, generateMarkedPageImages, generateImage, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize } from '../utils/feathralImaging';
+  import { type ImagingContext, generateMarkedPageImages, generateImage, generateImageInline, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
   import { onMount, tick } from 'svelte';
   import {makePagesFromStoryboard, type FourPanelTemplate} from './makePage';
   import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
-  import { Film, FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
+  import { FilmStackTransformer } from '../lib/layeredCanvas/dataModels/film';
   import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
   import { toastStore } from '@skeletonlabs/skeleton';
   import NotebookTextarea from './NotebookTextarea.svelte';
@@ -377,14 +377,13 @@
   }
 
   async function onCreatePages() {
-    console.log('onCreatePages called');
+    console.log('onCreatePages called (inline mode)');
     try {
       storyboardWaiting = true;
       const pages = await advisePageGeneration(makeRequest());
       storyboardWaiting = false;
 
       // 画像生成の準備
-      imageProgress = 0.001;
       imagingContext = {
         awakeWarningToken: false,
         errorToken: false,
@@ -404,7 +403,7 @@
       const selectedSize = selectClosestSupportedSize(targetSize, pageImagingMode, 0.7);
       console.log('Target size:', targetSize, 'Selected size:', selectedSize);
 
-      // 各ページを処理
+      // 各ページを処理（インライン方式）
       for (let pageIndex = 0; pageIndex < pages.pages.length; pageIndex++) {
         const storyboardPage = pages.pages[pageIndex];
 
@@ -418,54 +417,49 @@
             .slice(0, imagingContext.maxRefImages)
             .map(canvas => canvas.toDataURL('image/png'));
 
-          // 画像生成
-          const canvases = await generateImage(
+          // インライン画像生成 - リクエストを投げた後、完了を待たずにFilmを返す
+          const film = await generateImageInline(
             pagePrompt,
             selectedSize,
             pageImagingMode,
-            1,
             "opaque",
             imageDataUrls
           );
 
-          if (canvases.length > 0) {
-            // 1枚絵ページを作成
-            const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
-            const frameTree = rootFrameTree.children[0];
-            const film = Film.fromMedia(buildMedia(canvases[0]));
-            frameTree.filmStack.films = [film];
+          // 1枚絵ページを作成
+          const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
+          const frameTree = rootFrameTree.children[0];
+          frameTree.filmStack.films = [film];
 
-            const page = newPage(rootFrameTree, []);
-            page.paperSize = [...paperSize];
-            page.paperColor = npp.paperColor;
-            page.frameColor = npp.frameColor;
-            page.frameWidth = npp.frameWidth;
-            page.source = storyboardPage;
+          const page = newPage(rootFrameTree, []);
+          page.paperSize = [...paperSize];
+          page.paperColor = npp.paperColor;
+          page.frameColor = npp.frameColor;
+          page.frameWidth = npp.frameWidth;
+          page.source = storyboardPage;
 
-            const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
-            const frameLayout = findLayoutOf(layout, frameTree)!;
-            const transformer = new FilmStackTransformer(paperSize, frameTree.filmStack.films);
-            transformer.scale(0.01);
-            constraintLeaf(paperSize, frameLayout);
+          const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
+          const frameLayout = findLayoutOf(layout, frameTree)!;
+          const transformer = new FilmStackTransformer(paperSize, frameTree.filmStack.films);
+          transformer.scale(0.01);
+          constraintLeaf(paperSize, frameLayout);
 
-            $mainBook!.pages.push(page);
-            imagingContext.succeeded++;
-          }
+          $mainBook!.pages.push(page);
+          imagingContext.succeeded++;
         } catch (e) {
-          console.error('Image generation failed for page', pageIndex, e);
+          console.error('Image generation request failed for page', pageIndex, e);
           imagingContext.failed++;
           if (!isContentsPolicyViolationError(e)) {
             toastStore.trigger({ message: aiErrorMessage, timeout: 1500 });
           }
         }
 
-        imageProgress = (pageIndex + 1) / pages.pages.length;
         imagingContext = imagingContext;
       }
 
       commit();
       $redrawToken = true;
-      imageProgress = 1;
+      toastStore.trigger({ message: `${pages.pages.length}ページの画像生成を開始しました`, timeout: 3000 });
 
     } catch (e) {
       toastStore.trigger({ message: aiErrorMessage, timeout: 1500 });
