@@ -129,12 +129,20 @@ export async function loadMaterialsFromFolder(
       if (!media.isLoaded) {
         // Unmaterializedメディアの場合、ロード
         const rmr = media.persistentSource as RemoteMediaReference;
-        const { mediaResources }  = await pollMediaStatus(rmr);
-        if (mediaResources.length > 0) {
-          media.setMedia(mediaResources[0]);
+        // beforeRequestの場合はポーリングできない（requestIdがない）
+        if (rmr.mode === 'beforeRequest') {
+          console.log("================================================================ loadMedia: beforeRequest, skipping poll");
+          return [media];
         }
-        console.log("================================================================ loadMedia done", media);
-        await file.writeMediaResource(mediaResources[0]); // Ensure the media is written back if needed
+        // afterRequestの場合のみポーリング
+        if (rmr.mode === 'afterRequest') {
+          const { mediaResources } = await pollMediaStatus(rmr);
+          if (mediaResources.length > 0) {
+            media.setMedia(mediaResources[0]);
+          }
+          console.log("================================================================ loadMedia done", media);
+          await file.writeMediaResource(mediaResources[0]); // Ensure the media is written back if needed
+        }
       }
 
       return [media];

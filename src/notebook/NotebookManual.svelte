@@ -417,8 +417,8 @@
             .slice(0, imagingContext.maxRefImages)
             .map(canvas => canvas.toDataURL('image/png'));
 
-          // インライン画像生成 - リクエストを投げた後、完了を待たずにFilmを返す
-          const film = await generateImageInline(
+          // インライン画像生成 - リクエスト情報を埋め込んだFilmを返す（API呼び出しはfilmProcessorQueueで行われる）
+          const film = generateImageInline(
             pagePrompt,
             selectedSize,
             pageImagingMode,

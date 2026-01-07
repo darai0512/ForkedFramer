@@ -1,4 +1,5 @@
 import { ulid } from 'ulid';
+import type { TextToImageRequest, ImageToVideoRequest } from "../../utils/edgeFunctions/types/imagingTypes";
 
 export type NodeType = 'file' | 'folder';
 export type NodeId = string & { _NodeId: never };
@@ -11,7 +12,31 @@ export type EmbodiedEntry = [BindId, string, Node];
 // リモートメディア=fal.aiなどの画像生成サービス側にあり、まだダウンロードしていないファイル
 export type MediaType  = 'image' | 'video';
 export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
-export type RemoteMediaReference = { mediaType: MediaType, mode: RemoteMediaMode, requestId: string, model: string };
+
+// beforeRequest: リクエスト情報を保持（API未呼び出し）
+// afterRequest: requestIdを保持（API呼び出し済み、ポーリング待ち）
+// failure: 失敗状態
+export type RemoteMediaReferenceBeforeRequest = {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  request: TextToImageRequest;
+} | {
+  mediaType: 'video';
+  mode: 'beforeRequest';
+  request: ImageToVideoRequest;
+};
+
+export type RemoteMediaReferenceAfterRequest = {
+  mediaType: MediaType;
+  mode: 'afterRequest' | 'failure';
+  requestId: string;
+  model: string;
+};
+
+export type RemoteMediaReference =
+  | RemoteMediaReferenceBeforeRequest
+  | RemoteMediaReferenceAfterRequest;
+
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;
 export type MediaResource = MaterializedType | RemoteMediaReference;
 

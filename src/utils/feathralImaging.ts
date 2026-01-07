@@ -144,18 +144,18 @@ export async function generateImage(
 }
 
 /**
- * インライン画像生成 - リクエストを投げた後、完了を待たずにFilmを返す
- * 画像生成はfilmProcessorQueueで非同期に処理される
+ * インライン画像生成 - リクエスト情報を埋め込んだFilmを返す（API呼び出しなし）
+ * 実際のAPI呼び出しはfilmProcessorQueueで行われる
  */
-export async function generateImageInline(
+export function generateImageInline(
   prompt: string,
   image_size: {width: number, height: number},
   mode: ImagingMode,
   background: ImagingBackground,
   imageDataUrls: string[],
   option: TextToImageOption = { kind: 'none' },
-): Promise<Film> {
-  const req: TextToImageRequest = {
+): Film {
+  const request: TextToImageRequest = {
     provider: inferProvider(mode),
     prompt,
     imageSize: image_size,
@@ -166,29 +166,20 @@ export async function generateImageInline(
     option,
   };
 
-  try {
-    console.log("[DEBUG generateImageInline] Starting request, mode:", req.mode);
-    const { requestId, model } = await text2Image(req);
-    console.log("[DEBUG generateImageInline] Got requestId:", requestId, "model:", model);
-    await saveRequest(get(mainBookFileSystem)!, 'image', req.mode, requestId, model);
+  console.log("[generateImageInline] Creating beforeRequest media, mode:", request.mode);
 
-    // remote形式でImageMediaを作成
-    const newMedia = new ImageMedia({ mediaType: 'image', mode: 'afterRequest', requestId, model });
-    const newFilm = Film.fromMedia(newMedia);
+  // beforeRequest形式でImageMediaを作成（API呼び出しなし）
+  const newMedia = new ImageMedia({
+    mediaType: 'image',
+    mode: 'beforeRequest',
+    request
+  });
+  const newFilm = Film.fromMedia(newMedia);
 
-    // filmProcessorQueueに登録して非同期で処理
-    filmProcessorQueue.publish(newFilm);
+  // filmProcessorQueueに登録（ここでAPIが呼ばれ、ポーリングされる）
+  filmProcessorQueue.publish(newFilm);
 
-    return newFilm;
-  } catch (error: any) {
-    console.error("[DEBUG generateImageInline] Error:", error);
-    if (isContentsPolicyViolationError(error)) {
-      toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
-    } else {
-      toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
-    }
-    throw error;
-  }
+  return newFilm;
 }
 
 export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, onProgress: (progress: number) => void) {
@@ -279,9 +270,9 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
       : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
 
     console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImageInline...`);
-    // インライン方式: リクエストを投げた後、完了を待たずにFilmを返す
-    const film = await generateImageInline(composedPrompt, imageSize, mode, 'opaque', imageDataUrls);
-    console.log(`[DEBUG generateFrameImage ${frameId}] Got film (inline), adding to filmStack`);
+    // インライン方式: リクエスト情報を埋め込んだFilmを返す（API呼び出しはfilmProcessorQueueで行われる）
+    const film = generateImageInline(composedPrompt, imageSize, mode, 'opaque', imageDataUrls);
+    console.log(`[DEBUG generateFrameImage ${frameId}] Got film (beforeRequest), adding to filmStack`);
 
     frame.filmStack.films.push(film);
     console.log(`[DEBUG generateFrameImage ${frameId}] After push - films.length:`, frame.filmStack.films.length);
