@@ -2,6 +2,7 @@ import { z } from "zod";
 import { invoke } from "./utils/edgeFunctions/edgeFunctions";
 import { type TransformTextRequest, TransformTextRequestSchema, TransformTextResponseSchema } from "./utils/edgeFunctions/types/transformTextTypes.d"
 import {
+  type ImagingAction,
   type ImageToVideoRequest, ImageToVideoRequestSchema, ImageToVideoResponseSchema,
   type TextToImageRequest, TextToImageRequestSchema, TextToImageResponseSchema,
   type OutPaintRequest, OutPaintRequestSchema, OutPaintResponseSchema,
@@ -201,12 +202,12 @@ export async function listMaterials(req: ListMaterialsRequest) {
 export async function notifyShare(text: string) {
 }
 
-export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'video', mode: string, requestId: string, model: string }) {
+export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'video', action: ImagingAction, requestId: string, model: string }) {
   const isVideo = mediaReference.mediaType === 'video';
-  let interval = isVideo && mediaReference.mode != 'failure' ? 10000 : 1000;
+  let interval = isVideo && mediaReference.model != 'failure' ? 10000 : 1000;
   console.log("pollMediaStatus", mediaReference, interval);
 
-  if (mediaReference.mode.startsWith('gpt')) {
+  if (mediaReference.model.startsWith('gpt')) {
     interval = 5000;
   }
 

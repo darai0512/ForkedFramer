@@ -9,6 +9,7 @@
   import { createCanvasFromBlob, createVideoFromBlob } from '../lib/layeredCanvas/tools/imageUtil';
   import { ls } from '../lib/filesystem/fileSystem';
   import type { GalleryItem } from "../gallery/gallery";
+  import type { ImagingAction } from '$protocolTypes/imagingTypes';
 
   export let columnWidth: number = 220;
 
@@ -26,10 +27,10 @@
     deleteEntry($gadgetFileSystem!, requestId!);
   }
 
-  async function handleRequest(mediaType: MediaType, mode: string, request_id: string, model: string) {
+  async function handleRequest(mediaType: MediaType, action: ImagingAction, request_id: string, model: string) {
     try {
-      const { mediaResources, urls } = await pollMediaStatus({mediaType, mode, requestId: request_id, model});
-      await saveEntity($gadgetFileSystem!, mediaType, mode, request_id, model, urls);
+      const { mediaResources, urls } = await pollMediaStatus({mediaType, action, requestId: request_id, model});
+      await saveEntity($gadgetFileSystem!, mediaType, action, request_id, model, urls);
       return mediaResources.map((mediaResource) => {
         const media = buildMedia(mediaResource);
         return media;
@@ -73,7 +74,7 @@
       switch (entry.type) {
         case "request":
           const f = async () => {
-            return await handleRequest(entry.mediaType, entry.mode, entry.requestId, entry.model);
+            return await handleRequest(entry.mediaType, entry.action, entry.requestId, entry.model);
           };
           newItems.push(f);
           newRequestIds.set(f, entry.requestId);

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ImagingMode, ImagingProvider } from '$protocolTypes/imagingTypes';
+  import type { ImagingModel, ImagingProvider } from '$protocolTypes/imagingTypes';
   import { modeOptionsTree, isModeGroup, type ModeOption, type ModeTreeItem } from '../utils/feathralImaging';
   import { calculateImagingCost } from '../utils/edgeFunctions/calculateCost';
   import { onMount } from 'svelte';
@@ -8,7 +8,7 @@
   import FeathralCost from '../utils/FeathralCost.svelte';
   import { clickOutside } from '../utils/clickOutside';
 
-  export let mode: ImagingMode;
+  export let model: ImagingModel;
   export let group: 'imaging' | 'textedit' | 'ref' | 'page' | 'all' = 'imaging';
   export let preferenceKey: string = 'mode';
   const DEFAULT_IMAGE_SIZE = { width: 1024, height: 1024 };
@@ -21,28 +21,27 @@
   export let hasSelectedImages: boolean | undefined = undefined;
   export let selectedImageCount: number | undefined = undefined;
 
-  const preference = createPreference<ImagingMode>('imaging', preferenceKey);
+  const preference = createPreference<ImagingModel>('imaging', preferenceKey);
 
-  function coerceMode(v: unknown): ImagingMode {
-    if (typeof v === 'string') return v as ImagingMode;
-    if (v && typeof v === 'object' && 'value' in (v as any)) return (v as any).value as ImagingMode;
+  function coerceMode(v: unknown): ImagingModel {
+    if (typeof v === 'string') return v as ImagingModel;
+    if (v && typeof v === 'object' && 'value' in (v as any)) return (v as any).value as ImagingModel  ;
     return 'z-image';
   }
 
-  let internalMode: ImagingMode = coerceMode(mode);
-
+  let internalModel: ImagingModel = coerceMode(model);
   onMount(async () => {
-    const saved = await preference.getOrDefault(mode);
-    internalMode = coerceMode(saved);
-    mode = internalMode;
+    const saved = await preference.getOrDefault(model);
+    internalModel = coerceMode(saved);
+    model = internalModel;
   });
 
-  type DisplayModeOption = { value: ImagingMode; label: string; cost: number; uiType?: ImagingProvider; supportsGenerate: boolean; supportsEdit: boolean; refRange: { min: number; max: number } };
+  type DisplayModeOption = { value: ImagingModel; label: string; cost: number; uiType?: ImagingProvider; supportsGenerate: boolean; supportsEdit: boolean; refRange: { min: number; max: number } };
 
-  function same(a: ImagingMode, b?: ImagingMode) {
+  function same(a: ImagingModel, b?: ImagingModel) {
     return !!b && a === b;
   }
-  function included(choice: ImagingMode, opts: DisplayModeOption[]) {
+  function included(choice: ImagingModel, opts: DisplayModeOption[]) {
     return opts.some(op => same(op.value, choice));
   }
 
@@ -81,9 +80,9 @@
    * 3. 参照画像枚数条件 → refRange.min <= 枚数 <= refRange.max
    */
   function filterModeOption(o: ModeOption): DisplayModeOption | null {
-    const val = o.value as ImagingMode;
+    const val = o.value as ImagingModel;
     // 現在選択中のモードは必ず残す
-    if (same(val, internalMode) || same(val, mode)) {
+    if (same(val, internalModel) || same(val, model)) {
       return toDisplayOption(o);
     }
     // グループ条件
@@ -108,9 +107,9 @@
     // 1枚のみのモデルは基本的にi2iでありキャラ参照ではない
     const supportsCharacterRef = o.refRange.max >= 3;
     return {
-      value: o.value as ImagingMode,
+      value: o.value as ImagingModel,
       label: group === 'ref' && supportsCharacterRef ? `☆ ${o.name}` : o.name,
-      cost: calculateImagingCost(o.value as ImagingMode, effectiveSize, []),
+      cost: calculateImagingCost(o.value as ImagingModel, effectiveSize, []),
       uiType: o.uiType as ImagingProvider,
       supportsGenerate: o.refRange.min === 0,
       supportsEdit: o.refRange.max > 0,
@@ -151,7 +150,7 @@
   // 依存変数を明示的に参照してリアクティブに更新
   $: {
     // 依存変数を明示（Svelteが追跡できるようにする）
-    const _deps = [group, selectedImageCount, hasSelectedImages, internalMode, mode, imageSize];
+    const _deps = [group, selectedImageCount, hasSelectedImages, internalModel, model, imageSize];
     void _deps;
 
     const flat: DisplayModeOption[] = [];
@@ -189,9 +188,9 @@
   })();
 
   let coercedOnce = false;
-  function setSelection(next: ImagingMode, persist = true) {
-    internalMode = next;
-    mode = next;
+  function setSelection(next: ImagingModel, persist = true) {
+    internalModel = next;
+    model = next;
     if (persist) {
       preference.set(next).then(() => console.log('save done', next));
     }
@@ -199,12 +198,12 @@
     currentPath = [];
   }
 
-  $: if (!coercedOnce && internalMode && allOptions.length > 0 && !included(internalMode, allOptions)) {
+  $: if (!coercedOnce && internalModel && allOptions.length > 0 && !included(internalModel, allOptions)) {
     setSelection(allOptions[0].value);
     coercedOnce = true;
   }
-  $: if (mode && !same(mode, internalMode)) {
-    internalMode = coerceMode(mode);
+  $: if (model && !same(model, internalModel)) {
+    internalModel = coerceMode(model);
   }
 
   function handleTriggerClick() {
@@ -234,7 +233,7 @@
     currentPath = [];
   }
 
-  $: selectedOption = allOptions.find(o => o.value === internalMode) ?? null;
+  $: selectedOption = allOptions.find(o => o.value === internalModel) ?? null;
 
   // キーボードナビゲーション
   function handleKeydown(e: KeyboardEvent) {
@@ -332,7 +331,7 @@
                     <button
                       type="button"
                       class="imaging-dropdown__option"
-                      class:selected={item.value === internalMode}
+                      class:selected={item.value === internalModel}
                       on:click={() => handleOptionClick(item)}
                     >
                       <span class="label-with-chip">

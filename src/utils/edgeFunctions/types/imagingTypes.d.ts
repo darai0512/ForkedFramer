@@ -4,7 +4,22 @@ import { z } from "zod";
 export const ImagingBackgroundSchema = z.enum(["auto", "opaque", "transparent"]);
 export type ImagingBackground = z.infer<typeof ImagingBackgroundSchema>;
 
-export const ImagingModeSchema = z.enum([
+export const ImagingActionSchema = z.enum([
+  "texttoimage", 
+  "imagetovideo", 
+  "inpaint", 
+  "outpaint", 
+  "vision", 
+  "upscale", 
+  "removebg", 
+  "eraser", 
+  "layerize",
+  "textmask", 
+  "texteraser", 
+]);
+export type ImagingAction = z.infer<typeof ImagingActionSchema>;
+
+export const ImagingModelSchema = z.enum([
   "schnell",
   "pro",
   "chibi",
@@ -17,7 +32,6 @@ export const ImagingModeSchema = z.enum([
   "gpt-image-1.5/medium",
   "gpt-image-1.5/high",
   "qwen-image",
-  // TextEditMode から統合
   "kontext/pro",
   "kontext/max",
   "kontext/inscene",
@@ -33,12 +47,10 @@ export const ImagingModeSchema = z.enum([
   "z-image",
   "kling-image/o1",
 ]);
-export type ImagingMode = z.infer<typeof ImagingModeSchema>;
+export type ImagingModel = z.infer<typeof ImagingModelSchema>;
 
 export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "gpt-image-1.5", "qwen", "seedream", "decart"]);
 export type ImagingProvider = z.infer<typeof ImagingProviderSchema>;
-
-// TextEditMode は ImagingMode に統合したため削除
 
 const AngleSchema = z.object({
   rotate_right_left: z.number(),
@@ -65,11 +77,11 @@ const BaseTextToImageRequestSchema = z.object({
     height: z.number(),
   }),
   numImages: z.number(),
-  mode: ImagingModeSchema,
+  model: ImagingModelSchema,
   background: ImagingBackgroundSchema,
   option: TextToImageOptionSchema,
   // TextEdit 用の参照画像を Imaging にも許容
-  imageDataUrls: z.array(z.string()).optional(),
+  imageDataUrls: z.array(z.string()),
 });
 
 export const TextToImageRequestSchema = BaseTextToImageRequestSchema;
@@ -116,19 +128,6 @@ export const RemoveBgResponseSchema = z.object({
   model: z.string().describe("model name"),
 });
 export type RemoveBgResponse = z.infer<typeof RemoveBgResponseSchema>;
-
-export const ImagingStatusRequestSchema = z.object({
-  mode: z.string(),
-  requestId: z.string(),
-  model: z.string(),
-});
-export type ImagingStatusRequest = z.infer<typeof ImagingStatusRequestSchema>;
-
-export const ImagingStatusResponseSchema = z.object({
-  status: z.string(),
-  result: z.array(z.string()).optional(),
-});
-export type ImagingStatusResponse = z.infer<typeof ImagingStatusResponseSchema>;
 
 export const ImageToVideoModelSchema = z.enum([
   "kling", 
@@ -253,3 +252,17 @@ export const LayerizeResponseSchema = z.object({
   model: z.string().describe("model name"),
 });
 export type LayerizeResponse = z.infer<typeof LayerizeResponseSchema>;
+
+export const ImagingStatusRequestSchema = z.object({
+  action: ImagingActionSchema,
+  requestId: z.string(),
+  model: z.string(),
+});
+export type ImagingStatusRequest = z.infer<typeof ImagingStatusRequestSchema>;
+
+export const ImagingStatusResponseSchema = z.object({
+  status: z.string(),
+  result: z.array(z.string()).optional(),
+});
+export type ImagingStatusResponse = z.infer<typeof ImagingStatusResponseSchema>;
+

@@ -1,10 +1,11 @@
 import type { FileSystem } from "../lib/filesystem/fileSystem";
+import type { ImagingAction } from "$protocolTypes/imagingTypes";
 
 export interface RemoteRequest {
   type: "request";
   createdAt: string;
   mediaType: "image" | "video";
-  mode: string;
+  action: ImagingAction;
   requestId: string;
   model: string;
 }
@@ -13,7 +14,7 @@ export interface RemoteEntity {
   type: "entity";
   createdAt: string;
   mediaType: "image" | "video";
-  mode: string;
+  action: ImagingAction;
   requestId: string;
   model: string;
   mediaUrls: string[];
@@ -21,7 +22,7 @@ export interface RemoteEntity {
 
 export type RemoteEntry = RemoteEntity | RemoteRequest;
 
-export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "video", mode: string, requestId: string, model: string) {
+export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "video", action: ImagingAction, requestId: string, model: string) {
   const root = await fileSystem.getRoot();
   const warehouse = (await root.getNodeByName("倉庫"))!.asFolder()!;
 
@@ -30,7 +31,7 @@ export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "
     type: "request", 
     createdAt: new Date().toISOString(),
     mediaType,
-    mode,
+    action,
     requestId,
     model,
   });
@@ -38,7 +39,7 @@ export async function saveRequest(fileSystem: FileSystem, mediaType: "image" | "
   await warehouse.link(requestId, file.id);
 }
 
-export async function saveEntity(fileSystem: FileSystem, mediaType: "image" | "video", mode: string, requestId: string, model: string, mediaUrls: string[]) {
+export async function saveEntity(fileSystem: FileSystem, mediaType: "image" | "video", action: ImagingAction, requestId: string, model: string, mediaUrls: string[]) {
   const root = await fileSystem.getRoot();
   const warehouse = (await root.getNodeByName("倉庫"))!.asFolder()!;
 
@@ -47,7 +48,7 @@ export async function saveEntity(fileSystem: FileSystem, mediaType: "image" | "v
     type: "entity", 
     createdAt: new Date().toISOString(),
     mediaType,
-    mode,
+    action,
     requestId,
     model,
     mediaUrls,
@@ -77,6 +78,10 @@ export async function getEntries(fileSystem: FileSystem): Promise<RemoteEntry[]>
   const entries: RemoteEntry[] = [];
   for (const file of files) {
     const entry = (await file[2].asFile()!.read()) as RemoteEntry;
+    if (entry.action === undefined) {
+      // 古いデータなのでスキップ
+      continue;
+    }
     // 3ヶ月以上前ならスキップ
     if (new Date(entry.createdAt) < expireLimit) {
       await warehouse.unlink(file[0]);

@@ -1020,7 +1020,7 @@ export class FrameLayer extends LayerBase {
         break;
       case "fit":
         const paperSize = this.getPaperSize();
-        const transformer = new FilmStackTransformer(paperSize, payload.layout.element.filmStack.getSelectedFilms());
+        const transformer = new FilmStackTransformer(paperSize, payload.layout.element.filmStack.getOperationTargetFilms());
         transformer.scale(0.01);
         constraintLeaf(paperSize, payload.layout);
         this.onCommit();

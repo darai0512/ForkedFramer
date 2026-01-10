@@ -2,23 +2,23 @@
   import { onlineStatus } from "../utils/accountStore";
   import Feathral from '../utils/Feathral.svelte';
   import { persistentText } from '../utils/persistentText';
-  import type { ImagingMode } from '$protocolTypes/imagingTypes';
+  import type { ImagingModel } from '$protocolTypes/imagingTypes';
   import { type ImagingContext, generatePageImages, portraitsRecordFromNotebook } from '../utils/feathralImaging';
   import { busy, batchImagingPage } from './batchImagingStore';
   import { mainBook, redrawToken } from '../bookeditor/workspaceStore';
   import { commitBook } from '../lib/book/book';
   import ImagingModes from './ImagingModes.svelte';
-  import { modeOptions, getRefMaxForMode } from '../utils/feathralImaging';
+  import { getRefMaxForMode } from '../utils/feathralImaging';
   import { _ } from 'svelte-i18n';
   import "../box.css"  
 
   export let imagingContext: ImagingContext;
 
   let postfix: string = "";
-  let mode: ImagingMode = 'schnell';
+  let model: ImagingModel = 'schnell';
 
   // 選択モードに応じて参照画像の上限を同期
-  $: imagingContext.maxRefImages = getRefMaxForMode(mode);
+  $: imagingContext.maxRefImages = getRefMaxForMode(model);
 
   // Notebook のキャラクタ画像を参照画像としてセット
   $: imagingContext.refImages = portraitsRecordFromNotebook($mainBook?.notebook ?? null);
@@ -27,7 +27,7 @@
     console.log('execute');
     $busy = true;
     await generatePageImages(
-      imagingContext, postfix, mode, $batchImagingPage!, true, () => {imagingContext = imagingContext;});
+      imagingContext, postfix, model, $batchImagingPage!, true, () => {imagingContext = imagingContext;});
     $busy = false;
     console.log('execute done');
 
@@ -47,7 +47,7 @@
     <div class="flex flex-col gap-3">
       <div class="flex flex-row gap-2 items-center">
         <h3>{$_('generator.mode')}</h3>
-        <ImagingModes bind:mode={mode} group="imaging" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanelEstimate')}/>
+        <ImagingModes bind:model={model} group="imaging" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanelEstimate')}/>
       </div>
       <div class="flex flex-row gap-2 items-start">
         <h3>{$_('generator.style')}</h3>

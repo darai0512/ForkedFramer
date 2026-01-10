@@ -12,6 +12,7 @@ import { blobToSha1 } from '../lib/layeredCanvas/tools/misc';
 import { loading } from '../utils/loadingStore';
 import { onlineStatus } from '../utils/accountStore';
 import { BrowserMediaConverter } from '../lib/filesystem/mediaConverter';
+import type { ImagingAction } from '$protocolTypes/imagingTypes';
 
 export interface MaterialCollectionState {
   materialCollectionFolders: EmbodiedEntry[];
@@ -129,12 +130,27 @@ export async function loadMaterialsFromFolder(
       if (!media.isLoaded) {
         // Unmaterializedメディアの場合、ロード
         const rmr = media.persistentSource as RemoteMediaReference;
-        const { mediaResources }  = await pollMediaStatus(rmr);
-        if (mediaResources.length > 0) {
-          media.setMedia(mediaResources[0]);
+        // beforeRequestの場合はポーリングできない（requestIdがない）
+        if (rmr.mode === 'beforeRequest') {
+          console.log("================================================================ loadMedia: beforeRequest, skipping poll");
+          return [media];
         }
-        console.log("================================================================ loadMedia done", media);
-        await file.writeMediaResource(mediaResources[0]); // Ensure the media is written back if needed
+        // afterRequestの場合のみポーリング
+        if (rmr.mode === 'afterRequest') {
+          // TODO: rmrの方が空間が狭い、この機会に同等にしておいたほうがよい
+          const mr = {
+            mediaType: rmr.mediaType,
+            action: (rmr.mediaType === 'image' ? 'texttoimage' : 'imagetovideo') as ImagingAction,
+            requestId: rmr.requestId,
+            model: rmr.model
+          }
+          const { mediaResources } = await pollMediaStatus(mr);
+          if (mediaResources.length > 0) {
+            media.setMedia(mediaResources[0]);
+          }
+          console.log("================================================================ loadMedia done", media);
+          await file.writeMediaResource(mediaResources[0]); // Ensure the media is written back if needed
+        }
       }
 
       return [media];

@@ -1,7 +1,7 @@
 // このモジュールはFramePlanner側で定義してコピーしているので、
 // FramePlannerSupabaseで変更してはだめ
 
-import type { ImagingMode, ImageToVideoModel, ImageToVideoResolution, ImageToVideoRequest, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes.d"; // @deno-ts
+import type { ImagingModel, ImageToVideoModel, ImageToVideoResolution, ImageToVideoRequest, Padding, TextToImageRequest } from "$protocolTypes/imagingTypes.d"; // @deno-ts
 
 /**
  * 画像サイズからメガピクセル単位でのコストを計算する
@@ -17,7 +17,7 @@ function calculateCostFromMegapixels(size: { width: number; height: number }, co
 type CostSpec = { kind: 'fixed', value: number } | { kind: 'perMP', value: number } | { kind: 'perMP/IO', input: number, output: number } ;
 
 // モード単位で単一仕様に一般化（ref画像数には非依存）
-const COST_SPEC: Record<ImagingMode, CostSpec> = {
+const COST_SPEC: Record<ImagingModel, CostSpec> = {
     // FLUX 系（面積比例）
     "schnell": { kind: 'perMP', value: 1 },
     "pro": { kind: 'perMP', value: 8 },
@@ -170,13 +170,13 @@ function calcFromSpec(spec: CostSpec, outputSize: ImageSize, inputSizes: ImageSi
  * @param imageSize 出力画像サイズ
  * @param inputSizes 入力画像サイズの配列（perMP/IOモードで使用、なければ空配列）
  */
-export function calculateImagingCost(mode: ImagingMode, imageSize: ImageSize, inputSizes: ImageSize[]): number {
-    return calcFromSpec(COST_SPEC[mode], imageSize, inputSizes);
+export function calculateImagingCost(model: ImagingModel, imageSize: ImageSize, inputSizes: ImageSize[]): number {
+    return calcFromSpec(COST_SPEC[model], imageSize, inputSizes);
 }
 
 // リクエストオブジェクトから直接コストを計算
 export function calculateRequestCost(req: TextToImageRequest, inputSizes: ImageSize[]): number {
-    return calculateImagingCost(req.mode, req.imageSize, inputSizes);
+    return calculateImagingCost(req.model, req.imageSize, inputSizes);
 }
 
 export function calculateSeedanceCost(baseCost: number, duration: number, pixels: number): number {

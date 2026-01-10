@@ -42,7 +42,7 @@ export async function layerizeFilm(film: Film): Promise<Film[]> {
   const { requestId, model } = await layerize({ dataUrl, numLayers: request.numLayers });
   await saveRequest(get(mainBookFileSystem)!, "image", "layerize", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({ mediaType: "image", mode: "layerize", requestId, model });
+  const { mediaResources } = await pollMediaStatus({ mediaType: "image", action: "layerize", requestId, model });
 
   loading.set(false);
 

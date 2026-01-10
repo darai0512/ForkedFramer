@@ -211,7 +211,7 @@
           break;
       }
       film!.effects = film!.effects;
-      filmProcessorQueue.publish(film!);
+      filmProcessorQueue.publish({ film: film! });
     };
   }
 
@@ -226,7 +226,7 @@
     console.log("onDeleteEffect", index);
     film!.effects.splice(index, 1);
     film!.effects = film!.effects;
-    filmProcessorQueue.publish(film!);
+    filmProcessorQueue.publish({ film: film! });
     console.log("--- onDeleteEffect ---");
     dispatch('commit', true);
   }
@@ -239,7 +239,7 @@
       }
       if (flag) {
         effect.setOutputDirty();
-        filmProcessorQueue.publish(film!);
+        filmProcessorQueue.publish({ film: film! });
       }
     }
     dispatch('commit', false);

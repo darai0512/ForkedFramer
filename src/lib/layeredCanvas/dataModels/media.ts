@@ -1,7 +1,97 @@
 import type { Vector } from "../tools/geometry/geometry";
+import type {
+  TextToImageRequest,
+  ImageToVideoRequest,
+  OutPaintRequest,
+  InPaintRequest,
+  EraserRequest,
+  UpscaleRequest,
+  TextEraserRequest,
+  RemoveBgRequest,
+  ImagingAction
+} from "../../../utils/edgeFunctions/types/imagingTypes";
 
 export type MediaType = 'image' | 'video';
-export type RemoteMediaReference = { mediaType: MediaType, mode: string, requestId: string, model: string };
+export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
+
+// beforeRequest: リクエスト情報を保持（API未呼び出し）
+// afterRequest: requestIdを保持（API呼び出し済み、ポーリング待ち）
+// failure: 失敗状態
+export type FitParams = {
+  frameSize: Vector;   // フレームのサイズ
+  paperSize: Vector;   // ページのサイズ
+};
+
+export type RemoteMediaReferenceBeforeRequest = {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'texttoimage';
+  request: TextToImageRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'outpaint';
+  request: OutPaintRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'inpaint';
+  request: InPaintRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'eraser';
+  request: EraserRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'upscale';
+  request: UpscaleRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'texteraser';
+  request: TextEraserRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'removebg';
+  request: RemoveBgRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'video';
+  mode: 'beforeRequest';
+  action: 'imagetovideo';
+  request: ImageToVideoRequest;
+  fitParams?: FitParams;
+};
+
+export type RemoteMediaReferenceAfterRequest = {
+  mediaType: MediaType;
+  mode: 'afterRequest';
+  action: ImagingAction;
+  requestId: string;
+  model: string;
+};
+
+export type RemoteMediaReferenceFailure = {
+  mediaType: MediaType;
+  mode: 'failure';
+  requestId: string;
+  model: string;
+};
+
+export type RemoteMediaReference =
+  | RemoteMediaReferenceBeforeRequest
+  | RemoteMediaReferenceAfterRequest
+  | RemoteMediaReferenceFailure;
+
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;
 export type MediaResource = MaterializedType | RemoteMediaReference;
 
@@ -253,11 +343,24 @@ export class ImageMedia extends MediaBase {
     this.setFailed(false);
   }
 
+  // beforeRequest → afterRequest への遷移
+  setRequestResult(action: ImagingAction, requestId: string, model: string): void {
+    if (this.remoteMediaReference?.mode === 'beforeRequest') {
+      this.remoteMediaReference = {
+        mediaType: 'image',
+        mode: 'afterRequest',
+        action,
+        requestId,
+        model
+      };
+    }
+  }
+
   get player(): Player | null { return null; }
   get drawSource(): HTMLCanvasElement { return this.canvas ?? this.getFallbackCanvas(); }
   get drawSourceCanvas(): HTMLCanvasElement { return this.drawSource; }
-  get persistentSource(): MediaResource { 
-    return this.remoteMediaReference ?? this.drawSource; 
+  get persistentSource(): MediaResource {
+    return this.remoteMediaReference ?? this.drawSource;
   }
   get naturalWidth(): number { return this.drawSource.width; }
   get naturalHeight(): number { return this.drawSource.height; }
@@ -302,6 +405,19 @@ export class VideoMedia extends MediaBase {
     this.remoteMediaReference = undefined
     this.setLoaded(true);
     this.setFailed(false);
+  }
+
+  // beforeRequest → afterRequest への遷移
+  setRequestResult(action: ImagingAction, requestId: string, model: string): void {
+    if (this.remoteMediaReference?.mode === 'beforeRequest') {
+      this.remoteMediaReference = {
+        mediaType: 'video',
+        mode: 'afterRequest',
+        action,
+        requestId,
+        model
+      };
+    }
   }
 
   get player(): Player {

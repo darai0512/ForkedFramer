@@ -1,4 +1,15 @@
 import { ulid } from 'ulid';
+import type {
+  TextToImageRequest,
+  ImageToVideoRequest,
+  OutPaintRequest,
+  InPaintRequest,
+  EraserRequest,
+  UpscaleRequest,
+  TextEraserRequest,
+  RemoveBgRequest,
+  ImagingAction
+} from "../../utils/edgeFunctions/types/imagingTypes";
 
 export type NodeType = 'file' | 'folder';
 export type NodeId = string & { _NodeId: never };
@@ -10,7 +21,86 @@ export type EmbodiedEntry = [BindId, string, Node];
 
 // リモートメディア=fal.aiなどの画像生成サービス側にあり、まだダウンロードしていないファイル
 export type MediaType  = 'image' | 'video';
-export type RemoteMediaReference = { mediaType: MediaType, mode: string, requestId: string, model: string };
+export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
+
+// beforeRequest: リクエスト情報を保持（API未呼び出し）
+// afterRequest: requestIdを保持（API呼び出し済み、ポーリング待ち）
+// failure: 失敗状態
+export type FitParams = {
+  frameSize: [number, number];   // フレームのサイズ
+  paperSize: [number, number];   // ページのサイズ
+};
+
+export type RemoteMediaReferenceBeforeRequest = {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'texttoimage';
+  request: TextToImageRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'outpaint';
+  request: OutPaintRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'inpaint';
+  request: InPaintRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'eraser';
+  request: EraserRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'upscale';
+  request: UpscaleRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'texteraser';
+  request: TextEraserRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'image';
+  mode: 'beforeRequest';
+  action: 'removebg';
+  request: RemoveBgRequest;
+  fitParams?: FitParams;
+} | {
+  mediaType: 'video';
+  mode: 'beforeRequest';
+  action: 'imagetovideo';
+  request: ImageToVideoRequest;
+  fitParams?: FitParams;
+};
+
+export type RemoteMediaReferenceAfterRequest = {
+  mediaType: MediaType;
+  mode: 'afterRequest';
+  action: ImagingAction;
+  requestId: string;
+  model: string;
+};
+
+export type RemoteMediaReferenceFailure = {
+  mediaType: MediaType;
+  mode: 'failure';
+  requestId: string;
+  model: string;
+};
+
+export type RemoteMediaReference =
+  | RemoteMediaReferenceBeforeRequest
+  | RemoteMediaReferenceAfterRequest
+  | RemoteMediaReferenceFailure;
+
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;
 export type MediaResource = MaterializedType | RemoteMediaReference;
 

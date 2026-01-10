@@ -1,23 +1,20 @@
-import { get } from 'svelte/store';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import type { Page } from '../lib/book/book';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
-import { outPaint, pollMediaStatus } from "../supabase";
 import { analyticsEvent } from "./analyticsEvent";
 import type { Rect, Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 import { type FrameElement, calculatePhysicalLayout, findLayoutOf } from '../lib/layeredCanvas/dataModels/frameTree';
 import { trapezoidBoundingRect } from "../lib/layeredCanvas/tools/geometry/trapezoid";
 import { add2D, getRectCenter } from "../lib/layeredCanvas/tools/geometry/geometry";
-import { saveRequest } from '../filemanager/warehouse';
-import { mainBookFileSystem } from '../filemanager/fileManagerStore';
+import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 
-export async function outPaintFilm(film: Film, padding: {left: number, top: number, right: number, bottom: number}) {
+export function outPaintFilmInline(film: Film, padding: {left: number, top: number, right: number, bottom: number}): Film | null {
   if (film.content.kind !== 'media') {
-    return;
+    return null;
   }
   const imageMedia = film.content.media;
-  if (!(imageMedia instanceof ImageMedia)) { 
-    return; 
+  if (!(imageMedia instanceof ImageMedia)) {
+    return null;
   }
 
   if (film.reverse[0] < 0) {
@@ -35,28 +32,36 @@ export async function outPaintFilm(film: Film, padding: {left: number, top: numb
 
   const size = { width: imageMedia.naturalWidth, height: imageMedia.naturalHeight };
   const imageUrl = imageMedia.drawSourceCanvas.toDataURL("image/png");
-  const { requestId, model } = await outPaint({dataUrl: imageUrl, size, padding});
-  console.log("outpainting result", requestId);
-  await saveRequest(get(mainBookFileSystem)!, "image", "outpaint", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({ mediaType: "image", mode: "outpaint", requestId, model});
-  const canvas = mediaResources[0] as HTMLCanvasElement;
+  // beforeRequest形式でImageMediaを作成
+  const newMedia = new ImageMedia({
+    mediaType: 'image',
+    mode: 'beforeRequest',
+    action: 'outpaint',
+    request: {
+      dataUrl: imageUrl,
+      size,
+      padding
+    }
+  });
 
   const newFilm = film.clone();
-  newFilm.media = new ImageMedia(canvas);
+  newFilm.media = newMedia;
 
-  // 画像スケール
+  // 画像スケールの事前計算（実際の調整はメディアロード後に行う）
   // 元画像が大きすぎる場合、fal.aiがアスペクト比を維持したまま縮小するケースがあるので対応する
-  const oldImageSize = Math.min(imageMedia.naturalWidth, imageMedia.naturalHeight) ;
-  const newActualImageSize = Math.min(canvas.width, canvas.height);
+  const oldImageSize = Math.min(imageMedia.naturalWidth, imageMedia.naturalHeight);
   const newIdealImageSize = Math.min(size.width + padding.left + padding.right, size.height + padding.top + padding.bottom);
-  const newScale = film.n_scale / oldImageSize * newActualImageSize;
-  newFilm.n_scale = newScale * (newIdealImageSize / newActualImageSize);
+  // 仮のスケール設定（メディアロード後に調整される可能性がある）
+  newFilm.n_scale = film.n_scale * (newIdealImageSize / oldImageSize);
   newFilm.n_translation = [0, 0]; // 微妙にずれるケースがあるが諦める
+
+  // filmProcessorQueueに登録
+  filmProcessorQueue.publish({ film: newFilm });
 
   analyticsEvent('outpaint');
 
-  console.log("B", newFilm);
+  console.log("outPaintFilmInline: created beforeRequest film", newFilm);
   return newFilm;
 }
 

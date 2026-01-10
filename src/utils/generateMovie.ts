@@ -1,20 +1,16 @@
 import { get } from 'svelte/store';
-import { mainBookFileSystem } from '../filemanager/fileManagerStore';
-import type { ImageToVideoRequest, ImageToVideoModel } from '$protocolTypes/imagingTypes';
+import type { ImageToVideoRequest } from '$protocolTypes/imagingTypes';
 import { Film, FilmStack } from '../lib/layeredCanvas/dataModels/film';
 import { ImageMedia, VideoMedia } from '../lib/layeredCanvas/dataModels/media';
 import { waitDialog } from '../utils/waitDialog';
-import { image2Video } from '../supabase';
-import { saveRequest } from '../filemanager/warehouse';
-import { loading } from './loadingStore';
 import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { onlineStatus } from './accountStore';
 
 export async function generateMovie(filmStack: FilmStack, film: Film) {
-  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) {
     toastStore.trigger({ message: `内部エラー: 動画生成は画像に対してしか使えません`, timeout: 3000});
-    return; 
+    return;
   }
 
   if (get(onlineStatus) !== "signed-in") {
@@ -27,23 +23,20 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
 
   if (!request) { return; }
 
-  loading.set(true);
-  try {
-    const { requestId: request_id, model } = await image2Video(request);
-    await saveRequest(get(mainBookFileSystem)!, "video", request.model, request_id, model);
+  // beforeRequest形式でVideoMediaを作成（API呼び出しなし）
+  const newMedia = new VideoMedia({
+    mediaType: 'video',
+    mode: 'beforeRequest',
+    action: 'imagetovideo',
+    request
+  });
+  const newFilm = Film.fromMedia(newMedia);
 
-    const newMedia = new VideoMedia({ mediaType: "video", mode: request.model, requestId: request_id, model });
-    const newFilm = Film.fromMedia(newMedia);
-    filmProcessorQueue.publish(newFilm);
+  // filmProcessorQueueに登録（ここでAPIが呼ばれ、ポーリングされる）
+  filmProcessorQueue.publish({ film: newFilm });
 
-    const index = filmStack.films.indexOf(film);
-    filmStack.films.splice(index + 1, 0, newFilm);
-    loading.set(false);
+  const index = filmStack.films.indexOf(film);
+  filmStack.films.splice(index + 1, 0, newFilm);
 
-    toastStore.trigger({ message: `ムービー生成には数分かかります`, timeout: 3000});
-  }
-  catch (e) {
-    loading.set(false);
-    toastStore.trigger({ message: `動画生成に失敗しました`, timeout: 3000});
-  }
+  toastStore.trigger({ message: `ムービー生成には数分かかります`, timeout: 3000});
 }

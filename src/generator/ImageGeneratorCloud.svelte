@@ -8,7 +8,7 @@
   import { toastStore } from '@skeletonlabs/skeleton';
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import { ProgressRadial } from '@skeletonlabs/skeleton';
-  import type { ImagingMode, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
+  import type { ImagingModel, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
   import { calculateCost, generateImage, modeOptions as unifiedModeOptions, isContentsPolicyViolationError, getRefMaxForMode, supportsRefImages, getTimeFactorForMode } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
   import SliderEdit from '../utils/SliderEdit.svelte';
@@ -33,7 +33,7 @@
   let refered: Media | null= null;
   let postfix: string = "";
   let batchCount = 1;
-  let mode: ImagingMode = 'schnell';
+  let model: ImagingModel = 'schnell';
   let width = 1024;
   let height = 1024;
   let estimatedCost = 0;
@@ -44,8 +44,8 @@
   // 参考画像UI用（UIのみ。生成処理への結線は未対応）
   let referenceImages: GalleryItem[] = [];
   let referenceMedias: Media[] = [];
-  $: referenceImagesSupported = supportsRefImages(mode);
-  $: refMax = getRefMaxForMode(mode);
+  $: referenceImagesSupported = supportsRefImages(model);
+  $: refMax = getRefMaxForMode(model);
   $: if (!referenceImagesSupported) {
     if (referenceImages.length > 0 || referenceMedias.length > 0) {
       referenceImages = [];
@@ -65,8 +65,8 @@
     chosen = detail;
   }
 
-  $: onChangeMode(mode, sizeText);
-  function onChangeMode(mode: ImagingMode, st: string) {
+  $: onChangeMode(model, sizeText);
+  function onChangeMode(mode: ImagingModel, st: string) {
     // allowTextEdit is false here, so we assume imaging
     uiType = unifiedModeOptions.find(m => m.value === mode)?.uiType;
     if (uiType == 'gpt-image-1' || uiType == 'gpt-image-1.5') {
@@ -77,7 +77,7 @@
   }
 
   async function generate() {
-    if (mode === 'pro' && 1 < batchCount ) {
+    if (model === 'pro' && 1 < batchCount ) {
       toastStore.trigger({ message: $_('generator.proModeMultipleImagesNotSupported'), timeout: 2000 });
       batchCount = 1;
     }
@@ -91,7 +91,7 @@
       // 参照画像（上限はrefRange.maxまで）。
       // プロンプト中の [ref:###] を解析し、Notebook のキャラクタ画像を優先採用し、
       // 余剰枠をドロップゾーン画像で補完。
-      const refMaxLocal = getRefMaxForMode(mode);
+      const refMaxLocal = getRefMaxForMode(model);
       const notebook = get(mainBook)?.notebook ?? null;
       const refMap = portraitsRecordFromNotebook(notebook);
       const fallbackCanvases = referenceMedias.map(m => m.drawSourceCanvas);
@@ -104,7 +104,7 @@
 
       // 参照画像の枚数で推定時間を増やす: 0枚=1x, 1枚=2x, 2枚以上=3x
       const refMultiplier = 1 + Math.min(2, imageDataUrls.length);
-      const delta = 1 / (getTimeFactorForMode(mode) * refMultiplier) / pixelRatio;
+      const delta = 1 / (getTimeFactorForMode(model) * refMultiplier) / pixelRatio;
       q = setInterval(() => {progress = Math.min(1.0, progress+delta);}, 1000);
 
 
@@ -114,7 +114,7 @@
           return await generateImage(
             `${postfix}\n${prompt}`,
             { width, height },
-            mode,
+            model,
             batchCount,
             background,
             imageDataUrls
@@ -142,7 +142,7 @@
     toastStore.trigger({ message: $_('generator.copiedToClipboard'), timeout: 1500});
   }
 
-  $: estimatedCost = batchCount * calculateCost({width,height}, mode, []);
+  $: estimatedCost = batchCount * calculateCost({width,height}, model, []);
 
   onMount(async () => {
   });
@@ -156,7 +156,7 @@
     <Feathral/>
   </div>
   <div class="vbox left gap-2 mode">
-    <ImagingModes bind:mode={mode} group="imaging" imageSize={{ width, height }}/>
+    <ImagingModes bind:model={model} group="imaging" imageSize={{ width, height }}/>
   </div>
 
   <h2>{$_('generator.style')}</h2>

@@ -12,7 +12,7 @@ import {
   isMediaItem,
 } from './timelineTypes';
 import type {
-  ImagingMode,
+  ImagingModel,
   ImageToVideoModel,
   ImageToVideoRequest,
   ImageToVideoResolution,
@@ -42,7 +42,7 @@ import DolphinRoomView from './DolphinRoomView.svelte';
 import { DEFAULT_IMAGE_SIZE } from './constants';
 
 const dispatch = createEventDispatcher<{ dragstart: Media }>();
-const ANGLE_EDIT_MODE: ImagingMode = 'qwen-image-edit/multiple-angles';
+const ANGLE_EDIT_MODEL: ImagingModel = 'qwen-image-edit/multiple-angles';
 
 let timelineItems: TimelineItem[] = [];
 let timelineRows: TimelineRow[] = [];
@@ -57,7 +57,7 @@ let promptSubmitTrigger = 0;
 const objectUrls = createObjectUrlManager();
 const mediaElements = new Map<number, HTMLButtonElement>();
 let capturingMediaIds = new Set<number>();
-let imagingMode: ImagingMode = 'schnell';
+let imagingModel: ImagingModel = 'schnell';
 let generationType: 'image' | 'video' = 'image';
 let isGenerating = false;
 let messageHeading = '';
@@ -162,7 +162,7 @@ const captureCurrentFrame = createFrameCapture({
   allocateId,
 });
 
-const { handleModeButtonClick: originalHandleModeButtonClick } = createGenerationActions({
+const { handleModelButtonClick: originalHandleModelButtonClick } = createGenerationActions({
   getTimelineItems,
   setTimelineItems,
   getSelectedImageItems: () => selectedImageItems,
@@ -173,7 +173,7 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
   getDraft: () => draft,
   getStyle: () => style,
   getApplyStyle: () => applyStyle,
-  getImagingMode: () => imagingMode,
+  getImagingModel: () => imagingModel,
   getIsGenerating: () => isGenerating,
   setIsGenerating: (value) => {
     isGenerating = value;
@@ -196,7 +196,7 @@ const { handleModeButtonClick: originalHandleModeButtonClick } = createGeneratio
 
 async function handleModeButtonClick() {
   promptSubmitTrigger++;
-  await originalHandleModeButtonClick();
+  await originalHandleModelButtonClick();
   // 生成処理が完了した後にdraftをクリア
   draft = '';
 }
@@ -228,12 +228,12 @@ $: {
   videoAspectRatioForCost = pickVideoAspectRatio(videoModel, videoSourceSize.width, videoSourceSize.height);
 }
 $: {
-  const nextRequires = getRefRangeForMode(imagingMode).min > 0;
+  const nextRequires = getRefRangeForMode(imagingModel).min > 0;
   if (requiresReferenceSelection !== nextRequires) {
     requiresReferenceSelection = nextRequires;
   }
 }
-$: isAngleEditMode = imagingMode === ANGLE_EDIT_MODE;
+$: isAngleEditMode = imagingModel === ANGLE_EDIT_MODEL;
 $: promptRequired = !(isAngleEditMode && generationType === 'image');
 $: if (isAngleEditMode && batchCount !== 1) {
   batchCount = 1;
@@ -250,11 +250,11 @@ $: generationDisableReason = (() => {
   if (generationType === 'image' && requiresReferenceSelection && !hasSelectedImages) {
     return $_('dolphinRoom.disable.needImageForMode');
   }
-  if (generationType === 'image' && hasSelectedImages && !supportsRefImages(imagingMode)) {
+  if (generationType === 'image' && hasSelectedImages && !supportsRefImages(imagingModel)) {
     return $_('dolphinRoom.disable.noRefImageSupport');
   }
   if (generationType === 'image' && hasSelectedImages) {
-    const refRange = getRefRangeForMode(imagingMode);
+    const refRange = getRefRangeForMode(imagingModel);
     if (selectedImageItems.length > refRange.max) {
       return $_('dolphinRoom.disable.tooManyImages', { values: { max: refRange.max } });
     }
@@ -440,7 +440,7 @@ onDestroy(() => {
   bind:draft={draft}
   bind:style={style}
   bind:applyStyle={applyStyle}
-  bind:imagingMode={imagingMode}
+  bind:imagingModel={imagingModel}
   bind:generationType={generationType}
   videoModel={videoModel}
   videoModelOptions={videoModelOptions}
