@@ -16,7 +16,7 @@ import type { TimelineRow, MediaItem } from './timelineTypes';
 import { promptHistory as promptHistoryAction } from '../utils/promptHistoryAction';
 import { persistentText } from '../utils/persistentText';
 import type {
-  ImagingMode,
+  ImagingModel,
   ImageToVideoModel,
   ImageToVideoRequest,
   ImageToVideoResolution,
@@ -34,7 +34,7 @@ export let isGenerating = false;
 export let hasSelectedImages = false;
 export let selectedImageCount = 0;
 export let draft = '';
-export let imagingMode: ImagingMode = 'schnell';
+export let imagingModel: ImagingModel = 'schnell';
 export let generationType: 'image' | 'video' = 'image';
 export let videoModel: ImageToVideoModel = 'FramePack';
 export let videoModelOptions: Array<{ value: ImageToVideoModel; label: string; devOnly?: boolean }> = [];
@@ -44,7 +44,7 @@ export let videoDuration: ImageToVideoRequest['duration'] = '5';
 export let videoResolution: ImageToVideoResolution = '720p';
 export let videoAspectRatio: ImageToVideoRequest['aspectRatio'] = '16:9';
 export let onVideoModelChange: (model: ImageToVideoModel) => void = () => {};
-const angleEditOnlyMode: ImagingMode = 'qwen-image-edit/multiple-angles';
+const angleEditOnlyModel: ImagingModel = 'qwen-image-edit/multiple-angles';
 
 export let onClose: () => void = () => {};
 export let toggleMediaSelection: (itemId: number) => void = () => {};
@@ -90,7 +90,7 @@ $: imageTemplates = [
   {
     id: 'lineArt',
     label: $_('dolphinRoom.templates.lineArt'),
-    imagingMode: 'nano-banana' as ImagingMode,
+    imagingModel: 'nano-banana' as ImagingModel,
     prompt: $_('dolphinRoom.templates.lineArtPrompt'),
     applyStyle: false,
     requiresSelection: true,
@@ -98,14 +98,14 @@ $: imageTemplates = [
   {
     id: 'characterSheet',
     label: $_('dolphinRoom.templates.characterSheet'),
-    imagingMode: 'nano-banana' as ImagingMode,
+    imagingModel: 'nano-banana' as ImagingModel,
     prompt: $_('dolphinRoom.templates.characterSheetPrompt'),
     templateImageUrl: '/assets/charactersheet.webp',
   },
   {
     id: 'angleEdit',
     label: $_('dolphinRoom.templates.angleEdit'),
-    imagingMode: angleEditOnlyMode,
+    imagingModel: angleEditOnlyModel,
     prompt: '',
     applyStyle: false,
     requiresSelection: true,
@@ -176,8 +176,8 @@ async function applyTemplate(templateId: string): Promise<boolean> {
         pendingTemplateId = templateId;
         return false;
       }
-      if (template.imagingMode !== undefined) {
-        imagingMode = template.imagingMode;
+      if (template.imagingModel !== undefined) {
+        imagingModel = template.imagingModel;
         // 角度テンプレートは画像モード前提
         if (templateId === 'angleEdit' && generationType !== 'image') {
           generationType = 'image';
@@ -226,7 +226,7 @@ $: if (pendingTemplateId && hasSelectedImages) {
   selectedTemplate = templateId;
 }
 
-$: angleModeActive = imagingMode === 'qwen-image-edit/multiple-angles';
+$: angleModeActive = imagingModel === 'qwen-image-edit/multiple-angles';
 $: if (angleModeActive && showMoreOptions) {
   showMoreOptions = false;
 }
@@ -350,7 +350,7 @@ $: if (angleModeActive && showMoreOptions) {
             <div class="model-item">
               <span class="model-label">{$_('dolphinRoom.generation.image')}</span>
               <ImagingModes
-                bind:mode={imagingMode}
+                bind:model={imagingModel}
                 group="all"
                 width={300}
                 disabled={false}

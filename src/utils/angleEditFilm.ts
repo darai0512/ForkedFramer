@@ -2,15 +2,12 @@ import { get } from 'svelte/store';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
-import { textEdit, pollMediaStatus } from "../supabase";
 import { analyticsEvent } from "./analyticsEvent";
-import { saveRequest } from '../filemanager/warehouse';
-import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
-import { loading } from './loadingStore';
-import type { ImagingMode, TextToImageRequest } from '$protocolTypes/imagingTypes';
+import type { ImagingModel, TextToImageRequest } from '$protocolTypes/imagingTypes';
 import { inferProvider } from './feathralImaging';
+import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 
 type AngleEditDialogResult = {
   image: HTMLCanvasElement;
@@ -22,30 +19,28 @@ type AngleEditDialogResult = {
   };
 }
 
-export async function angleEditFilm(film: Film) {
+export async function angleEditFilmInline(film: Film): Promise<Film | null> {
   if (get(onlineStatus) !== "signed-in") {
     toastStore.trigger({ message: `アングル編集はサインインしてないと使えません`, timeout: 3000});
-    return;
+    return null;
   }
 
-  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) {
     toastStore.trigger({ message: `アングル編集は画像のみ使えます`, timeout: 3000});
-    return; 
+    return null;
   }
   const imageMedia = film.content.media as ImageMedia;
 
   const request = await waitDialog<AngleEditDialogResult>('angleedit', { title: "アングル編集", imageSource: imageMedia.drawSource });
   console.log(request);
   if (!request) {
-    return;
-  }    
+    return null;
+  }
 
-  loading.set(true);
-  
   const imageDataUrl = request.image.toDataURL("image/png");
   const imageDataUrls = [imageDataUrl];
-  const model: ImagingMode = 'qwen-image-edit/multiple-angles';
-  
+  const model: ImagingModel = 'qwen-image-edit/multiple-angles';
+
   const req: TextToImageRequest = {
     option: {
       kind: 'angle',
@@ -55,20 +50,27 @@ export async function angleEditFilm(film: Film) {
     prompt: '',
     imageSize: { width: request.image.width, height: request.image.height },
     numImages: 1,
-    mode: model,
+    model: model,
     background: 'auto',
     imageDataUrls,
   };
 
-  const { requestId, model: responseModel } = await textEdit(req);
-  await saveRequest(get(mainBookFileSystem)!, "image", req.mode, requestId, responseModel);
-
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: req.mode, requestId, model: responseModel});
-  loading.set(false);
+  // beforeRequest形式でImageMediaを作成
+  const newMedia = new ImageMedia({
+    mediaType: 'image',
+    mode: 'beforeRequest',
+    action: 'texttoimage',
+    request: req
+  });
 
   const newFilm = film.clone();
-  newFilm.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
+  newFilm.media = newMedia;
+
+  // filmProcessorQueueに登録
+  filmProcessorQueue.publish({ film: newFilm });
 
   analyticsEvent('angleedit');
+
+  console.log("angleEditFilmInline: created beforeRequest film", newFilm);
   return newFilm;
 }

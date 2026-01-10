@@ -1,10 +1,9 @@
 <script lang="ts">
   import { modalStore } from '@skeletonlabs/skeleton';
   import { onMount } from 'svelte';
-  import { createPreferenceStore } from '../preferences';
   import AutoSizeTextarea from '../notebook/AutoSizeTextarea.svelte';
   import ImagingModes from '../generator/ImagingModes.svelte';
-  import type { ImagingMode } from '$protocolTypes/imagingTypes';
+  import type { ImagingModel } from '$protocolTypes/imagingTypes';
   import type { Media } from '../lib/layeredCanvas/dataModels/media';
   import type { GalleryItem } from '../gallery/gallery';
   import { _ } from 'svelte-i18n';
@@ -23,7 +22,7 @@
   let prompt = '';
   let placeholder = $_('dialogs.textEdit.placeholder');
 
-  let selectedModel: ImagingMode = 'kontext/inscene';
+  let selectedModel: ImagingModel = 'kontext/inscene';
   
   // 参考画像用のデータ
   let referenceImages: GalleryItem[] = [];
@@ -128,7 +127,7 @@
         <div class="right-pane-content">
           <div class="setting-section">
             <h3>{$_('dialogs.textEdit.model')}</h3>
-            <ImagingModes bind:mode={selectedModel} {imageSize} group="textedit" />
+            <ImagingModes bind:model={selectedModel} {imageSize} group="textedit" />
           </div>
           
           {#if referenceImagesSupported}

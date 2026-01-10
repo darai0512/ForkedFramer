@@ -6,8 +6,7 @@ import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Page } from '../../lib/book/book';
 import { trapezoidBoundingRect } from "../../lib/layeredCanvas/tools/geometry/trapezoid";
 import { minimumBoundingScale } from "../../lib/layeredCanvas/tools/geometry/geometry";
-import { outPaintFilm, calculateFramePadding } from '../../utils/outPaintFilm';
-import { loading } from '../../utils/loadingStore';
+import { outPaintFilmInline, calculateFramePadding } from '../../utils/outPaintFilm';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { onlineStatus } from "../../utils/accountStore";
 import { get as getStore } from 'svelte/store';
@@ -131,18 +130,12 @@ async function outPaintFrameFilm(fit: FrameInspectorTarget) {
   const film = fit.commandTargetFilm!;
   if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { return; }
 
-  loading.set(true);
   const padding = calculateFramePadding(fit.page, fit.frame, film);
-  try {
-    const newFilm = await outPaintFilm(film, padding);
+  const newFilm = outPaintFilmInline(film, padding);
+  if (newFilm) {
     const index = fit.frame.filmStack.films.indexOf(film);
-    fit.frame.filmStack.films.splice(index + 1, 0, newFilm!);
+    fit.frame.filmStack.films.splice(index + 1, 0, newFilm);
     commit(null);
-  } catch (e) {
-    console.error(e);
-    toastStore.trigger({ message: getStore(_)('frame.errors.outpaintFailed'), timeout: 3000});
-  } finally {
-    loading.set(false);
   }
 }
 

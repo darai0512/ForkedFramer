@@ -2,13 +2,10 @@ import { get } from 'svelte/store';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
-import { inPaint, pollMediaStatus } from "../supabase";
 import { analyticsEvent } from "./analyticsEvent";
-import { saveRequest } from '../filemanager/warehouse';
-import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
-import { loading } from './loadingStore';
+import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 
 type InpaintDialogResult = {
   mask: HTMLCanvasElement;
@@ -16,35 +13,23 @@ type InpaintDialogResult = {
   prompt: string;
 }
 
-export async function inpaintFilm(film: Film) {
+export async function inpaintFilmInline(film: Film): Promise<Film | null> {
   if (get(onlineStatus) !== "signed-in") {
     toastStore.trigger({ message: `インペイントはサインインしてないと使えません`, timeout: 3000});
-    return;
+    return null;
   }
 
-  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { 
+  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) {
     toastStore.trigger({ message: `インペイントは画像のみ使えます`, timeout: 3000});
-    return; 
+    return null;
   }
   const imageMedia = film.content.media as ImageMedia;
 
   const request = await waitDialog<InpaintDialogResult>('inpaint', { title: "インペイント", imageSource: imageMedia.drawSource });
   console.log(request);
   if (!request) {
-    return;
-  }    
-
-  // const newCanvas = document.createElement('canvas');
-  // newCanvas.width = request.image.width;
-  // newCanvas.height = request.image.height;
-  // const ctx = newCanvas.getContext('2d')!;
-  // ctx.drawImage(request.image, 0, 0);
-  // ctx.drawImage(request.mask, 0, 0);
-
-  // await waitDialog<{}>('canvasBrowser', { canvas: newCanvas });
-
-  // ここ
-
+    return null;
+  }
 
   // request.maskを白黒画像に変換（アルファ値128未満なら白、そうでなければ黒）
   {
@@ -65,16 +50,29 @@ export async function inpaintFilm(film: Film) {
     request.mask = maskCanvas;
   }
 
-  loading.set(true);
   const maskDataUrl = request.mask.toDataURL("image/png");
   const imageDataUrl = request.image.toDataURL("image/png");
-  const { requestId, model } = await inPaint({maskDataUrl, imageDataUrl, prompt: request.prompt});
-  await saveRequest(get(mainBookFileSystem)!, "image", "inpaint", requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({mediaType: "image", mode: "inpaint", requestId, model});
-  loading.set(false);
+  // beforeRequest形式でImageMediaを作成
+  const newMedia = new ImageMedia({
+    mediaType: 'image',
+    mode: 'beforeRequest',
+    action: 'inpaint',
+    request: {
+      maskDataUrl,
+      imageDataUrl,
+      prompt: request.prompt
+    }
+  });
 
-  film.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
+  const newFilm = film.clone();
+  newFilm.media = newMedia;
 
-  analyticsEvent('eraser');
+  // filmProcessorQueueに登録
+  filmProcessorQueue.publish({ film: newFilm });
+
+  analyticsEvent('inpaint');
+
+  console.log("inpaintFilmInline: created beforeRequest film", newFilm);
+  return newFilm;
 }

@@ -10,7 +10,7 @@ import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf } fro
 import { Film } from '../lib/layeredCanvas/dataModels/film';
 import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
 import { updateToken } from "../utils/accountStore";
-import type { TextToImageRequest, ImagingBackground, ImagingMode, ImagingProvider, TextToImageOption } from './edgeFunctions/types/imagingTypes';
+import type { TextToImageRequest, ImagingBackground, ImagingModel, ImagingProvider, TextToImageOption } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
 import { FunctionsHttpError } from '@supabase/supabase-js'
 // import { captureConsoleIntegration } from '@sentry/svelte';
@@ -89,7 +89,7 @@ export function buildImageDataUrlsForPrompt(
   return urls;
 }
 
-export function inferProvider(m: ImagingMode): ImagingProvider {
+export function inferProvider(m: ImagingModel): ImagingProvider {
   if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
   if (m.startsWith('gpt-image-1.5/')) return 'gpt-image-1.5';
   if (m.startsWith('qwen-image')) return 'qwen';
@@ -99,13 +99,13 @@ export function inferProvider(m: ImagingMode): ImagingProvider {
 
 async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvasElement[]> {
   try {
-    console.log("[DEBUG submitImagingRequest] Starting request, mode:", req.mode);
+    console.log("[DEBUG submitImagingRequest] Starting request, mode:", req.model);
     const { requestId, model } = await text2Image(req);
     console.log("[DEBUG submitImagingRequest] Got requestId:", requestId, "model:", model);
-    await saveRequest(get(mainBookFileSystem)!, 'image', req.mode, requestId, model);
+    await saveRequest(get(mainBookFileSystem)!, 'image', "texttoimage", requestId, model);
 
     const perf = performance.now();
-    const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: req.mode, requestId, model });
+    const { mediaResources } = await pollMediaStatus({ mediaType: 'image', action: "texttoimage", requestId, model });
     console.log('[DEBUG submitImagingRequest] Completed in', (performance.now() - perf) / 1000.0, 'seconds, canvases:', mediaResources.length);
     return mediaResources as HTMLCanvasElement[];
   } catch (error: any) {
@@ -124,18 +124,18 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
 export async function generateImage(
   prompt: string,
   image_size: {width: number, height: number},
-  mode: ImagingMode,
+  model: ImagingModel,
   num_images: number,
   background: ImagingBackground,
   imageDataUrls: string[],
   option: TextToImageOption = { kind: 'none' },
 ): Promise<HTMLCanvasElement[]> {
   const req: TextToImageRequest = {
-    provider: inferProvider(mode),
+    provider: inferProvider(model),
     prompt,
     imageSize: image_size,
     numImages: num_images,
-    mode,
+    model,
     background,
     imageDataUrls,
     option,
@@ -151,29 +151,30 @@ export async function generateImage(
 export function generateImageInline(
   prompt: string,
   image_size: {width: number, height: number},
-  mode: ImagingMode,
+  model: ImagingModel,
   background: ImagingBackground,
   imageDataUrls: string[],
   option: TextToImageOption,
   fitParams?: FitParams
 ): Film {
   const request: TextToImageRequest = {
-    provider: inferProvider(mode),
+    provider: inferProvider(model),
     prompt,
     imageSize: image_size,
     numImages: 1,
-    mode,
+    model,
     background,
     imageDataUrls,
     option,
   };
 
-  console.log("[generateImageInline] Creating beforeRequest media, mode:", request.mode, "fitParams:", fitParams);
+  console.log("[generateImageInline] Creating beforeRequest media, mode:", request.model, "fitParams:", fitParams);
 
   // beforeRequest形式でImageMediaを作成（API呼び出しなし）
   const newMedia = new ImageMedia({
     mediaType: 'image',
     mode: 'beforeRequest',
+    action: 'texttoimage',
     request,
     fitParams
   });
@@ -185,7 +186,7 @@ export function generateImageInline(
   return newFilm;
 }
 
-export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, onProgress: (progress: number) => void) {
+export async function generateMarkedPageImages(imagingContext: ImagingContext, postfix: string, model: ImagingModel, onProgress: (progress: number) => void) {
   console.log("[DEBUG generateMarkedPageImages] Starting");
   const marks = get(bookOperators)!.getMarks();
   const newPages = get(mainBook)!.pages.filter((p, i) => marks[i]);
@@ -218,13 +219,13 @@ export async function generateMarkedPageImages(imagingContext: ImagingContext, p
     imagingContext.succeeded = 0;
     imagingContext.failed = 0;
     onProgress(progress / sum);
-    await generatePageImages(imagingContext, postfix, mode, page, false, onProgress2);
+    await generatePageImages(imagingContext, postfix, model, page, false, onProgress2);
     console.log(`[DEBUG generateMarkedPageImages] Page ${i + 1} done. succeeded:`, imagingContext.succeeded, "failed:", imagingContext.failed);
   }
   console.log("[DEBUG generateMarkedPageImages] All pages done. Final progress:", progress, "/", sum);
 }
 
-export async function generatePageImages(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, page: Page, skipFilledFrame: boolean, onProgress: () => void) {
+export async function generatePageImages(imagingContext: ImagingContext, postfix: string, model: ImagingModel, page: Page, skipFilledFrame: boolean, onProgress: () => void) {
   imagingContext.awakeWarningToken = true;
   imagingContext.errorToken = true;
   const leaves = collectLeaves(page.frameTree);
@@ -235,7 +236,7 @@ export async function generatePageImages(imagingContext: ImagingContext, postfix
     promises.push(
       (async (): Promise<void> => {
         // フィッティングはメディアロード後にfilmProcessorStoreで行われる
-        await generateFrameImage(imagingContext, postfix, mode, findLayoutOf(pageLayout, leaf)!, page.paperSize);
+        await generateFrameImage(imagingContext, postfix, model, findLayoutOf(pageLayout, leaf)!, page.paperSize);
         onProgress();
       })());
   }
@@ -248,7 +249,7 @@ export async function generatePageImages(imagingContext: ImagingContext, postfix
 }
 
 
-async function generateFrameImage(imagingContext: ImagingContext, postfix: string, mode: ImagingMode, leafLayout: Layout, paperSize: Vector) {
+async function generateFrameImage(imagingContext: ImagingContext, postfix: string, model: ImagingModel, leafLayout: Layout, paperSize: Vector) {
   const frameId = Math.random().toString(36).substring(7);
   console.log(`[DEBUG generateFrameImage ${frameId}] Starting (inline mode)`);
   try {
@@ -263,7 +264,7 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     // コマのサイズに基づいて画像生成サイズを決定
     const [frameWidth, frameHeight] = leafLayout.size;
     const targetSize: SizePair = { width: frameWidth, height: frameHeight };
-    const supportedSizes = getSupportedSizesForMode(mode);
+    const supportedSizes = getSupportedSizesForMode(model);
     const imageSize = supportedSizes && supportedSizes.length > 0
       ? findClosestSize(targetSize, [...supportedSizes], 0.7)
       : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
@@ -277,7 +278,7 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     console.log(`[DEBUG generateFrameImage ${frameId}] Calling generateImageInline...`);
     // インライン方式: リクエスト情報を埋め込んだFilmを返す（API呼び出しはfilmProcessorQueueで行われる）
     // フィッティングはメディアロード後にfilmProcessorStoreで行われる
-    const film = generateImageInline(composedPrompt, imageSize, mode, 'opaque', imageDataUrls, { kind: 'none' }, fitParams);
+    const film = generateImageInline(composedPrompt, imageSize, model, 'opaque', imageDataUrls, { kind: 'none' }, fitParams);
     console.log(`[DEBUG generateFrameImage ${frameId}] Got film (beforeRequest), adding to filmStack`);
 
     frame.filmStack.films.push(film);
@@ -298,9 +299,9 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
 
 // textEdit専用の分岐は廃止（generateFrameImage内で参照画像を自動添付）
 
-export function calculateCost(size: {width:number,height:number}, mode: ImagingMode, inputSizes: {width:number,height:number}[]): number {
-  console.log("calculateCost", size, mode);
-  return calculateImagingCost(mode, size, inputSizes);
+export function calculateCost(size: {width:number,height:number}, model: ImagingModel, inputSizes: {width:number,height:number}[]): number {
+  console.log("calculateCost", size, model);
+  return calculateImagingCost(model, size, inputSizes);
 }
 
 /*
@@ -327,7 +328,7 @@ function calculateGPTCost(mode: Mode): number {
  *   - max>0: 編集モードで使用可能（参照画像を受け取れる）
  * timeFactor: 生成時間の推定係数（プログレスバー用、大きいほど遅い）
  */
-export type ModeOption = { readonly value: ImagingMode; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean; readonly supportedSizes?: readonly SizePair[] };
+export type ModeOption = { readonly value: ImagingModel; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean; readonly supportedSizes?: readonly SizePair[] };
 
 // 階層構造用の型定義（再帰的）
 export type ModeTreeItem = ModeOption | ModeGroup;
@@ -422,8 +423,8 @@ export const modeOptions: readonly ModeOption[] = flattenModeOptions(modeOptions
 
 // 型安全チェック: modeOptions が全 ImagingMode をカバーしているか
 type CoveredModes = typeof modeOptions[number]['value'];
-type MissingModes = Exclude<ImagingMode, CoveredModes>;
-type ExtraModes = Exclude<CoveredModes, ImagingMode>;
+type MissingModes = Exclude<ImagingModel, CoveredModes>;
+type ExtraModes = Exclude<CoveredModes, ImagingModel>;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _checkMissingModes: MissingModes extends never ? true : { error: 'modeOptions に不足している ImagingMode があります'; missing: MissingModes } = true;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -432,25 +433,25 @@ const _checkExtraModes: ExtraModes extends never ? true : { error: 'modeOptions 
 // ModeChoice は廃止（すべて ImagingMode で扱う）
 
 // 参照画像対応ヘルパ
-export function getRefRangeForMode(mode: ImagingMode): { min: number; max: number } {
-  const found = modeOptions.find(o => o.value === mode)?.refRange;
+export function getRefRangeForMode(model: ImagingModel): { min: number; max: number } {
+  const found = modeOptions.find(o => o.value === model)?.refRange;
   return found ?? { min: 0, max: 0 };
 }
 
-export function getRefMaxForMode(mode: ImagingMode): number {
-  return Math.max(0, getRefRangeForMode(mode).max);
+export function getRefMaxForMode(model: ImagingModel): number {
+  return Math.max(0, getRefRangeForMode(model).max);
 }
 
-export function supportsRefImages(mode: ImagingMode): boolean {
-  return getRefRangeForMode(mode).max > 0;
+export function supportsRefImages(model: ImagingModel): boolean {
+  return getRefRangeForMode(model).max > 0;
 }
 
-export function getTimeFactorForMode(mode: ImagingMode): number {
-  return modeOptions.find(o => o.value === mode)?.timeFactor ?? 12;
+export function getTimeFactorForMode(model: ImagingModel): number {
+  return modeOptions.find(o => o.value === model)?.timeFactor ?? 12;
 }
 
-export function getSupportedSizesForMode(mode: ImagingMode): readonly SizePair[] | null {
-  return modeOptions.find(o => o.value === mode)?.supportedSizes ?? null;
+export function getSupportedSizesForMode(model: ImagingModel): readonly SizePair[] | null {
+  return modeOptions.find(o => o.value === model)?.supportedSizes ?? null;
 }
 
 /**
@@ -463,10 +464,10 @@ export function getSupportedSizesForMode(mode: ImagingMode): readonly SizePair[]
  */
 export function selectClosestSupportedSize(
   targetSize: SizePair,
-  mode: ImagingMode,
+  model: ImagingModel,
   aspectWeight: number
 ): SizePair {
-  const supportedSizes = getSupportedSizesForMode(mode);
+  const supportedSizes = getSupportedSizesForMode(model);
   if (!supportedSizes || supportedSizes.length === 0) {
     return targetSize;
   }

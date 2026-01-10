@@ -67,7 +67,7 @@ export async function removeBackground(mediaItem: MediaItem): Promise<void> {
   const { requestId, model } = await removeBg({ dataUrl });
   await saveRequest(get(mainBookFileSystem)!, 'image', 'removebg', requestId, model);
 
-  const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'removebg', requestId, model });
+  const { mediaResources } = await pollMediaStatus({ mediaType: 'image', action: 'removebg', requestId, model });
 
   mediaItem.media = new ImageMedia(mediaResources[0] as HTMLCanvasElement);
   analyticsEvent('punch');

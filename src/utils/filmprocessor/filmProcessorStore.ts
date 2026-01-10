@@ -1,8 +1,8 @@
 import { type Film, fitFilms, FilmStackTransformer } from "../../lib/layeredCanvas/dataModels/film";
-import { ImageMedia, VideoMedia, type RemoteMediaReference, type FitParams } from "../../lib/layeredCanvas/dataModels/media";
+import { ImageMedia, VideoMedia, type RemoteMediaReference, type RemoteMediaReferenceBeforeRequest, type FitParams } from "../../lib/layeredCanvas/dataModels/media";
 import { redrawToken, bookOperators } from "../../bookeditor/workspaceStore";
 import { PubSubQueue } from "../pubsub";
-import { text2Image, image2Video, pollMediaStatus } from '../../supabase';
+import { text2Image, image2Video, outPaint, inPaint, eraser, upscale, textEraser, removeBg, pollMediaStatus } from '../../supabase';
 import { get } from "svelte/store";
 import { toastStore } from '@skeletonlabs/skeleton';
 import { saveRequest } from '../../filemanager/warehouse';
@@ -36,19 +36,15 @@ filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
     // beforeRequest の場合: APIリクエストを発行
     if (rmr.mode === 'beforeRequest') {
       try {
-        if (rmr.mediaType === 'image' && media instanceof ImageMedia) {
-          console.log("[filmProcessorQueue] beforeRequest (image): calling text2Image");
-          const { requestId, model } = await text2Image(rmr.request);
-          await saveRequest(get(mainBookFileSystem)!, 'image', rmr.request.mode, requestId, model);
-          media.setRequestResult(requestId, model);
-          console.log("[filmProcessorQueue] image request submitted:", requestId);
-        } else if (rmr.mediaType === 'video' && media instanceof VideoMedia) {
-          console.log("[filmProcessorQueue] beforeRequest (video): calling image2Video");
-          const { requestId, model } = await image2Video(rmr.request);
-          await saveRequest(get(mainBookFileSystem)!, 'video', rmr.request.model, requestId, model);
-          media.setRequestResult(requestId, model);
-          console.log("[filmProcessorQueue] video request submitted:", requestId);
+        const action = rmr.action;
+        const { requestId, model } = await dispatchApiRequest(rmr);
+        await saveRequest(get(mainBookFileSystem)!, rmr.mediaType, action, requestId, model);
+        if (media instanceof ImageMedia) {
+          media.setRequestResult(action, requestId, model);
+        } else if (media instanceof VideoMedia) {
+          media.setRequestResult(action, requestId, model);
         }
+        console.log(`[filmProcessorQueue] ${action} request submitted:`, requestId);
         redrawToken.set(true);
       } catch (e: any) {
         const msg = typeof e?.message === 'string' ? e.message : `${e}`;
@@ -63,8 +59,14 @@ filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
     const currentRmr = media.persistentSource as RemoteMediaReference;
     if (currentRmr.mode === 'afterRequest') {
       try {
-        console.log("[filmProcessorQueue] afterRequest: polling for", currentRmr.requestId);
-        const { mediaResources } = await pollMediaStatus(currentRmr);
+        console.log("[filmProcessorQueue] afterRequest: polling for", currentRmr.requestId, "action:", currentRmr.action);
+        const mr = {
+          mediaType: currentRmr.mediaType,
+          action: currentRmr.action,
+          requestId: currentRmr.requestId,
+          model: currentRmr.model
+        }
+        const { mediaResources } = await pollMediaStatus(mr);
         if (mediaResources.length > 0) {
           media.setMedia(mediaResources[0]);
         }
@@ -106,3 +108,37 @@ filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
   }
   redrawToken.set(true);
 });
+
+// アクションに応じて適切なAPIを呼び分ける
+async function dispatchApiRequest(
+  rmr: RemoteMediaReferenceBeforeRequest
+): Promise<{ requestId: string; model: string }> {
+  switch (rmr.action) {
+    case 'texttoimage':
+      console.log("[filmProcessorQueue] beforeRequest: calling text2Image");
+      return await text2Image(rmr.request);
+    case 'imagetovideo':
+      console.log("[filmProcessorQueue] beforeRequest: calling image2Video");
+      return await image2Video(rmr.request);
+    case 'outpaint':
+      console.log("[filmProcessorQueue] beforeRequest: calling outPaint");
+      return await outPaint(rmr.request);
+    case 'inpaint':
+      console.log("[filmProcessorQueue] beforeRequest: calling inPaint");
+      return await inPaint(rmr.request);
+    case 'eraser':
+      console.log("[filmProcessorQueue] beforeRequest: calling eraser");
+      return await eraser(rmr.request);
+    case 'upscale':
+      console.log("[filmProcessorQueue] beforeRequest: calling upscale");
+      return await upscale(rmr.request);
+    case 'texteraser':
+      console.log("[filmProcessorQueue] beforeRequest: calling textEraser");
+      return await textEraser(rmr.request);
+    case 'removebg':
+      console.log("[filmProcessorQueue] beforeRequest: calling removeBg");
+      return await removeBg(rmr.request);
+    default:
+      throw new Error(`Unknown action: ${(rmr as any).action}`);
+  }
+}

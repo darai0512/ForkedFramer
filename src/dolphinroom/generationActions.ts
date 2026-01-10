@@ -9,11 +9,10 @@ import { saveRequest } from '../filemanager/warehouse';
 import { fitCanvasToRange } from '../lib/layeredCanvas/tools/imageUtil';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import type { MediaItem, TimelineItem, MessageItem } from './timelineTypes';
-import type { ImagingMode, ImageToVideoModel, ImageToVideoRequest } from '$protocolTypes/imagingTypes';
+import type { ImagingModel, ImageToVideoModel, ImageToVideoRequest } from '$protocolTypes/imagingTypes';
 import type { Writable } from 'svelte/store';
 import {
   DEFAULT_BACKGROUND,
-  DEFAULT_IMAGE_COUNT,
   DEFAULT_IMAGE_SIZE,
   DEFAULT_VIDEO_COUNT,
   DEFAULT_VIDEO_SOURCE_MAX,
@@ -41,7 +40,7 @@ interface GenerationDeps {
   getDraft(): string;
   getStyle(): string;
   getApplyStyle(): boolean;
-  getImagingMode(): ImagingMode;
+  getImagingModel(): ImagingModel;
   getIsGenerating(): boolean;
   setIsGenerating(value: boolean): void;
   getImageWidth(): number;
@@ -62,17 +61,17 @@ type AngleEditValues = {
   wideAngleLens: boolean;
 };
 
-const ANGLE_EDIT_MODE: ImagingMode = 'qwen-image-edit/multiple-angles';
+const ANGLE_EDIT_MODE: ImagingModel = 'qwen-image-edit/multiple-angles';
 
 export function createGenerationActions(deps: GenerationDeps) {
-  async function handleModeButtonClick() {
+  async function handleModelButtonClick() {
     if (deps.getIsGenerating() || deps.isDraftEmpty()) return;
 
     const promptRequired = deps.isPromptRequired();
     const generationPrompt = composeGenerationPrompt(deps.getDraft());
     if (promptRequired && !generationPrompt) return;
 
-    const currentMode = deps.getImagingMode();
+    const currentMode = deps.getImagingModel();
     const requiresReference = getRefRangeForMode(currentMode).min > 0;
     const timelinePrompt = (!promptRequired && currentMode === ANGLE_EDIT_MODE)
       ? get(_)('frame.actions.angleEdit')
@@ -119,7 +118,7 @@ export function createGenerationActions(deps: GenerationDeps) {
       const canvases = await executeProcessAndNotify(
         5000,
         get(_)("generator.imageGenerated"),
-        async () => await generateImage(fullPrompt, imageSize, deps.getImagingMode(), batchCount, DEFAULT_BACKGROUND, []),
+        async () => await generateImage(fullPrompt, imageSize, deps.getImagingModel(), batchCount, DEFAULT_BACKGROUND, []),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({
@@ -153,7 +152,7 @@ export function createGenerationActions(deps: GenerationDeps) {
       return;
     }
 
-    const imagingMode = deps.getImagingMode();
+    const imagingMode = deps.getImagingModel();
 
     if (!supportsRefImages(imagingMode)) {
       toastStore.trigger({ message: 'このモードは参照画像に対応していません。', timeout: 2500 });
@@ -292,7 +291,7 @@ export function createGenerationActions(deps: GenerationDeps) {
       const { requestId, model: resolvedModel } = await image2Video(request);
       const fileSystem = get(mainBookFileSystem);
       if (fileSystem) {
-        await saveRequest(fileSystem, 'video', request.model, requestId, resolvedModel);
+        await saveRequest(fileSystem, 'video', "imagetovideo", requestId, resolvedModel);
       }
 
       toastStore.trigger({ message: '動画生成を開始しました。完了までしばらくお待ちください。', timeout: 3500 });
@@ -300,7 +299,7 @@ export function createGenerationActions(deps: GenerationDeps) {
       const pollResult = await executeProcessAndNotify(
         VIDEO_NOTIFICATION_THRESHOLD_MS,
         get(_)("generator.videoGenerated"),
-        async () => await pollMediaStatus({ mediaType: 'video', mode: request.model, requestId, model: resolvedModel }),
+        async () => await pollMediaStatus({ mediaType: 'video', action: 'imagetovideo', requestId, model: resolvedModel }),
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithVideos({
@@ -329,6 +328,6 @@ export function createGenerationActions(deps: GenerationDeps) {
   }
 
   return {
-    handleModeButtonClick,
+    handleModelButtonClick,
   };
 }

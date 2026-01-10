@@ -27,6 +27,7 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
   const newMedia = new VideoMedia({
     mediaType: 'video',
     mode: 'beforeRequest',
+    action: 'imagetovideo',
     request
   });
   const newFilm = Film.fromMedia(newMedia);

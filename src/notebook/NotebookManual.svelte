@@ -5,7 +5,7 @@
   import { commitBook, newPage, type NotebookLocal, type CharacterLocal } from '../lib/book/book';
   import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceStore'
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
-  import type { ImagingMode } from '$protocolTypes/imagingTypes';
+  import type { ImagingModel } from '$protocolTypes/imagingTypes';
   import { type ImagingContext, generateMarkedPageImages, generateImage, generateImageInline, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize } from '../utils/feathralImaging';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
@@ -59,8 +59,8 @@
     refImages: {},
     maxRefImages: 4,
   };
-  let imagingMode: ImagingMode = 'schnell';
-  let pageImagingMode: ImagingMode = 'nano-banana-pro';
+  let imagingMode: ImagingModel = 'schnell';
+  let pageImagingMode: ImagingModel = 'nano-banana-pro';
   let plotInstruction: string = '';
   let pagePostfix: string = '';
 
@@ -690,7 +690,7 @@
         <div class="section">
           <h2>{$_('notebook.manual.imageGeneration')}</h2>
           <div class="ml-4">
-            <ImagingModes bind:mode={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top" width={350}/>
+            <ImagingModes bind:model={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top" width={350}/>
             <p class="text-xs mt-1 mb-2">☆マークは登場人物画像を参照します</p>
             <div class="flex flex-col mt-2 gap-1">
               <span>{$_('notebook.manual.style')}</span>
@@ -712,7 +712,7 @@
         <div class="section">
           <h2>{$_('notebook.manual.imageGeneration')}</h2>
           <div class="ml-4">
-            <ImagingModes bind:mode={pageImagingMode} group="page" preferenceKey="pageMode" imageSize={{width: newPagePaperSize[0], height: newPagePaperSize[1]}} placement="top" width={350}/>
+            <ImagingModes bind:model={pageImagingMode} group="page" preferenceKey="pageMode" imageSize={{width: newPagePaperSize[0], height: newPagePaperSize[1]}} placement="top" width={350}/>
             <div class="flex flex-col mt-2 gap-1">
               <span>{$_('notebook.manual.style')}</span>
               <textarea class="textarea portrait-style" rows="2" bind:value={pagePostfix} use:persistentText={{store:'imaging', key:'pageStyle', defaultValue: '右から左に読むマンガ。縦書き。コマの中の絵のスタイルは日本アニメ風のイラスト', onLoad: (v) => pagePostfix = v}}></textarea>

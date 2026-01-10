@@ -12,6 +12,7 @@ import { blobToSha1 } from '../lib/layeredCanvas/tools/misc';
 import { loading } from '../utils/loadingStore';
 import { onlineStatus } from '../utils/accountStore';
 import { BrowserMediaConverter } from '../lib/filesystem/mediaConverter';
+import type { ImagingAction } from '$protocolTypes/imagingTypes';
 
 export interface MaterialCollectionState {
   materialCollectionFolders: EmbodiedEntry[];
@@ -136,7 +137,14 @@ export async function loadMaterialsFromFolder(
         }
         // afterRequestの場合のみポーリング
         if (rmr.mode === 'afterRequest') {
-          const { mediaResources } = await pollMediaStatus(rmr);
+          // TODO: rmrの方が空間が狭い、この機会に同等にしておいたほうがよい
+          const mr = {
+            mediaType: rmr.mediaType,
+            action: (rmr.mediaType === 'image' ? 'texttoimage' : 'imagetovideo') as ImagingAction,
+            requestId: rmr.requestId,
+            model: rmr.model
+          }
+          const { mediaResources } = await pollMediaStatus(mr);
           if (mediaResources.length > 0) {
             media.setMedia(mediaResources[0]);
           }

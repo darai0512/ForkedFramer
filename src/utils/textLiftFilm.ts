@@ -69,8 +69,8 @@ export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement)
       const imageDataUrl = resizedForApi.toDataURL("image/png");
       // 全文字消去済み画像を取得
       const { requestId, model } = await textEraser({ imageDataUrl });
-      await saveRequest(get(mainBookFileSystem)!, 'image', 'text-eraser', requestId, model);
-      const { mediaResources } = await pollMediaStatus({ mediaType: 'image', mode: 'text-eraser', requestId, model });
+      await saveRequest(get(mainBookFileSystem)!, 'image', 'texteraser', requestId, model);
+      const { mediaResources } = await pollMediaStatus({ mediaType: 'image', action: 'texteraser', requestId, model });
       const erasedCanvasFromApi = mediaResources[0] as HTMLCanvasElement;
       // 消去済み画像を元のサイズに戻す
       const fullyErasedCanvas = resizeCanvas(erasedCanvasFromApi, originalWidth, originalHeight);

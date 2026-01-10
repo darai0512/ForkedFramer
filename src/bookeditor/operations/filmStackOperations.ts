@@ -3,18 +3,18 @@ import { Film } from "../../lib/layeredCanvas/dataModels/film";
 import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Page } from '../../lib/book/book';
 import { toastStore } from '@skeletonlabs/skeleton';
-import { punchFilm } from '../../utils/punchImage';
-import { upscaleFilm } from '../../utils/upscaleImage';
+import { punchFilmInline } from '../../utils/punchImage';
+import { upscaleFilmInline } from '../../utils/upscaleImage';
 import { onlineStatus } from "../../utils/accountStore";
 import { loading } from '../../utils/loadingStore';
 import { toolTipRequest } from '../../utils/passiveToolTipStore';
 import { commit, delayedCommiter } from './commitOperations';
 import { generateMovie } from '../../utils/generateMovie';
 import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
-import { eraserFilm } from "../../utils/eraserFilm";
-import { inpaintFilm } from "../../utils/inpaintFilm";
-import { textEditFilm } from "../../utils/textEditFilm";
-import { angleEditFilm } from "../../utils/angleEditFilm";
+import { eraserFilmInline } from "../../utils/eraserFilm";
+import { inpaintFilmInline } from "../../utils/inpaintFilm";
+import { textEditFilmInline } from "../../utils/textEditFilm";
+import { angleEditFilmInline } from "../../utils/angleEditFilm";
 import { mainBook } from '../workspaceStore'; // デバッグ用
 import { textLiftFilm } from "../../utils/textLiftFilm";
 import { layerizeFilm } from "../../utils/layerizeFilm";
@@ -122,10 +122,12 @@ export async function handlePunchCommand<T extends FilmOperationTarget>(
   if (film.content.kind !== 'media') { return; }
   if (!(film.content.media instanceof ImageMedia)) { return; }
 
-  loading.set(true);
-  await punchFilm(film);
+  const newFilm = punchFilmInline(film);
+  if (newFilm) {
+    const index = target.filmStack.films.indexOf(film);
+    target.filmStack.films.splice(index + 1, 0, newFilm);
+  }
   commit(null);
-  loading.set(false);
 }
 
 // アップスケール処理の共通処理
@@ -141,9 +143,13 @@ export async function handleUpscaleCommand<T extends FilmOperationTarget>(
   if (film.content.kind !== 'media') { return; }
   if (!(film.content.media instanceof ImageMedia)) { return; }
 
-  await upscaleFilm(film);
+  const newFilm = await upscaleFilmInline(film);
+  if (newFilm) {
+    const index = target.filmStack.films.indexOf(film);
+    target.filmStack.films.splice(index + 1, 0, newFilm);
+    toastStore.trigger({ message: `アップスケール処理を開始しました`, timeout: 3000});
+  }
   commit(null);
-  toastStore.trigger({ message: `アップスケールしました`, timeout: 3000});
 }
 
 // 動画生成の共通処理
@@ -182,41 +188,45 @@ export async function handleCoverCommand<T extends FilmOperationTarget>(
 export async function handleEraserCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  await eraserFilm(target.commandTargetFilm!);
+  const newFilm = await eraserFilmInline(target.commandTargetFilm!);
+  if (newFilm) {
+    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
+    target.filmStack.films.splice(index + 1, 0, newFilm);
+  }
   commit(null);
-  loading.set(false);
 }
 
 export async function handleInpaintCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  await inpaintFilm(target.commandTargetFilm!);
+  const newFilm = await inpaintFilmInline(target.commandTargetFilm!);
+  if (newFilm) {
+    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
+    target.filmStack.films.splice(index + 1, 0, newFilm);
+  }
   commit(null);
-  loading.set(false);
 }
 
 export async function handleTextEditCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  const newFilm = await textEditFilm(target.commandTargetFilm!);
+  const newFilm = await textEditFilmInline(target.commandTargetFilm!);
   if (newFilm) {
     const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
     target.filmStack.films.splice(index + 1, 0, newFilm);
   }
   commit(null);
-  loading.set(false);
 }
 
 export async function handleAngleEditCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  const newFilm = await angleEditFilm(target.commandTargetFilm!);
+  const newFilm = await angleEditFilmInline(target.commandTargetFilm!);
   if (newFilm) {
     const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
     target.filmStack.films.splice(index + 1, 0, newFilm);
   }
   commit(null);
-  loading.set(false);
 }
 
 export async function handleSendToMaterialCollectionCommand<T extends FilmOperationTarget>(
