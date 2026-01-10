@@ -12,10 +12,9 @@
 
   let canvasElement: HTMLCanvasElement;
 
-  let rotateRightLeft = 0;
-  let moveForward = 0;
+  let horizontalAngle = 0;
   let verticalAngle = 0;
-  let wideAngleLens = false;
+  let zoom = 5;
   
   onMount(async () => {
     const args = $modalStore[0]?.meta;
@@ -72,10 +71,9 @@
     $modalStore[0].response?.({
       image: imageSource,
       angle: {
-        rotate_right_left: -rotateRightLeft, // Invert direction
-        move_forward: moveForward,
+        horizontal_angle: horizontalAngle,
         vertical_angle: verticalAngle,
-        wide_angle_lens: wideAngleLens,
+        zoom: zoom,
       },
     });
 
@@ -118,23 +116,12 @@
               <div class="camera-row">
               <span class="control-label">
                 <span class="label-group">
-                  {$_('dialogs.angleEdit.rotate')}
-                  <span class="label-hint">{$_('dialogs.angleEdit.rotateDescription')}</span>
+                  {$_('dialogs.angleEdit.horizontalAngle')}
+                  <span class="label-hint">{$_('dialogs.angleEdit.horizontalAngleDescription')}</span>
                 </span>
               </span>
-            <input type="range" min={-90} max={90} step={45} bind:value={rotateRightLeft}>
-            <input type="number" min={-90} max={90} step={45} bind:value={rotateRightLeft}>
-          </div>
-
-          <div class="camera-row">
-            <span class="control-label">
-                <span class="label-group">
-                  {$_('dialogs.angleEdit.moveForward')}
-                  <span class="label-hint">{$_('dialogs.angleEdit.moveForwardDescription')}</span>
-                </span>
-              </span>
-            <input type="range" min={0} max={10} step={2.5} bind:value={moveForward}>
-            <input type="number" min={0} max={10} step={2.5} bind:value={moveForward}>
+            <input type="range" min={0} max={360} step={15} bind:value={horizontalAngle}>
+            <input type="number" min={0} max={360} step={15} bind:value={horizontalAngle}>
           </div>
 
           <div class="camera-row">
@@ -144,15 +131,19 @@
                   <span class="label-hint">{$_('dialogs.angleEdit.verticalAngleDescription')}</span>
                 </span>
               </span>
-            <input type="range" min={-1} max={1} step={0.5} bind:value={verticalAngle}>
-            <input type="number" min={-1} max={1} step={0.5} bind:value={verticalAngle}>
+            <input type="range" min={-30} max={90} step={15} bind:value={verticalAngle}>
+            <input type="number" min={-30} max={90} step={15} bind:value={verticalAngle}>
           </div>
 
-          <div class="camera-row toggle-row">
-            <label class="toggle">
-              <input type="checkbox" bind:checked={wideAngleLens}>
-              <span>{$_('dialogs.angleEdit.wideAngleLens')}</span>
-            </label>
+          <div class="camera-row">
+            <span class="control-label">
+                <span class="label-group">
+                  {$_('dialogs.angleEdit.zoom')}
+                  <span class="label-hint">{$_('dialogs.angleEdit.zoomDescription')}</span>
+                </span>
+              </span>
+            <input type="range" min={0} max={10} step={1} bind:value={zoom}>
+            <input type="number" min={0} max={10} step={1} bind:value={zoom}>
           </div>
         </div>
       </div>
@@ -263,10 +254,6 @@
     gap: 8px;
   }
 
-  .camera-row.toggle-row {
-    grid-template-columns: 1fr;
-  }
-
   .control-label {
     display: flex;
     justify-content: flex-start;
@@ -292,13 +279,6 @@
 
   .camera-row input[type="number"] {
     width: 70px;
-  }
-
-  .toggle {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    font-weight: 600;
   }
 
   .button-row {

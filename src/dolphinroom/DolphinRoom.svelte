@@ -77,10 +77,9 @@ let videoAspectRatioForCost: ImageToVideoRequest['aspectRatio'];
 let imageWidth = DEFAULT_IMAGE_SIZE.width;
 let imageHeight = DEFAULT_IMAGE_SIZE.height;
 let batchCount = 1;
-let angleRotateRightLeft = 0;
-let angleMoveForward = 0;
+let angleHorizontalAngle = 0;
 let angleVerticalAngle = 0;
-let angleWideAngleLens = false;
+let angleZoom = 5;
 let requiresReferenceSelection = false;
 let isAngleEditMode = false;
 let promptRequired = true;
@@ -182,10 +181,9 @@ const { handleModelButtonClick: originalHandleModelButtonClick } = createGenerat
   getImageHeight: () => imageHeight,
   getBatchCount: () => batchCount,
   getAngleEditValues: () => ({
-    rotateRightLeft: Number(angleRotateRightLeft),
-    moveForward: Number(angleMoveForward),
+    horizontalAngle: Number(angleHorizontalAngle),
     verticalAngle: Number(angleVerticalAngle),
-    wideAngleLens: angleWideAngleLens,
+    zoom: Number(angleZoom),
   }),
   objectUrls,
   allocateId,
@@ -453,10 +451,9 @@ onDestroy(() => {
   bind:imageWidth={imageWidth}
   bind:imageHeight={imageHeight}
   bind:batchCount={batchCount}
-  bind:angleRotateRightLeft={angleRotateRightLeft}
-  bind:angleMoveForward={angleMoveForward}
+  bind:angleHorizontalAngle={angleHorizontalAngle}
   bind:angleVerticalAngle={angleVerticalAngle}
-  bind:angleWideAngleLens={angleWideAngleLens}
+  bind:angleZoom={angleZoom}
   onVideoModelChange={handleVideoModelChange}
   onClose={closeDrawer}
   toggleMediaSelection={toggleMediaSelection}

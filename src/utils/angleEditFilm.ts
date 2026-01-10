@@ -12,10 +12,9 @@ import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 type AngleEditDialogResult = {
   image: HTMLCanvasElement;
   angle: {
-    rotate_right_left: number;
-    move_forward: number;
+    horizontal_angle: number;
     vertical_angle: number;
-    wide_angle_lens: boolean;
+    zoom: number;
   };
 }
 

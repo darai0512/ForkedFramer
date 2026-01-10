@@ -504,14 +504,12 @@
     "angleEdit": {
       "model": "Model",
       "cameraSettings": "Camera controls",
-      "rotate": "Rotate left/right (°)",
-      "rotateDescription": "Pan left ↔ right",
-      "moveForward": "Move forward",
-      "moveForwardDescription": "Wide → close-up",
-      "verticalAngle": "Vertical angle",
-      "verticalAngleDescription": "Bird's-eye → worm's-eye",
-      "wideAngleLens": "Wide-angle lens",
-      "wideAngleLensDescription": "Enable the wide-angle lens effect"
+      "horizontalAngle": "Horizontal angle (°)",
+      "horizontalAngleDescription": "0-360° Camera orbits around subject",
+      "verticalAngle": "Vertical angle (°)",
+      "verticalAngleDescription": "-30～90° Look up → look down",
+      "zoom": "Zoom",
+      "zoomDescription": "0-10 Wide → close-up"
     },
     "inpaint": {
       "placeholder": "Enter what to replace the masked area with"

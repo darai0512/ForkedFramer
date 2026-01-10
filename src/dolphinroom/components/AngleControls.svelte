@@ -1,9 +1,8 @@
 <script lang="ts">
   import { _ } from 'svelte-i18n';
-  export let rotateRightLeft: number = 0;
-  export let moveForward: number = 0;
+  export let horizontalAngle: number = 0;
   export let verticalAngle: number = 0;
-  export let wideAngleLens: boolean = false;
+  export let zoom: number = 5;
 </script>
 
 <div class="control-section angle-edit-panel">
@@ -11,23 +10,12 @@
     <div class="camera-row">
       <span class="control-label">
         <span class="label-group">
-          {$_('dialogs.angleEdit.rotate')}
-          <span class="label-hint">{$_('dialogs.angleEdit.rotateDescription')}</span>
+          {$_('dialogs.angleEdit.horizontalAngle')}
+          <span class="label-hint">{$_('dialogs.angleEdit.horizontalAngleDescription')}</span>
         </span>
       </span>
-      <input type="range" min={-90} max={90} step={45} bind:value={rotateRightLeft} aria-label={$_('dialogs.angleEdit.rotate')} />
-      <input type="number" min={-90} max={90} step={45} bind:value={rotateRightLeft} aria-label={$_('dialogs.angleEdit.rotate')} />
-    </div>
-
-    <div class="camera-row">
-      <span class="control-label">
-        <span class="label-group">
-          {$_('dialogs.angleEdit.moveForward')}
-          <span class="label-hint">{$_('dialogs.angleEdit.moveForwardDescription')}</span>
-        </span>
-      </span>
-      <input type="range" min={0} max={10} step={2.5} bind:value={moveForward} aria-label={$_('dialogs.angleEdit.moveForward')} />
-      <input type="number" min={0} max={10} step={2.5} bind:value={moveForward} aria-label={$_('dialogs.angleEdit.moveForward')} />
+      <input type="range" min={0} max={360} step={15} bind:value={horizontalAngle} aria-label={$_('dialogs.angleEdit.horizontalAngle')} />
+      <input type="number" min={0} max={360} step={15} bind:value={horizontalAngle} aria-label={$_('dialogs.angleEdit.horizontalAngle')} />
     </div>
 
     <div class="camera-row">
@@ -37,15 +25,19 @@
           <span class="label-hint">{$_('dialogs.angleEdit.verticalAngleDescription')}</span>
         </span>
       </span>
-      <input type="range" min={-1} max={1} step={0.5} bind:value={verticalAngle} aria-label={$_('dialogs.angleEdit.verticalAngle')} />
-      <input type="number" min={-1} max={1} step={0.5} bind:value={verticalAngle} aria-label={$_('dialogs.angleEdit.verticalAngle')} />
+      <input type="range" min={-30} max={90} step={15} bind:value={verticalAngle} aria-label={$_('dialogs.angleEdit.verticalAngle')} />
+      <input type="number" min={-30} max={90} step={15} bind:value={verticalAngle} aria-label={$_('dialogs.angleEdit.verticalAngle')} />
     </div>
 
-    <div class="camera-row toggle-row">
-      <label class="toggle">
-        <input type="checkbox" bind:checked={wideAngleLens}>
-        <span>{$_('dialogs.angleEdit.wideAngleLens')}</span>
-      </label>
+    <div class="camera-row">
+      <span class="control-label">
+        <span class="label-group">
+          {$_('dialogs.angleEdit.zoom')}
+          <span class="label-hint">{$_('dialogs.angleEdit.zoomDescription')}</span>
+        </span>
+      </span>
+      <input type="range" min={0} max={10} step={1} bind:value={zoom} aria-label={$_('dialogs.angleEdit.zoom')} />
+      <input type="number" min={0} max={10} step={1} bind:value={zoom} aria-label={$_('dialogs.angleEdit.zoom')} />
     </div>
   </div>
 </div>
@@ -70,10 +62,6 @@
     grid-template-columns: 260px minmax(160px, 280px) 60px;
     align-items: center;
     gap: 8px;
-  }
-
-  .camera-row.toggle-row {
-    grid-template-columns: 1fr;
   }
 
   .control-label {

@@ -55,10 +55,9 @@ interface GenerationDeps {
 }
 
 type AngleEditValues = {
-  rotateRightLeft: number;
-  moveForward: number;
+  horizontalAngle: number;
   verticalAngle: number;
-  wideAngleLens: boolean;
+  zoom: number;
 };
 
 const ANGLE_EDIT_MODE: ImagingModel = 'qwen-image-edit/multiple-angles';
@@ -205,10 +204,9 @@ export function createGenerationActions(deps: GenerationDeps) {
         ? {
             kind: 'angle' as const,
             angle: {
-              rotate_right_left: -angleValues.rotateRightLeft,
-              move_forward: angleValues.moveForward,
+              horizontal_angle: angleValues.horizontalAngle,
               vertical_angle: angleValues.verticalAngle,
-              wide_angle_lens: angleValues.wideAngleLens,
+              zoom: angleValues.zoom,
             },
           }
         : { kind: 'none' as const };

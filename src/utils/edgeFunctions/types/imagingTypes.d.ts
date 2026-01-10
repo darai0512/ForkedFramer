@@ -53,10 +53,9 @@ export const ImagingProviderSchema = z.enum(["flux", "gpt-image-1", "gpt-image-1
 export type ImagingProvider = z.infer<typeof ImagingProviderSchema>;
 
 const AngleSchema = z.object({
-  rotate_right_left: z.number(),
-  move_forward: z.number(),
-  vertical_angle: z.number(),
-  wide_angle_lens: z.boolean(),
+  horizontal_angle: z.number(), // 0-360°
+  vertical_angle: z.number(),   // -30～90°
+  zoom: z.number(),             // 0-10, default: 5
 });
 const TextToImageOptionSchema = z.discriminatedUnion("kind", [
   z.object({

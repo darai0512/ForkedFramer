@@ -506,14 +506,12 @@
     "angleEdit": {
       "model": "モデル",
       "cameraSettings": "カメラ制御",
-      "rotate": "回り込み (°)",
-      "rotateDescription": "左から ←→ 右から",
-      "moveForward": "前進量",
-      "moveForwardDescription": "そのまま → 接写",
-      "verticalAngle": "垂直アングル",
-      "verticalAngleDescription": "鳥視点 → ネズミ視点",
-      "wideAngleLens": "ワイドアングルレンズ",
-      "wideAngleLensDescription": "広角レンズ効果を有効にします"
+      "horizontalAngle": "水平アングル (°)",
+      "horizontalAngleDescription": "0-360° カメラが被写体の周りを回転",
+      "verticalAngle": "垂直アングル (°)",
+      "verticalAngleDescription": "-30～90° 見上げ → 見下ろし",
+      "zoom": "ズーム",
+      "zoomDescription": "0-10 引き → 寄り"
     },
     "inpaint": {
       "placeholder": "マスク領域の変更後を入力してください"

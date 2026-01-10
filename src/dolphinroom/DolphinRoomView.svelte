@@ -64,10 +64,9 @@ export let promptSubmitTrigger: number = 0;
 export let imageWidth: number = 1024;
 export let imageHeight: number = 1024;
 export let batchCount: number = 1;
-export let angleRotateRightLeft: number = 0;
-export let angleMoveForward: number = 0;
+export let angleHorizontalAngle: number = 0;
 export let angleVerticalAngle: number = 0;
-export let angleWideAngleLens: boolean = false;
+export let angleZoom: number = 5;
 
 function clearAllSelections() {
   const selectedItems: MediaItem[] = [];
@@ -437,10 +436,9 @@ $: if (angleModeActive && showMoreOptions) {
           <div class="input-wrapper" class:angle-mode={angleModeActive}>
             {#if angleModeActive}
               <AngleControls
-                bind:rotateRightLeft={angleRotateRightLeft}
-                bind:moveForward={angleMoveForward}
+                bind:horizontalAngle={angleHorizontalAngle}
                 bind:verticalAngle={angleVerticalAngle}
-                bind:wideAngleLens={angleWideAngleLens}
+                bind:zoom={angleZoom}
               />
             {:else}
               <div class="history-hint">{$_('dolphinRoom.generation.historyHint')}</div>
