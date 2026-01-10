@@ -15,7 +15,7 @@ export type FilmProcessorTask = {
   onLoaded?: () => void;  // メディアがロードされた後に呼ばれるコールバック（フィッティング処理など）
 };
 
-export const filmProcessorQueue = new PubSubQueue<FilmProcessorTask>();
+export const filmProcessorQueue = new PubSubQueue<FilmProcessorTask>({ maxConcurrency: 4 });
 filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
   const { film, onLoaded } = task;
 
