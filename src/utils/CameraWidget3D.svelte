@@ -495,8 +495,10 @@
       if (raycaster.ray.intersectPlane(plane, intersect)) {
         let angle = Math.atan2(intersect.x, intersect.z) * (180 / Math.PI);
         if (angle < 0) angle += 360;
-        liveAzimuth = Math.max(0, Math.min(360, angle));
-        azimuth = Math.round(liveAzimuth);
+        // 45度単位にスナップ
+        const snapped = Math.round(angle / 45) * 45;
+        liveAzimuth = snapped % 360;
+        azimuth = liveAzimuth;
         updateVisuals();
         notifyChange();
       }
@@ -506,9 +508,10 @@
         const relY = intersect.y - CENTER.y;
         const relZ = intersect.z;
         let angle = Math.atan2(relY, relZ) * (180 / Math.PI);
-        angle = Math.max(-30, Math.min(60, angle));
-        liveElevation = angle;
-        elevation = Math.round(liveElevation);
+        // 30度単位にスナップ（-30, 0, 30, 60）
+        const snapped = Math.round(angle / 30) * 30;
+        liveElevation = Math.max(-30, Math.min(60, snapped));
+        elevation = liveElevation;
         updateVisuals();
         notifyChange();
       }
@@ -538,8 +541,10 @@
         const sensitivity = 5; // 調整用
         const newDist = dragStartDistance - delta * sensitivity;
 
-        liveDistance = Math.max(0, Math.min(10, newDist));
-        distance = Math.round(liveDistance * 10) / 10;
+        // 0, 5, 10 にスナップ
+        const snapped = Math.round(newDist / 5) * 5;
+        liveDistance = Math.max(0, Math.min(10, snapped));
+        distance = liveDistance;
         updateVisuals();
         notifyChange();
       }

@@ -230,6 +230,37 @@ $: if (angleModeActive && showMoreOptions) {
   showMoreOptions = false;
 }
 
+// 選択された画像を取得
+$: selectedMediaItems = (() => {
+  const items: MediaItem[] = [];
+  for (const block of timelineRows) {
+    if (block.kind === 'media-grid' || block.kind === 'message-media') {
+      items.push(...block.items.filter(item => item.selected && item.kind === 'image'));
+    }
+  }
+  return items;
+})();
+
+// 選択された最初の画像からcanvasを作成
+let angleImageSource: HTMLCanvasElement | null = null;
+$: {
+  const firstSelected = selectedMediaItems[0];
+  if (firstSelected?.media?.isLoaded) {
+    const media = firstSelected.media;
+    const sourceCanvas = media.drawSourceCanvas;
+    const canvas = document.createElement('canvas');
+    canvas.width = media.naturalWidth;
+    canvas.height = media.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx && sourceCanvas) {
+      ctx.drawImage(sourceCanvas, 0, 0);
+      angleImageSource = canvas;
+    }
+  } else {
+    angleImageSource = null;
+  }
+}
+
 </script>
 
 <Drawer
@@ -439,6 +470,7 @@ $: if (angleModeActive && showMoreOptions) {
                 bind:horizontalAngle={angleHorizontalAngle}
                 bind:verticalAngle={angleVerticalAngle}
                 bind:zoom={angleZoom}
+                imageSource={angleImageSource}
               />
             {:else}
               <div class="history-hint">{$_('dolphinRoom.generation.historyHint')}</div>

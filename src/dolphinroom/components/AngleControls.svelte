@@ -1,94 +1,113 @@
 <script lang="ts">
   import { _ } from 'svelte-i18n';
+  import CameraWidget3D from '../../utils/CameraWidget3D.svelte';
+
   export let horizontalAngle: number = 0;
   export let verticalAngle: number = 0;
   export let zoom: number = 5;
+  export let imageSource: HTMLCanvasElement | null = null;
+
+  let cameraWidget: CameraWidget3D;
+
+  function handleCameraChange(event: CustomEvent<{ azimuth: number; elevation: number; distance: number }>) {
+    horizontalAngle = event.detail.azimuth;
+    verticalAngle = event.detail.elevation;
+    zoom = event.detail.distance;
+  }
+
+  export function reset() {
+    cameraWidget?.reset();
+    horizontalAngle = 0;
+    verticalAngle = 0;
+    zoom = 5;
+  }
 </script>
 
-<div class="control-section angle-edit-panel">
-  <div class="camera-table">
-    <div class="camera-row">
-      <span class="control-label">
-        <span class="label-group">
-          {$_('dialogs.angleEdit.horizontalAngle')}
-          <span class="label-hint">{$_('dialogs.angleEdit.horizontalAngleDescription')}</span>
-        </span>
-      </span>
-      <input type="range" min={0} max={360} step={15} bind:value={horizontalAngle} aria-label={$_('dialogs.angleEdit.horizontalAngle')} />
-      <input type="number" min={0} max={360} step={15} bind:value={horizontalAngle} aria-label={$_('dialogs.angleEdit.horizontalAngle')} />
+<div class="angle-controls-container">
+  <div class="widget-wrapper">
+    <CameraWidget3D
+      bind:this={cameraWidget}
+      bind:azimuth={horizontalAngle}
+      bind:elevation={verticalAngle}
+      bind:distance={zoom}
+      {imageSource}
+      on:change={handleCameraChange}
+    />
+  </div>
+  <div class="info-panel">
+    <div class="info-row">
+      <span class="info-label">{$_('dialogs.angleEdit.horizontalAngle')}</span>
+      <span class="info-value azimuth">{horizontalAngle}°</span>
     </div>
-
-    <div class="camera-row">
-      <span class="control-label">
-        <span class="label-group">
-          {$_('dialogs.angleEdit.verticalAngle')}
-          <span class="label-hint">{$_('dialogs.angleEdit.verticalAngleDescription')}</span>
-        </span>
-      </span>
-      <input type="range" min={-30} max={90} step={15} bind:value={verticalAngle} aria-label={$_('dialogs.angleEdit.verticalAngle')} />
-      <input type="number" min={-30} max={90} step={15} bind:value={verticalAngle} aria-label={$_('dialogs.angleEdit.verticalAngle')} />
+    <div class="info-row">
+      <span class="info-label">{$_('dialogs.angleEdit.verticalAngle')}</span>
+      <span class="info-value elevation">{verticalAngle}°</span>
     </div>
-
-    <div class="camera-row">
-      <span class="control-label">
-        <span class="label-group">
-          {$_('dialogs.angleEdit.zoom')}
-          <span class="label-hint">{$_('dialogs.angleEdit.zoomDescription')}</span>
-        </span>
-      </span>
-      <input type="range" min={0} max={10} step={1} bind:value={zoom} aria-label={$_('dialogs.angleEdit.zoom')} />
-      <input type="number" min={0} max={10} step={1} bind:value={zoom} aria-label={$_('dialogs.angleEdit.zoom')} />
+    <div class="info-row">
+      <span class="info-label">{$_('dialogs.angleEdit.zoom')}</span>
+      <span class="info-value distance">{zoom}</span>
     </div>
+    <button class="btn variant-ghost-surface btn-sm reset-btn" on:click={reset}>
+      {$_('dialogs.angleEdit.reset') || 'Reset'}
+    </button>
   </div>
 </div>
 
 <style>
-  .angle-edit-panel {
+  .angle-controls-container {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    height: 300px;
+  }
+
+  .widget-wrapper {
+    flex: 1;
+    min-width: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .info-panel {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    width: 100%;
+    min-width: 160px;
   }
 
-  .camera-table {
+  .info-row {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgb(var(--color-surface-200));
+    border-radius: 6px;
   }
 
-  .camera-row {
-    display: grid;
-    grid-template-columns: 260px minmax(160px, 280px) 60px;
-    align-items: center;
-    gap: 8px;
+  .info-label {
+    font-size: 13px;
+    color: rgb(var(--color-surface-600));
   }
 
-  .control-label {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
+  .info-value {
     font-weight: 600;
+    font-size: 14px;
   }
 
-  .label-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  .info-value.azimuth {
+    color: #E93D82;
   }
 
-  .label-hint {
-    font-size: 12px;
-    color: rgb(var(--color-surface-500));
-    font-weight: 400;
+  .info-value.elevation {
+    color: #00FFD0;
   }
 
-  .camera-row input[type="range"] {
-    width: 100%;
+  .info-value.distance {
+    color: #FFB800;
   }
 
-  .camera-row input[type="number"] {
-    width: 70px;
+  .reset-btn {
+    margin-top: 8px;
   }
 </style>
 

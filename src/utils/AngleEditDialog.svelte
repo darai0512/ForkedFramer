@@ -109,11 +109,6 @@
 
           <div class="hint-section">
             <p class="hint-text">{$_('dialogs.angleEdit.dragHint') || 'Drag the colored handles to adjust camera angles'}</p>
-            <ul class="hint-list">
-              <li><span class="handle-dot azimuth"></span> {$_('dialogs.angleEdit.horizontalAngle')}</li>
-              <li><span class="handle-dot elevation"></span> {$_('dialogs.angleEdit.verticalAngle')}</li>
-              <li><span class="handle-dot distance"></span> {$_('dialogs.angleEdit.zoom')}</li>
-            </ul>
           </div>
 
         </div>
@@ -247,42 +242,7 @@
   .hint-text {
     font-size: 12px;
     color: rgb(var(--color-surface-500));
-    margin: 0 0 12px 0;
-  }
-
-  .hint-list {
-    list-style: none;
-    padding: 0;
     margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .hint-list li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: rgb(var(--color-surface-600));
-  }
-
-  .handle-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-  }
-
-  .handle-dot.azimuth {
-    background: #E93D82;
-  }
-
-  .handle-dot.elevation {
-    background: #00FFD0;
-  }
-
-  .handle-dot.distance {
-    background: #FFB800;
   }
 
   .button-row {
