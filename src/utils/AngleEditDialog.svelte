@@ -2,20 +2,17 @@
   import { modalStore } from '@skeletonlabs/skeleton';
   import { onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
+  import CameraWidget3D from './CameraWidget3D.svelte';
 
   let title: string;
   let imageSource: HTMLCanvasElement;
-  let imageSize: { width: number; height: number } = { width: 0, height: 0 };
-
-  const CANVAS_WIDTH = 800;
-  const CANVAS_HEIGHT = 600;
-
-  let canvasElement: HTMLCanvasElement;
 
   let horizontalAngle = 0;
   let verticalAngle = 0;
   let zoom = 5;
-  
+
+  let cameraWidget: CameraWidget3D;
+
   onMount(async () => {
     const args = $modalStore[0]?.meta;
     console.log('AngleEdit Dialog mounted, modal store:', args);
@@ -24,41 +21,24 @@
       title = args.title;
       if (args.imageSource) {
         imageSource = args.imageSource;
-        imageSize = { width: imageSource.width, height: imageSource.height };
-        console.log('Image source:', imageSource, 'size:', imageSize);
-        drawImageOnCanvas();
+        console.log('Image source:', imageSource, 'size:', { width: imageSource.width, height: imageSource.height });
       } else {
         console.error('No image source in modal meta');
       }
     }
   });
 
-  function drawImageOnCanvas() {
-    if (!imageSource || !canvasElement) return;
-    
-    const ctx = canvasElement.getContext('2d');
-    if (!ctx) return;
+  function handleCameraChange(event: CustomEvent<{ azimuth: number; elevation: number; distance: number }>) {
+    horizontalAngle = event.detail.azimuth;
+    verticalAngle = event.detail.elevation;
+    zoom = event.detail.distance;
+  }
 
-    ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    const imageAspect = imageSource.width / imageSource.height;
-    const canvasAspect = CANVAS_WIDTH / CANVAS_HEIGHT;
-    
-    let drawWidth, drawHeight, drawX, drawY;
-    
-    if (imageAspect > canvasAspect) {
-      drawWidth = CANVAS_WIDTH;
-      drawHeight = CANVAS_WIDTH / imageAspect;
-      drawX = 0;
-      drawY = (CANVAS_HEIGHT - drawHeight) / 2;
-    } else {
-      drawWidth = CANVAS_HEIGHT * imageAspect;
-      drawHeight = CANVAS_HEIGHT;
-      drawX = (CANVAS_WIDTH - drawWidth) / 2;
-      drawY = 0;
-    }
-    
-    ctx.drawImage(imageSource, drawX, drawY, drawWidth, drawHeight);
+  function onReset() {
+    cameraWidget?.reset();
+    horizontalAngle = 0;
+    verticalAngle = 0;
+    zoom = 5;
   }
 
   function onCancel() {
@@ -81,19 +61,21 @@
   }
 </script>
 
-<div class="card p-4 shadow-xl">
+<div class="card p-4 shadow-xl angle-edit-dialog">
   <header class="card-header">
     <h2>{title}</h2>
   </header>
   <section class="p-4">
     <div class="main-content-container">
       <div class="left-pane">
-        <div class="canvas-container">
-          <canvas
-            bind:this={canvasElement}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            class="border border-surface-300 rounded"
+        <div class="widget-container">
+          <CameraWidget3D
+            bind:this={cameraWidget}
+            bind:azimuth={horizontalAngle}
+            bind:elevation={verticalAngle}
+            bind:distance={zoom}
+            imageSource={imageSource}
+            on:change={handleCameraChange}
           />
         </div>
       </div>
@@ -104,93 +86,97 @@
             <div class="fixed-model">Qwen Multiple Angles</div>
           </div>
 
+          <div class="info-section">
+            <h3>{$_('dialogs.angleEdit.cameraSettings')}</h3>
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="info-label">{$_('dialogs.angleEdit.horizontalAngle')}</span>
+                <span class="info-value azimuth">{horizontalAngle}°</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">{$_('dialogs.angleEdit.verticalAngle')}</span>
+                <span class="info-value elevation">{verticalAngle}°</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">{$_('dialogs.angleEdit.zoom')}</span>
+                <span class="info-value distance">{zoom.toFixed(1)}</span>
+              </div>
+            </div>
+            <button class="btn variant-ghost-surface btn-sm reset-btn" on:click={onReset}>
+              {$_('dialogs.angleEdit.reset') || 'Reset'}
+            </button>
+          </div>
+
+          <div class="hint-section">
+            <p class="hint-text">{$_('dialogs.angleEdit.dragHint') || 'Drag the colored handles to adjust camera angles'}</p>
+            <ul class="hint-list">
+              <li><span class="handle-dot azimuth"></span> {$_('dialogs.angleEdit.horizontalAngle')}</li>
+              <li><span class="handle-dot elevation"></span> {$_('dialogs.angleEdit.verticalAngle')}</li>
+              <li><span class="handle-dot distance"></span> {$_('dialogs.angleEdit.zoom')}</li>
+            </ul>
+          </div>
+
         </div>
       </div>
     </div>
   </section>
   <footer class="card-footer">
-    <div class="footer-content">
-          <div class="control-section">
-            <h3>{$_('dialogs.angleEdit.cameraSettings')}</h3>
-            <div class="camera-table">
-              <div class="camera-row">
-              <span class="control-label">
-                <span class="label-group">
-                  {$_('dialogs.angleEdit.horizontalAngle')}
-                  <span class="label-hint">{$_('dialogs.angleEdit.horizontalAngleDescription')}</span>
-                </span>
-              </span>
-            <input type="range" min={0} max={360} step={15} bind:value={horizontalAngle}>
-            <input type="number" min={0} max={360} step={15} bind:value={horizontalAngle}>
-          </div>
-
-          <div class="camera-row">
-            <span class="control-label">
-                <span class="label-group">
-                  {$_('dialogs.angleEdit.verticalAngle')}
-                  <span class="label-hint">{$_('dialogs.angleEdit.verticalAngleDescription')}</span>
-                </span>
-              </span>
-            <input type="range" min={-30} max={90} step={15} bind:value={verticalAngle}>
-            <input type="number" min={-30} max={90} step={15} bind:value={verticalAngle}>
-          </div>
-
-          <div class="camera-row">
-            <span class="control-label">
-                <span class="label-group">
-                  {$_('dialogs.angleEdit.zoom')}
-                  <span class="label-hint">{$_('dialogs.angleEdit.zoomDescription')}</span>
-                </span>
-              </span>
-            <input type="range" min={0} max={10} step={1} bind:value={zoom}>
-            <input type="number" min={0} max={10} step={1} bind:value={zoom}>
-          </div>
-        </div>
-      </div>
-      <div class="button-row">
-        <button class="btn variant-ghost-surface" on:click={onCancel}>{$_('dialogs.cancel')}</button>
-        <button class="btn variant-filled-primary" on:click={onSubmit}>{$_('dialogs.execute')}</button>
-      </div>
+    <div class="button-row">
+      <button class="btn variant-ghost-surface" on:click={onCancel}>{$_('dialogs.cancel')}</button>
+      <button class="btn variant-filled-primary" on:click={onSubmit}>{$_('dialogs.execute')}</button>
     </div>
   </footer>
 </div>
 
 <style>
+  .angle-edit-dialog {
+    width: 900px;
+    max-width: 95vw;
+  }
+
   h2 {
     font-family: '源暎エムゴ';
     font-size: 24px;
     margin-top: 16px;
   }
-  
+
   .main-content-container {
     display: flex;
     gap: 16px;
-    height: 600px;
+    height: 500px;
   }
-  
+
   .left-pane {
     flex: 2;
     display: flex;
     flex-direction: column;
   }
-  
+
+  .widget-container {
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
   .right-pane {
     flex: 1;
-    min-width: 0;
+    min-width: 200px;
+    max-width: 280px;
     border-left: 1px solid rgb(var(--color-surface-300));
     padding-left: 16px;
     overflow-y: auto;
-    max-height: 600px;
+    max-height: 500px;
   }
-  
+
   .right-pane-content {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
   }
-  
+
   .setting-section {
-    margin-bottom: 24px;
+    margin-bottom: 0;
   }
 
   .fixed-model {
@@ -200,85 +186,103 @@
 
   .right-pane h3 {
     font-family: '源暎エムゴ';
-    font-size: 18px;
-    margin: 0 0 8px 0;
+    font-size: 16px;
+    margin: 0 0 12px 0;
     color: rgb(var(--color-primary-500));
   }
-  
-  .canvas-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex: 1;
-  }
-  
-  canvas {
-    max-width: 100%;
-    max-height: 100%;
-  }
-  
-  .footer-content {
-    width: 100%;
+
+  .info-section {
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .control-section {
+  .info-grid {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-width: 480px;
-    width: 100%;
-    margin: 0 auto;
   }
 
-  .control-section h3 {
-    font-family: '源暎エムゴ';
-    font-size: 18px;
-    margin: 0;
-    color: rgb(var(--color-primary-500));
-  }
-
-  .camera-table {
+  .info-row {
     display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgb(var(--color-surface-200));
+    border-radius: 6px;
   }
 
-  .camera-row {
-    display: grid;
-    grid-template-columns: 260px minmax(160px, 280px) 60px;
-    align-items: center;
-    gap: 8px;
+  .info-label {
+    font-size: 13px;
+    color: rgb(var(--color-surface-600));
   }
 
-  .control-label {
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
+  .info-value {
     font-weight: 600;
+    font-size: 14px;
   }
 
-  .label-group {
-    display: flex;
-    gap: 8px;
-    align-items: center;
+  .info-value.azimuth {
+    color: #E93D82;
   }
 
-  .label-hint {
+  .info-value.elevation {
+    color: #00FFD0;
+  }
+
+  .info-value.distance {
+    color: #FFB800;
+  }
+
+  .reset-btn {
+    margin-top: 8px;
+  }
+
+  .hint-section {
+    padding: 12px;
+    background: rgb(var(--color-surface-100));
+    border-radius: 8px;
+  }
+
+  .hint-text {
     font-size: 12px;
     color: rgb(var(--color-surface-500));
-    font-weight: 400;
+    margin: 0 0 12px 0;
   }
 
-  .camera-row input[type="range"] {
-    width: 100%;
+  .hint-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .camera-row input[type="number"] {
-    width: 70px;
+  .hint-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgb(var(--color-surface-600));
+  }
+
+  .handle-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .handle-dot.azimuth {
+    background: #E93D82;
+  }
+
+  .handle-dot.elevation {
+    background: #00FFD0;
+  }
+
+  .handle-dot.distance {
+    background: #FFB800;
   }
 
   .button-row {
@@ -286,5 +290,4 @@
     justify-content: flex-end;
     gap: 8px;
   }
-
 </style>

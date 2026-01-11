@@ -511,7 +511,9 @@
       "verticalAngle": "垂直アングル (°)",
       "verticalAngleDescription": "-30～90° 見上げ → 見下ろし",
       "zoom": "ズーム",
-      "zoomDescription": "0-10 引き → 寄り"
+      "zoomDescription": "0-10 引き → 寄り",
+      "reset": "リセット",
+      "dragHint": "ハンドルをドラッグしてカメラアングルを調整"
     },
     "inpaint": {
       "placeholder": "マスク領域の変更後を入力してください"

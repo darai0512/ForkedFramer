@@ -509,7 +509,9 @@
       "verticalAngle": "Vertical angle (°)",
       "verticalAngleDescription": "-30～90° Look up → look down",
       "zoom": "Zoom",
-      "zoomDescription": "0-10 Wide → close-up"
+      "zoomDescription": "0-10 Wide → close-up",
+      "reset": "Reset",
+      "dragHint": "Drag the colored handles to adjust camera angles"
     },
     "inpaint": {
       "placeholder": "Enter what to replace the masked area with"
