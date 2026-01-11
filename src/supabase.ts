@@ -309,25 +309,48 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
     }, 
     {interval});
 
-  // たまに次のfetchが失敗することがあるようなので、待ってみる
-  await new Promise(resolve => setTimeout(resolve, 1000));
-
   console.log("[DEBUG pollMediaStatus] Fetching images from urls:", urls);
-  const mediaResources: (HTMLCanvasElement | HTMLVideoElement)[] = await Promise.all(
-    urls.map(async (url, i) => {
-      console.log(`[DEBUG pollMediaStatus] Fetching image ${i}:`, url.substring(0, 100));
-      const response = await fetch(url);
-      console.log(`[DEBUG pollMediaStatus] Fetch response ${i}:`, response.status, response.ok);
-      const blob = await response.blob();
-      console.log(`[DEBUG pollMediaStatus] Blob ${i}:`, blob.size, blob.type);
-      if (isVideo) {
-        const video = await createVideoFromBlob(blob);
-        return video;
-      } else {
-        const image = await createCanvasFromBlob(blob);
-        console.log(`[DEBUG pollMediaStatus] Canvas ${i}:`, image.width, image.height);
-        return image;
+
+  // たまにfetchが失敗することがあるので、指数バックオフでリトライ
+  const retryDelays = [1000, 4000, 16000]; // 1秒、4秒、16秒後にリトライ
+
+  async function fetchWithRetry<T>(fn: () => Promise<T>): Promise<T> {
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= retryDelays.length; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (attempt < retryDelays.length) {
+          const delay = retryDelays[attempt];
+          console.log(`[DEBUG pollMediaStatus] Fetch failed, retrying in ${delay}ms...`, error);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
       }
+    }
+    throw lastError;
+  }
+
+  const mediaResources: (HTMLCanvasElement | HTMLVideoElement)[] = await Promise.all(
+    urls.map(async (url: string, i: number) => {
+      return await fetchWithRetry(async () => {
+        console.log(`[DEBUG pollMediaStatus] Fetching image ${i}:`, url.substring(0, 100));
+        const response = await fetch(url);
+        console.log(`[DEBUG pollMediaStatus] Fetch response ${i}:`, response.status, response.ok);
+        if (!response.ok) {
+          throw new Error(`Fetch failed with status ${response.status}`);
+        }
+        const blob = await response.blob();
+        console.log(`[DEBUG pollMediaStatus] Blob ${i}:`, blob.size, blob.type);
+        if (isVideo) {
+          const video = await createVideoFromBlob(blob);
+          return video;
+        } else {
+          const image = await createCanvasFromBlob(blob);
+          console.log(`[DEBUG pollMediaStatus] Canvas ${i}:`, image.width, image.height);
+          return image;
+        }
+      });
     }));
 
   console.log("[DEBUG pollMediaStatus] mediaResources count:", mediaResources.length);
