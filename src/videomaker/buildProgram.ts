@@ -63,6 +63,7 @@ function buildPaper(page: Page) {
   const paperRendererLayer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
+  paperRendererLayer.setFontSizeCoefficientHolder(page);
   paper.addLayer(paperRendererLayer);
 
   return paper;

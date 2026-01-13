@@ -4,9 +4,11 @@
 	import ColorPickerLabel from '../../utils/colorpicker/ColorPickerLabel.svelte';
   import { RangeSlider } from '@skeletonlabs/skeleton';
   import { redrawToken, mainBook } from '../workspaceStore';
-  import { commitBook } from '../../lib/book/book';
   import { toolTip } from '../../utils/passiveToolTipStore';
+  import SliderEdit from '../../utils/SliderEdit.svelte';
+  import { commit } from '../operations/commitOperations';
 
+  let prevFontSizeCoefficient: number | null = null;
 
   $: if ($pageInspectorTarget) {
     const p = $pageInspectorTarget;
@@ -14,9 +16,14 @@
       p.frameTree.bgColor = p.paperColor;
       p.frameTree.borderColor = p.frameColor;
       p.frameTree.borderWidth = p.frameWidth;
-      commitBook($mainBook!, "page-attribute");
+      commit("page-attribute");
       $redrawToken = true;
     }
+    if (prevFontSizeCoefficient !== null && prevFontSizeCoefficient !== p.fontSizeCoefficient) {
+      commit("page-attribute");
+      $redrawToken = true;
+    }
+    prevFontSizeCoefficient = p.fontSizeCoefficient;
   }
 
   $: target = $pageInspectorTarget!;
@@ -45,6 +52,10 @@
           </div>
         </div>
         <h1>枠の幅</h1><RangeSlider name="line" bind:value={target.frameWidth} max={10} step={1} style="width:100px;"/>
+        <h1>フォントサイズ係数</h1>
+        <div class="slider-container">
+          <SliderEdit bind:value={target.fontSizeCoefficient} min={0.5} max={2} step={0.01} allowDecimal={true}/>
+        </div>
       </div>
     </div>
   </Drawer>
@@ -78,5 +89,8 @@
     height: 20px;
     margin-left: 4px;
     margin-right: 4px;
+  }
+  .slider-container {
+    width: 180px;
   }
 </style>

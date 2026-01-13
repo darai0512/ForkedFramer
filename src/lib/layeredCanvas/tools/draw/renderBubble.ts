@@ -10,13 +10,13 @@ import type { Bubble } from "../../dataModels/bubble";
  * バブルの描画処理をまとめたユーティリティ
  */
 
-export function renderBubbles(ctx: CanvasRenderingContext2D, paperSize: Vector, bubbles: Bubble[], minimumSizeWarning: boolean, supportsDpr: boolean) {
+export function renderBubbles(ctx: CanvasRenderingContext2D, paperSize: Vector, bubbles: Bubble[], minimumSizeWarning: boolean, supportsDpr: boolean, fontSizeCoefficient: number) {
   for (let bubble of bubbles) {
     renderBubbleBackground(ctx, paperSize, bubble, minimumSizeWarning);
-    renderBubbleForeground(ctx, paperSize, bubble, false, supportsDpr);
+    renderBubbleForeground(ctx, paperSize, bubble, false, supportsDpr, false, fontSizeCoefficient);
   }
   for (let bubble of bubbles) {
-    renderBubbleForeground(ctx, paperSize, bubble, true, supportsDpr);
+    renderBubbleForeground(ctx, paperSize, bubble, true, supportsDpr, false, fontSizeCoefficient);
   }
 }
 
@@ -48,7 +48,7 @@ function setBubbleStyle(ctx: CanvasRenderingContext2D, bubble: Bubble, paperSize
   }
 }
 
-export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, drawsUnited: boolean, supportsDpr: boolean, skipText: boolean = false) {
+export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, drawsUnited: boolean, supportsDpr: boolean, skipText: boolean, fontSizeCoefficient: number) {
   if (bubble.parent) {
     if (!drawsUnited) { return; }
   } else {
@@ -68,7 +68,7 @@ export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize:
 
   // テキスト描画
   if (bubble.text && !bubble.hidesText && !skipText) {
-    drawBubbleText(ctx, paperSize, bubble, supportsDpr);
+    drawBubbleText(ctx, paperSize, bubble, supportsDpr, fontSizeCoefficient);
   }
   ctx.restore();
 
@@ -141,13 +141,13 @@ function strokeBubbleElement(ctx: CanvasRenderingContext2D, paperSize: Vector, b
   }
 }
 
-function drawBubbleText(targetCtx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, supportsDpr: boolean) {
+function drawBubbleText(targetCtx: CanvasRenderingContext2D, paperSize: Vector, bubble: Bubble, supportsDpr: boolean, fontSizeCoefficient: number) {
   const transform = targetCtx.getTransform();
   const dpr = supportsDpr ? (window.devicePixelRatio ?? 1) : 1;
   // 回転がない場合は直接値を使用、回転がある場合のみ計算
   let scaleX: number;
   let scaleY: number;
-  
+
   // transform.bとtransform.cが非常に小さい場合は回転なしと判定
   if (Math.abs(transform.b) < 0.001 && Math.abs(transform.c) < 0.001) {
     scaleX = Math.abs(transform.a);
@@ -157,11 +157,11 @@ function drawBubbleText(targetCtx: CanvasRenderingContext2D, paperSize: Vector, 
     scaleX = Math.sqrt(transform.a * transform.a + transform.b * transform.b);
     scaleY = Math.sqrt(transform.c * transform.c + transform.d * transform.d);
   }
-  
+
   const viewScale: Vector = [scaleX * dpr, scaleY * dpr];
 
   const size = bubble.getPhysicalSize(paperSize);
-  let fontSize = bubble.getPhysicalFontSize(paperSize);
+  let fontSize = bubble.getPhysicalFontSize(paperSize) * fontSizeCoefficient;
   const offset = bubble.getPhysicalOffset(paperSize);
   const outlineWidth = bubble.getPhysicalOutlineWidth(paperSize);
 

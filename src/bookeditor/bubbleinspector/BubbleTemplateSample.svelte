@@ -72,7 +72,7 @@
     bubble.n_p1 = [0.04,0.04];
     bubble.text = texts[Math.floor(Math.random() * texts.length)];
     
-    renderBubbles(ctx, [w,h], [bubble], false, true);
+    renderBubbles(ctx, [w,h], [bubble], false, true, 1.0);
     // drawBubble(ctx, "fill", 'sample', [canvas.width - 16, canvas.height - 16], p, opts);
     // drawBubble(ctx, "stroke", 'sample', [canvas.width - 16, canvas.height - 16], p, opts);
     ctx.restore();

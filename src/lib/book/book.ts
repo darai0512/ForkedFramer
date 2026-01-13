@@ -33,6 +33,7 @@ export type Page = {
   paperColor: string,
   frameColor: string,
   frameWidth: number,
+  fontSizeCoefficient: number,
   source: any; // 一時的、Storyboard.Bubble
 }
 
@@ -106,6 +107,7 @@ export type SerializedPage = {
   paperColor: string,
   frameColor: string,
   frameWidth: number,
+  fontSizeCoefficient?: number,
 }
 
 export type SerializedBookAttributes = {
@@ -245,11 +247,12 @@ export function newPage(frameTree: FrameElement, bubbles: Bubble[]) {
   const page: Page = {
     id: ulid(),
     frameTree,
-    bubbles, 
+    bubbles,
     paperSize: [840, 1188],
     paperColor: '#ffffff',
     frameColor: '#000000',
     frameWidth: 2,
+    fontSizeCoefficient: 1.0,
     source: null,
   }
   return page;
@@ -352,6 +355,7 @@ export function clonePage(page: Page): Page {
     paperColor: page.paperColor,
     frameColor: page.frameColor,
     frameWidth: page.frameWidth,
+    fontSizeCoefficient: page.fontSizeCoefficient,
     source: page.source,
   }
 }

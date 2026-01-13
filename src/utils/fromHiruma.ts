@@ -36,11 +36,12 @@ export function createPage(source: ExPage, imagePromptPrefix: string): InPage {
   const target: InPage = {
     id: ulid(),
     frameTree: FrameElement.compile(root),
-    bubbles: [], 
+    bubbles: [],
     paperSize: [source.page_width, source.page_height],
     paperColor: source.background_color,
     frameColor: source.border_color,
     frameWidth: source.border_width,
+    fontSizeCoefficient: 1.0,
     source: null,
   }
   const layout = calculatePhysicalLayout(target.frameTree, target.paperSize, [0,0]);

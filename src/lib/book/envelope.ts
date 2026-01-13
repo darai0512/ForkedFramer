@@ -115,9 +115,10 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
       paperColor: envelopedPage.paperColor,
       frameColor: envelopedPage.frameColor,
       frameWidth: envelopedPage.frameWidth,
+      fontSizeCoefficient: envelopedPage.fontSizeCoefficient ?? 1.0,
       source: null,
     }
-    book.pages.push(page);    
+    book.pages.push(page);
   }
 
   return book;
@@ -151,6 +152,7 @@ export async function writeEnvelope(book: Book, progress: (n: number) => void): 
       paperColor: page.paperColor,
       frameColor: page.frameColor,
       frameWidth: page.frameWidth,
+      fontSizeCoefficient: page.fontSizeCoefficient,
     }
     envelopedBook.pages.push(serializedPage);    
     progress(envelopedBook.pages.length / book.pages.length);
@@ -264,9 +266,10 @@ export async function readOldEnvelope(json: string): Promise<Book> {
       paperColor: envelopedPage.paperColor,
       frameColor: envelopedPage.frameColor,
       frameWidth: envelopedPage.frameWidth,
+      fontSizeCoefficient: envelopedPage.fontSizeCoefficient ?? 1.0,
       source: null,
     }
-    book.pages.push(page);    
+    book.pages.push(page);
   }
 
   return book;

@@ -39,6 +39,7 @@ export async function renderPage(page: Page): Promise<HTMLCanvasElement> {
   const paperRendererLayer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
+  paperRendererLayer.setFontSizeCoefficientHolder(page);
   layeredCanvas.rootPaper.addLayer(paperRendererLayer);
 
   layeredCanvas.render();
@@ -60,6 +61,7 @@ export async function renderPageToPsd(page: Page) {
 
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
+  paperRendererLayer.setFontSizeCoefficientHolder(page);
 
   const {frames, bubbles} = paperRendererLayer.renderApart();
 

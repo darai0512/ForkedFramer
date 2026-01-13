@@ -213,6 +213,7 @@ function buildPaper(
   const paperRendererLayer = new PaperRendererLayer(true, renderPreference);
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
+  paperRendererLayer.setFontSizeCoefficientHolder(page);
   paper.addLayer(paperRendererLayer);
 
   if (true) { // viewerLayerデバッグのときはfalseにする

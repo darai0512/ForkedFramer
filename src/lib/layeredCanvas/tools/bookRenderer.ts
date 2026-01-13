@@ -88,6 +88,7 @@ function buildPaper(page: Page, focusKeeper: FocusKeeper, showPlayButton: boolea
   const paperRendererLayer = new PaperRendererLayer(true, { bubbleRenderMode: BubbleRenderMode.All });
   paperRendererLayer.setFrameTree(page.frameTree);
   paperRendererLayer.setBubbles(page.bubbles);
+  paperRendererLayer.setFontSizeCoefficientHolder(page);
   paper.addLayer(paperRendererLayer);
 
   // viewerLayer

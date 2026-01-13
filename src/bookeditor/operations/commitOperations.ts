@@ -33,6 +33,9 @@ export const delayedCommiter = new DelayedCommiterGroup({
   "page-size": () => {
     commitInternal("page-size");
   },
+  "page-attribute": () => {
+    commitInternal("page-attribute");
+  },
 });
 
 // 内部コミット実装
@@ -67,7 +70,8 @@ function resetBubbleCache() {
     }
     for (const paper of _arrayLayer!.array.papers) {
       const rendererLayer = paper.paper.findLayer(PaperRendererLayer) as PaperRendererLayer;
-      rendererLayer.setBubbles(pages[i++].bubbles);
+      const page = pages[i++];
+      rendererLayer.setBubbles(page.bubbles);
       rendererLayer.resetCache();
     }
   })();  // subscribe結果を即座に実行して解除

@@ -49,9 +49,14 @@ export class PaperRendererLayer extends LayerBase {
   frameTree: FrameElement | null = null;
   rawBubbles: Bubble[] | null = null;
   thisFrameRenderData: RenderData | null = null;
+  fontSizeCoefficientHolder: { fontSizeCoefficient: number } | null = null;
 
   constructor(private supportsDpr: boolean, private renderPreference: RenderPreference = { bubbleRenderMode: BubbleRenderMode.All }) {
     super();
+  }
+
+  get fontSizeCoefficient(): number {
+    return this.fontSizeCoefficientHolder?.fontSizeCoefficient ?? 1.0;
   }
 
   renderDepths(): number[] { return [0,1]; }
@@ -400,17 +405,18 @@ export class PaperRendererLayer extends LayerBase {
       return;
     }
     const paperSize = this.getPaperSize();
+    const fontSizeCoefficient = this.fontSizeCoefficient;
     if (mode === BubbleRenderMode.BackgroundOnly) {
       // 背景と枠線を描画、テキストはスキップ
       for (const bubble of bubbles) {
         renderBubbleBackground(ctx, paperSize, bubble, true);
-        renderBubbleForeground(ctx, paperSize, bubble, false, this.supportsDpr, true);
+        renderBubbleForeground(ctx, paperSize, bubble, false, this.supportsDpr, true, fontSizeCoefficient);
       }
       for (const bubble of bubbles) {
-        renderBubbleForeground(ctx, paperSize, bubble, true, this.supportsDpr, true);
+        renderBubbleForeground(ctx, paperSize, bubble, true, this.supportsDpr, true, fontSizeCoefficient);
       }
     } else {
-      renderBubbles(ctx, paperSize, bubbles, true, this.supportsDpr);
+      renderBubbles(ctx, paperSize, bubbles, true, this.supportsDpr, fontSizeCoefficient);
     }
   }
 
@@ -420,6 +426,10 @@ export class PaperRendererLayer extends LayerBase {
 
   setFrameTree(frameTree: FrameElement) {
     this.frameTree = frameTree;
+  }
+
+  setFontSizeCoefficientHolder(holder: { fontSizeCoefficient: number }) {
+    this.fontSizeCoefficientHolder = holder;
   }
 
   renderApart(): { frames: {border: HTMLCanvasElement, content: HTMLCanvasElement}[], bubbles: HTMLCanvasElement[] } {
@@ -454,18 +464,17 @@ export class PaperRendererLayer extends LayerBase {
     const bubbleCanvases: {[key:string]: HTMLCanvasElement} = {};
 
     for (let bubble of bubbles) {
-      const ri = bubble.renderInfo;
       if (bubble.parent != null) { continue; }
       const { canvas, ctx } = makeCanvas();
       const paperSize = this.getPaperSize();
       renderBubbleBackground(ctx, paperSize, bubble, true);
-      renderBubbleForeground(ctx, paperSize, bubble, false, this.supportsDpr);
+      renderBubbleForeground(ctx, paperSize, bubble, false, this.supportsDpr, false, this.fontSizeCoefficient);
       bubbleCanvases[bubble.uuid] = canvas;
     }
     for (let bubble of bubbles) {
       if (bubble.parent == null) { continue; }
       const ctx = bubbleCanvases[bubble.parent].getContext('2d')!;
-      renderBubbleForeground(ctx, this.getPaperSize(), bubble, true, this.supportsDpr);
+      renderBubbleForeground(ctx, this.getPaperSize(), bubble, true, this.supportsDpr, false, this.fontSizeCoefficient);
     }
 
     return { frames: canvases, bubbles: Object.values(bubbleCanvases) };

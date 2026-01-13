@@ -70,6 +70,7 @@ export async function saveBookTo(book: Book, fileSystem: FileSystem, file: File)
       paperColor: page.paperColor,
       frameColor: page.frameColor,
       frameWidth: page.frameWidth,
+      fontSizeCoefficient: page.fontSizeCoefficient,
     }
     serializedBook.pages.push(serializedPage);    
   }
@@ -108,6 +109,7 @@ function serializePage(page: Page): SerializedPage {
     paperColor: page.paperColor,
     frameColor: page.frameColor,
     frameWidth: page.frameWidth,
+    fontSizeCoefficient: page.fontSizeCoefficient,
   }
 }
 
@@ -184,6 +186,7 @@ export async function loadBookFrom(fileSystem: FileSystem, file: File): Promise<
       paperColor: serializedPage.paperColor,
       frameColor: serializedPage.frameColor,
       frameWidth: serializedPage.frameWidth,
+      fontSizeCoefficient: serializedPage.fontSizeCoefficient ?? 1.0,
       source: null,
     };
     book.pages.push(page);
@@ -207,6 +210,7 @@ async function wrapPageAsBook(serializedPage: any, frameTree: FrameElement, bubb
     paperColor: serializedPage.paperColor,
     frameColor: serializedPage.frameColor,
     frameWidth: serializedPage.frameWidth,
+    fontSizeCoefficient: serializedPage.fontSizeCoefficient ?? 1.0,
     source: null,
   };
 
