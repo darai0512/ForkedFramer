@@ -117,8 +117,8 @@ export const frameExamples: Record<string, any> = {
     },
     bubbles: [
       {
-        n_p0: [0.25,0.026],
-        n_p1: [0.75,0.089],
+        n_p0: [0.1,0.026],
+        n_p1: [0.9,0.089],
         text: "タイトル",
         shape: "none",
         direction: "h",
@@ -322,8 +322,8 @@ export const frameExamples: Record<string, any> = {
     },
     bubbles: [
       {
-        n_p0: [0.25,0.026],
-        n_p1: [0.75,0.089],
+        n_p0: [0.1,0.026],
+        n_p1: [0.9,0.089],
         text: "タイトル",
         shape: "none",
         direction: "h",

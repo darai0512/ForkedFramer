@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 応答は日本語で。
 コミットメッセージは英語で。
 A11y警告はsvelte-ignoreでOK
-関数のデフォルト引数はなるべく使わない
+関数定義・編集するとき、デフォルト引数は使わない。呼び出し元を修正する。
 
 ## Project Overview
 
