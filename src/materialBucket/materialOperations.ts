@@ -3,7 +3,7 @@ import { waitDialog } from '../utils/waitDialog';
 import { get } from 'svelte/store';
 import { gadgetFileSystem, saveMaterialToFolder as saveToFolder, deleteMaterialFromFolder as deleteFromFolder } from '../filemanager/fileManagerStore';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
-import { buildMedia, ImageMedia, VideoMedia, type RemoteMediaReference, type MediaResource } from '../lib/layeredCanvas/dataModels/media';
+import { buildMedia, ImageMedia, VideoMedia, type RemoteMediaReference } from '../lib/layeredCanvas/dataModels/media';
 import { copyCanvas } from '../lib/layeredCanvas/tools/imageUtil';
 import { materialCollectionUpdateToken } from './materialBucketStore';
 import { pollMediaStatus, getMaterialsUrl, recordMaterial } from '../supabase';
@@ -126,7 +126,7 @@ export async function loadMaterialsFromFolder(
     
     const loadMedia = async (): Promise<Media[]> => {
       const mediaResource = await file.readMediaResource();
-      const media = buildMedia(mediaResource as MediaResource);
+      const media = buildMedia(mediaResource);
       if (!media.isLoaded) {
         // Unmaterializedメディアの場合、ロード
         const rmr = media.persistentSource as RemoteMediaReference;
