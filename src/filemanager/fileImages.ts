@@ -101,7 +101,7 @@ async function loadMediaResource(fileSystem: FileSystem, mediaResourceId: NodeId
       r["clean"][fileSystem.id] = true;
       mediaResourceCache[fileSystem.id][mediaResourceId] = r;
 
-      return mediaResource;
+      return mediaResource as MediaResource;
     }
     catch (e) {
       if (typeof process !== 'undefined') {

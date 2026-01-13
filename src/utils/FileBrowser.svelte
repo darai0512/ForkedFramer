@@ -5,7 +5,7 @@
   import { collectGarbage } from '../utils/garbageCollection';
   import { mainBookFileSystem } from '../filemanager/fileManagerStore';
   import type { NodeId, File } from '../lib/filesystem/fileSystem';
-  import { buildMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
+  import { buildMedia, type Media, type MediaResource } from '../lib/layeredCanvas/dataModels/media';
   import { _ } from 'svelte-i18n';
 
   let usedMedias: (() => Promise<Media[]>)[] = [];
@@ -13,7 +13,7 @@
 
   async function loadMedia(file: File): Promise<Media[]> {
     const media = await file.readMediaResource();
-    return [buildMedia(media)];
+    return [buildMedia(media as MediaResource)];
   }
 
   onMount(async () => {
