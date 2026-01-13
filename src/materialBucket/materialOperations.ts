@@ -141,8 +141,8 @@ export async function loadMaterialsFromFolder(
           const mr = {
             mediaType: rmr.mediaType,
             action: (rmr.mediaType === 'image' ? 'texttoimage' : 'imagetovideo') as ImagingAction,
-            requestId: rmr.requestId,
-            model: rmr.model
+            requestId: rmr.requestId as string,
+            model: rmr.model as string
           }
           const { mediaResources } = await pollMediaStatus(mr);
           if (mediaResources.length > 0) {
