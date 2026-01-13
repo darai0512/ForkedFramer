@@ -3,7 +3,7 @@ import { mainBookFileSystem } from '../filemanager/fileManagerStore';
 import { text2Image, pollMediaStatus } from '../supabase';
 import { toastStore } from '@skeletonlabs/skeleton';
 import type { Page, NotebookLocal } from '../lib/book/book';
-import { ImageMedia, type FitParams } from '../lib/layeredCanvas/dataModels/media';
+import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
 import { findClosestSize, calculateAspectPreservingSize, type SizePair } from '../lib/layeredCanvas/tools/imageUtil';
 import { type Layout, collectLeaves, calculatePhysicalLayout, findLayoutOf } from '../lib/layeredCanvas/dataModels/frameTree';
@@ -155,7 +155,7 @@ export function generateImageInline(
   background: ImagingBackground,
   imageDataUrls: string[],
   option: TextToImageOption,
-  fitParams?: FitParams
+  fitParams?: { frameSize: Vector; paperSize: Vector }
 ): Film {
   const request: TextToImageRequest = {
     provider: inferProvider(model),
@@ -270,8 +270,8 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
       : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
 
     // fitParams: メディアロード後にフィッティングするためのパラメータ
-    const fitParams: FitParams = {
-      frameSize: [frameWidth, frameHeight],
+    const fitParams = {
+      frameSize: [frameWidth, frameHeight] as Vector,
       paperSize: paperSize
     };
 

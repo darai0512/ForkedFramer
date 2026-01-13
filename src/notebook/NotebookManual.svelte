@@ -13,7 +13,7 @@
   import { onMount, tick } from 'svelte';
   import {makePagesFromStoryboard, type FourPanelTemplate} from './makePage';
   import { FrameElement, calculatePhysicalLayout, findLayoutOf } from '../lib/layeredCanvas/dataModels/frameTree';
-  import type { FitParams } from '../lib/layeredCanvas/dataModels/media';
+  import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
   import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
   import { toastStore } from '@skeletonlabs/skeleton';
   import NotebookTextarea from './NotebookTextarea.svelte';
@@ -427,8 +427,8 @@
           const [frameWidth, frameHeight] = frameLayout.size;
 
           // fitParams: メディアロード後にフィッティングするためのパラメータ
-          const fitParams: FitParams = {
-            frameSize: [frameWidth, frameHeight],
+          const fitParams = {
+            frameSize: [frameWidth, frameHeight] as Vector,
             paperSize: paperSize
           };
 

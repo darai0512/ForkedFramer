@@ -1,5 +1,6 @@
 import { type Film, fitFilms, FilmStackTransformer } from "../../lib/layeredCanvas/dataModels/film";
-import { ImageMedia, VideoMedia, type RemoteMediaReference, type FitParams } from "../../lib/layeredCanvas/dataModels/media";
+import { ImageMedia, VideoMedia, type RemoteMediaReference } from "../../lib/layeredCanvas/dataModels/media";
+import type { Vector } from "../../lib/layeredCanvas/tools/geometry/geometry";
 import type { ImagingAction } from "$protocolTypes/imagingTypes";
 import { redrawToken, bookOperators } from "../../bookeditor/workspaceStore";
 import { PubSubQueue } from "../pubsub";
@@ -29,9 +30,9 @@ filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
     const rmr = media.persistentSource as RemoteMediaReference;
 
     // fitParams を保存（beforeRequest状態のときのみ存在、状態遷移後は消えるため）
-    let fitParams: FitParams | undefined;
+    let fitParams: { frameSize: Vector; paperSize: Vector } | undefined;
     if (rmr.mode === 'beforeRequest') {
-      fitParams = rmr.fitParams as FitParams | undefined;
+      fitParams = rmr.fitParams as { frameSize: Vector; paperSize: Vector } | undefined;
     }
 
     // beforeRequest の場合: APIリクエストを発行

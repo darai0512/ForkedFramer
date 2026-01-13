@@ -5,11 +5,6 @@ import type { Vector } from "../tools/geometry/geometry";
 export type MediaType = 'image' | 'video';
 export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
 
-export type FitParams = {
-  frameSize: Vector;   // フレームのサイズ
-  paperSize: Vector;   // ページのサイズ
-};
-
 export type RemoteMediaReference = {
   mediaType: MediaType;
   mode: string;
