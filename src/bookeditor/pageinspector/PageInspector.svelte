@@ -53,8 +53,10 @@
         </div>
         <h1>枠の幅</h1><RangeSlider name="line" bind:value={target.frameWidth} max={10} step={1} style="width:100px;"/>
         <h1>フォントサイズ係数</h1>
-        <div class="slider-container">
-          <SliderEdit bind:value={target.fontSizeCoefficient} min={0.5} max={2} step={0.01} allowDecimal={true}/>
+        <div class="flex flex-col items-center">
+          <div class="slider-container">
+            <SliderEdit bind:value={target.fontSizeCoefficient} min={0.5} max={2} step={0.01} allowDecimal={true}/>
+          </div>
         </div>
       </div>
     </div>
