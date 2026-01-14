@@ -445,6 +445,7 @@
           );
 
           frameTree.filmStack.films = [film];
+          frameTree.prompt = pagePrompt;
 
           const page = newPage(rootFrameTree, []);
           page.paperSize = [...paperSize];
