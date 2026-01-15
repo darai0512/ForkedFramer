@@ -44,6 +44,7 @@ export const ImagingModelSchema = z.enum([
   "flux-2-dev",
   "flux-2-pro",
   "flux-2-flex",
+  "flux-2-klein",
   "z-image",
   "kling-image/o1",
 ]);

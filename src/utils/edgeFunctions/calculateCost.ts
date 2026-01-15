@@ -47,6 +47,7 @@ const COST_SPEC: Record<ImagingModel, CostSpec> = {
     "flux-2-dev": { kind: 'perMP/IO', input: 2, output:2 },
     "flux-2-pro": { kind: 'perMP/IO', input: 2, output:5 },
     "flux-2-flex": { kind: 'perMP/IO', input: 9, output: 9 },
+    "flux-2-klein": { kind: 'perMP/IO', input: 2, output: 2 },
     // その他
     "z-image": { kind: 'perMP', value: 1 },
     "kling-image/o1": { kind: 'fixed', value: 5 },

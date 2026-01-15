@@ -370,6 +370,7 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
       { value: 'flux-2-dev', name: 'Flux 2 Dev', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: false },
       { value: 'flux-2-pro', name: 'Flux 2 Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: false },
       { value: 'flux-2-flex', name: 'Flux 2 Flex', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: false },
+      { value: 'flux-2-klein', name: 'Flux 2 Klein', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 5, pageImaging: true },
       { value: 'kontext/pro', name: 'Kontext [Pro]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
       { value: 'kontext/max', name: 'Kontext [Max]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
       { value: 'kontext/inscene', name: 'Kontext [InScene]', uiType: 'flux', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
