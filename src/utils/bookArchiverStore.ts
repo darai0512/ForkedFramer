@@ -6,6 +6,9 @@ export type BookArchiveOperation =
   'copy' |
   'copy-after-upscale' |
   'export-psd' |
+  'download-frames' |
+  'download-frames-no-bubbles' |
+  'download-lora-data' |
   'aipictors' |
   'envelope' |
   'export-prompts' |

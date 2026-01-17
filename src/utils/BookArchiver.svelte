@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { saveAsPngZip, saveAsPsdZip, makeZip } from "./saver/saveAsZip";
+  import { saveAsPngZip, saveAsPsdZip, saveAsFramePngZip, saveAsLoraDataZip, makeZip } from "./saver/saveAsZip";
   import { copyToClipboard } from "./saver/copyToClipboard";
   import { type BookArchiveOperation, bookArchiver } from "./bookArchiverStore";
   import { mainBook, bookOperators, mainBookTitle } from "../bookeditor/workspaceStore";
@@ -63,6 +63,18 @@
               saveAsPsd(targetPages[0]);
             } else {
               saveAsPsdZip(targetPages, $mainBookTitle);
+            }
+            break;
+          case 'download-frames':
+            await saveAsFramePngZip(targetPages[0], $mainBookTitle, { includeBubbles: true });
+            break;
+          case 'download-frames-no-bubbles':
+            await saveAsFramePngZip(targetPages[0], $mainBookTitle, { includeBubbles: false });
+            break;
+          case 'download-lora-data':
+            for (let i = 0; i < targetPages.length; i++) {
+              const pageIndex = pages.indexOf(targetPages[i]);
+              await saveAsLoraDataZip(targetPages[i], $mainBookTitle, pageIndex + 1);
             }
             break;
           case 'aipictors':

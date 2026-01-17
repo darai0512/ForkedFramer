@@ -24,7 +24,12 @@
     {label: $_('downloader.exportPrompts'), onClick: exportPrompts, hint: $_('downloader.exportPromptsHint')},
     {label: $_('downloader.publishToMangaFarm'), onClick: publishEnvelope, hint: $_('downloader.publishToMangaFarmHint')},
     // {label: "test", onClick: testIt }
-    ...($developmentFlag ? [{label: $_('downloader.testDownload'), onClick: downloadPublicationFiles, hint: $_('downloader.testDownloadHint')}] : [])
+    ...($developmentFlag ? [
+      {label: $_('downloader.downloadFrames'), onClick: downloadFrames, hint: $_('downloader.downloadFramesHint')},
+      {label: $_('downloader.downloadFramesNoBubbles'), onClick: downloadFramesNoBubbles, hint: $_('downloader.downloadFramesNoBubblesHint')},
+      {label: $_('downloader.downloadLoraData'), onClick: downloadLoraData, hint: $_('downloader.downloadLoraDataHint')},
+      {label: $_('downloader.testDownload'), onClick: downloadPublicationFiles, hint: $_('downloader.testDownloadHint')},
+    ] : [])
   ];
 
   function archive(op: BookArchiveOperation) {
@@ -60,6 +65,21 @@
   async function downloadPSD() {
     analyticsEvent('export_psd');
     archive('export-psd');
+  }
+
+  async function downloadFrames() {
+    analyticsEvent('download_frames');
+    archive('download-frames');
+  }
+
+  async function downloadFramesNoBubbles() {
+    analyticsEvent('download_frames_no_bubbles');
+    archive('download-frames-no-bubbles');
+  }
+
+  async function downloadLoraData() {
+    analyticsEvent('download_lora_data');
+    archive('download-lora-data');
   }
 
   async function shareBook() {
