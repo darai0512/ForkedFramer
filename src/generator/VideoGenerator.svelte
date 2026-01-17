@@ -17,6 +17,7 @@
   type Option = { value: string; label: string };
   
   let prompt = '';
+  let submitTrigger = 0;
   let duration: ImageToVideoRequest['duration'] = "5";
   let aspectRatio: ImageToVideoRequest['aspectRatio'] = "1:1";
   let resolution: ImageToVideoResolution = "720p";
@@ -118,6 +119,8 @@
   }
 
   async function onSubmit() {
+    submitTrigger++;
+
     const resizedCanvas = fitCanvasToRange(sourceMedia.drawSourceCanvas, { max: 1024 });
     const resizedImageUrl = resizedCanvas.toDataURL();
     const request: ImageToVideoRequest = {
@@ -128,7 +131,7 @@
       resolution,
       model
     };
-    
+
     $modalStore[0].response!(request);
     modalStore.close();
   }
@@ -187,6 +190,7 @@
             bind:waiting={promptWaiting}
             on:advise={onAskPrompt}
             historyStoreKey="videoGeneratorPromptHistory"
+            {submitTrigger}
           />
           <div class="history-hint">{$_('generator.historyHint')}</div>
         </div>

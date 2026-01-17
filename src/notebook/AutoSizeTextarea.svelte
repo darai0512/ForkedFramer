@@ -9,6 +9,7 @@
   export let minHeight = 24;
   export let placeholder ='';
   export let historyStoreKey: string | undefined = undefined;
+  export let submitTrigger: number | undefined = undefined;
 
   let textarea: HTMLTextAreaElement;
 
@@ -38,7 +39,8 @@
   let historyOptions: PromptHistoryActionOptions | undefined;
   $: historyOptions = historyStoreKey ? {
     storeKey: historyStoreKey,
-    valueBinding
+    valueBinding,
+    submitTrigger
   } : undefined;
 
 </script>

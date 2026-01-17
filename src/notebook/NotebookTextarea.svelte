@@ -18,6 +18,7 @@
   export let placeholder = '';
   export let cost: number = 0;
   export let historyStoreKey: string | undefined = undefined;
+  export let submitTrigger: number | undefined = undefined;
 
   function copyToClipboard() {
     navigator.clipboard.writeText(value);
@@ -40,6 +41,7 @@
       bind:value={value}
       placeholder={placeholder}
       historyStoreKey={historyStoreKey}
+      {submitTrigger}
       on:keydown
     />
     <div class="icon-container flex flex-row-reverse gap-2">

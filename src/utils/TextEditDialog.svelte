@@ -21,6 +21,7 @@
   let canvasElement: HTMLCanvasElement;
   let prompt = '';
   let placeholder = $_('dialogs.textEdit.placeholder');
+  let submitTrigger = 0;
 
   let selectedModel: ImagingModel = 'kontext/inscene';
   
@@ -96,6 +97,8 @@
   function onSubmit() {
     if (!imageSource || !prompt.trim()) return;
 
+    submitTrigger++;
+
     $modalStore[0].response?.({
       image: imageSource,
       prompt: prompt,
@@ -158,6 +161,7 @@
           bind:value={prompt}
           placeholder={placeholder}
           historyStoreKey="textEditPromptHistory"
+          {submitTrigger}
         />
         <div class="flex gap-2">
           <button class="btn variant-ghost-surface" on:click={onCancel}>{$_('dialogs.cancel')}</button>
