@@ -36,7 +36,12 @@ export class SupabaseFileSystem extends FileSystem {
     this.storage = new BackblazeContentStorage();
     this.isVault = true;
     const user = await supabase.auth.getUser();
-    this.userId = user.data.user!.id;
+    if (!user.data.user) {
+      // サーバー側でセッションが無効 → 明示的にサインアウトして状態を同期
+      await supabase.auth.signOut();
+      throw new Error('Session expired');
+    }
+    this.userId = user.data.user.id;
   }
 
   async createFile(_type: string): Promise<File> {

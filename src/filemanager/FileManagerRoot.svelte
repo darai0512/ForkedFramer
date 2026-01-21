@@ -116,7 +116,7 @@
   }
 
   $: onBuildCloudFileSystem($onlineStatus, $onlineAccount);
-  async function onBuildCloudFileSystem(os: OnlineStatus, oa: OnlineAccount | null) { 
+  async function onBuildCloudFileSystem(os: OnlineStatus, oa: OnlineAccount | null) {
     console.log("#### onBuildCloudFileSystem");
     if (os == 'unknown') { $cloudState = 'uncertain'; return; }
     if (os == 'signed-out') { $cloudState = 'unlinked'; return; }
@@ -125,9 +125,14 @@
     const plan = oa.subscriptionPlan;
     if (plan != 'basic' && plan != 'basic/en' && plan != 'premium') { $cloudState = 'unlinked'; return; }
 
-    cloudFileSystem = await buildCloudFileSystem();
-    cloudFolders = await getRootFolders(cloudFileSystem);
-    $cloudState = 'linked';
+    try {
+      cloudFileSystem = await buildCloudFileSystem();
+      cloudFolders = await getRootFolders(cloudFileSystem);
+      $cloudState = 'linked';
+    } catch (e) {
+      console.error("Failed to build cloud file system:", e);
+      $cloudState = 'unlinked';
+    }
   }
 
   async function buildFsaFileSystem(pref: FileSystemPreference | null) {
