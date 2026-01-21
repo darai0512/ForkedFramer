@@ -10,6 +10,7 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import { saveRequest } from '../../filemanager/warehouse';
 import { mainBookFileSystem } from '../../filemanager/fileManagerStore';
 import type { Rect } from "../../lib/layeredCanvas/tools/geometry/geometry";
+import { isHandledHttpError } from "../edgeFunctions/edgeFunctions";
 
 // FilmProcessorTask: Filmと生成完了後のコールバックを含む
 export type FilmProcessorTask = {
@@ -49,8 +50,10 @@ filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
         console.log(`[filmProcessorQueue] ${action} request submitted:`, requestId);
         redrawToken.set(true);
       } catch (e: any) {
-        const msg = typeof e?.message === 'string' ? e.message : `${e}`;
-        toastStore.trigger({ message: `リクエストの送信に失敗しました: ${msg}`, timeout: 4000 });
+        if (!isHandledHttpError(e)) {
+          const msg = typeof e?.message === 'string' ? e.message : `${e}`;
+          toastStore.trigger({ message: `リクエストの送信に失敗しました: ${msg}`, timeout: 4000 });
+        }
         media.fail();
         redrawToken.set(true);
         return;
@@ -95,8 +98,10 @@ filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
 
         get(bookOperators)?.commit(null);
       } catch (e: any) {
-        const msg = typeof e?.message === 'string' ? e.message : `${e}`;
-        toastStore.trigger({ message: `メディアの取得に失敗しました: ${msg}`, timeout: 4000 });
+        if (!isHandledHttpError(e)) {
+          const msg = typeof e?.message === 'string' ? e.message : `${e}`;
+          toastStore.trigger({ message: `メディアの取得に失敗しました: ${msg}`, timeout: 4000 });
+        }
         media.fail();
         redrawToken.set(true);
         return;

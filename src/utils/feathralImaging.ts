@@ -12,7 +12,8 @@ import { bookOperators, mainBook, redrawToken } from '../bookeditor/workspaceSto
 import { updateToken } from "../utils/accountStore";
 import type { TextToImageRequest, ImagingBackground, ImagingModel, ImagingProvider, TextToImageOption } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
-import { FunctionsHttpError } from '@supabase/supabase-js'
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import { isHandledHttpError } from './edgeFunctions/edgeFunctions';
 // import { captureConsoleIntegration } from '@sentry/svelte';
 import { calculateImagingCost } from './edgeFunctions/calculateCost';
 import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
@@ -110,10 +111,12 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
     return mediaResources as HTMLCanvasElement[];
   } catch (error: any) {
     console.error("[DEBUG submitImagingRequest] Error:", error);
-    if (isContentsPolicyViolationError(error)) {
-      toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
-    } else {
-      toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
+    if (!isHandledHttpError(error)) {
+      if (isContentsPolicyViolationError(error)) {
+        toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
+      } else {
+        toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
+      }
     }
     throw error;
   }

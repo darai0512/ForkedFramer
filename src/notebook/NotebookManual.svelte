@@ -7,6 +7,7 @@
   import { executeProcessAndNotify } from "../utils/executeProcessAndNotify";
   import type { ImagingModel } from '$protocolTypes/imagingTypes';
   import { type ImagingContext, generateMarkedPageImages, generateImage, generateImageInline, isContentsPolicyViolationError, portraitsRecordFromNotebook, selectClosestSupportedSize } from '../utils/feathralImaging';
+import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
   import { persistentText } from '../utils/persistentText';
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { ulid } from 'ulid';
@@ -346,7 +347,9 @@
       notebook!.characters = notebook!.characters;
     }
     catch (e) {
-      if (!isContentsPolicyViolationError(e)) {
+      c.portrait = null;
+      notebook!.characters = notebook!.characters;
+      if (!isContentsPolicyViolationError(e) && !isHandledHttpError(e)) {
         throw e;
       }
     }
