@@ -147,7 +147,10 @@ function createAuthStore(): AuthStore {
 
   async function signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    // セッションが存在しない場合は既にログアウト状態なので無視
+    if (error && error.name !== 'AuthSessionMissingError') {
+      throw error;
+    }
   }
 
   return {
