@@ -863,7 +863,8 @@ const pointerSequence: LayerPointerMethods = {
 
   pointerCancel(this: { pointerHandler?: AnyGenerator }) {
     if (this.pointerHandler) {
-      this.pointerHandler.throw('cancel');
+      // AsyncGenerator.throw()はPromiseを返すため、catchしないとUnhandled Rejectionになる
+      Promise.resolve(this.pointerHandler.throw('cancel')).catch(() => {});
       this.pointerHandler = null;
     }
   },
