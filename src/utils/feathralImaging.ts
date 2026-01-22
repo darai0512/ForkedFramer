@@ -111,13 +111,17 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
     return mediaResources as HTMLCanvasElement[];
   } catch (error: any) {
     console.error("[DEBUG submitImagingRequest] Error:", error);
-    if (!isHandledHttpError(error)) {
-      if (isContentsPolicyViolationError(error)) {
-        toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
-      } else {
-        toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
-      }
+    // 402（残高不足）や422（コンテンツポリシー違反）はコードの問題ではないので再スローしない
+    if (isHandledHttpError(error)) {
+      // 402は既にedgeFunctions.tsでトースト表示済み
+      return [];
     }
+    if (isContentsPolicyViolationError(error)) {
+      toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
+      return [];
+    }
+    // その他のエラーはトースト表示して再スロー（Sentryに報告）
+    toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
     throw error;
   }
 }
