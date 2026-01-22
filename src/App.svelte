@@ -206,6 +206,22 @@
         replaysOnErrorSampleRate: 1.0,
         ignoreErrors: ['WebGPU is not supported on this browser','No appropriate GPUAdapter found'],
         release: stamp,
+        beforeSend(event, hint) {
+          const error = hint.originalException;
+          if (error && typeof error === 'object' && 'context' in error) {
+            const context = (error as any).context;
+            // 402（残高不足）や422（コンテンツポリシー違反）はコードの問題ではないので報告しない
+            if (context && (context.status === 402 || context.status === 422)) {
+              return null;
+            }
+            // FunctionsHttpErrorのステータスコードをタグに追加
+            if (context && context.status) {
+              event.tags = event.tags || {};
+              event.tags['http.status_code'] = context.status;
+            }
+          }
+          return event;
+        },
       });
     }
   });

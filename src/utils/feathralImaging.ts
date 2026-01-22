@@ -120,7 +120,7 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
       toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
       return [];
     }
-    // その他のエラーはトースト表示して再スロー（Sentryに報告）
+    // その他のエラーはトースト表示して再スロー
     toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
     throw error;
   }
