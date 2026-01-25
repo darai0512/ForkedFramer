@@ -19,15 +19,14 @@ import { IndexedDBFileSystem } from './filesystem/indexeddbFileSystem';
 // Mock FilePersistenceProvider
 class MockPersistenceProvider implements FilePersistenceProvider {
   private files: Map<string, Uint8Array | string> = new Map();
-  private dbName: string;
+  private namespace: string;
 
   constructor(dbName: string) {
-    this.dbName = dbName; // 特定のDB名を管理するため
+    this.namespace = dbName; // プロバイダを識別するための名前空間
   }
 
   async readFile(name: string): Promise<Uint8Array | null> {
-    if (name !== this.dbName) return null; // このプロバイダが管理するDBファイルのみ対象
-    const data = this.files.get(this.dbName);
+    const data = this.files.get(this.getKey(name));
     if (data instanceof Uint8Array) {
       return data;
     }
@@ -38,18 +37,15 @@ class MockPersistenceProvider implements FilePersistenceProvider {
   }
 
   async writeFile(name: string, data: Uint8Array): Promise<void> {
-    if (name !== this.dbName) return; // このプロバイダが管理するDBファイルのみ対象
-    this.files.set(this.dbName, data);
+    this.files.set(this.getKey(name), data);
   }
 
   async removeFile(name: string): Promise<void> {
-    if (name !== this.dbName) return; // このプロバイダが管理するDBファイルのみ対象
-    this.files.delete(this.dbName);
+    this.files.delete(this.getKey(name));
   }
 
   async readText(name: string): Promise<string | null> {
-    if (name !== this.dbName) return null;
-    const data = this.files.get(this.dbName);
+    const data = this.files.get(this.getKey(name));
     if (typeof data === 'string') {
       return data;
     }
@@ -60,8 +56,11 @@ class MockPersistenceProvider implements FilePersistenceProvider {
   }
 
   async writeText(name: string, text: string): Promise<void> {
-    if (name !== this.dbName) return;
-    this.files.set(this.dbName, text);
+    this.files.set(this.getKey(name), text);
+  }
+
+  private getKey(name: string): string {
+    return `${this.namespace}:${name}`;
   }
 }
 
@@ -168,6 +167,23 @@ describe('FSAFileSystem tests', () => {
     const content = await file.read();
     expect(content).toBe(testContent);
   });
+
+  it('should persist data across reopen', async () => {
+    const file = await fs.createFile('text') as FSAFile;
+    const testContent = 'Persisted content';
+    await file.write(testContent);
+    const fileId = file.id;
+
+    const sqliteAdapter = new SqlJsAdapter(persistenceProvider, wasmPath);
+    const blobStore = new MockBlobStore();
+    const fsReopen = new FSAFileSystem(sqliteAdapter, blobStore as unknown as BlobStore, mediaConverter);
+    await fsReopen.open();
+
+    const reopenedFile = await fsReopen.getNode(fileId);
+    expect(reopenedFile).toBeInstanceOf(FSAFile);
+    const content = await (reopenedFile as FSAFile).read();
+    expect(content).toBe(testContent);
+  });
   
   it('should handle JSON object in write and read', async () => {
     const file = await fs.createFile('json') as FSAFile;
@@ -203,6 +219,7 @@ describe('FSAFileSystem tests', () => {
     const file = await fs.createFile('text');
     const fileId = file.id;
     await fs.destroyNode(fileId);
+    // getNode は存在しない場合に console.error を出す仕様なので、テストのstdout/stderrに出力されます
     const retrievedFile = await fs.getNode(fileId);
     expect(retrievedFile).toBeNull();
   });
