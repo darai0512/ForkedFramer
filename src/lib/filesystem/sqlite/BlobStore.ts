@@ -18,24 +18,22 @@ export class FSABlobStore implements BlobStore {
   async write(id: string, blob: Blob): Promise<string> {
     if (!this.dirHandle) throw new Error('BlobStore not initialized');
     console.log('Writing blob:', id, 'type:', blob.type);
-    
+
     const fileName = `${id}.bin`;
     const metaFileName = `${id}.meta`;
-    
-    await Promise.all([
-      (async () => {
-        const fileHandle = await this.dirHandle!.getFileHandle(fileName, { create: true });
-        const writable = await fileHandle.createWritable({ keepExistingData: false });
-        await blob.stream().pipeTo(writable);
-      })(),
-      (async () => {
-        const metaHandle = await this.dirHandle!.getFileHandle(metaFileName, { create: true });
-        const metaWritable = await metaHandle.createWritable({ keepExistingData: false });
-        await metaWritable.write(JSON.stringify({ type: blob.type }));
-        await metaWritable.close();
-      })()
-    ]);
-    
+
+    // データファイルを先に書き込む（Blobを直接書き込み）
+    const fileHandle = await this.dirHandle.getFileHandle(fileName, { create: true });
+    const writable = await fileHandle.createWritable({ keepExistingData: false });
+    await writable.write(blob);
+    await writable.close();
+
+    // メタファイルを書き込む（データ書き込み成功後）
+    const metaHandle = await this.dirHandle.getFileHandle(metaFileName, { create: true });
+    const metaWritable = await metaHandle.createWritable({ keepExistingData: false });
+    await metaWritable.write(JSON.stringify({ type: blob.type }));
+    await metaWritable.close();
+
     return `blobs/${fileName}`;
   }
 
@@ -159,5 +157,4 @@ export async function internalizeBlobsInObject(
     return obj;
   }
 }
-
 
