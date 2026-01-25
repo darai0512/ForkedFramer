@@ -15,21 +15,15 @@
   import type { ImageToVideoRequest } from '$protocolTypes/imagingTypes';
 
   let mediaContainer: HTMLDivElement;
-  let contentArea: HTMLDivElement;
 
   // シークバー操作中フラグを MediaFrame から受け取る
   let isSeekingGlobal = false;
 
   function handleBackgroundClick(event: MouseEvent) {
-    // クリック位置がコンテンツエリア外かつシークバー操作中でない場合のみ閉じる
-    if (!contentArea || isSeekingGlobal) return;
-
-    const rect = contentArea.getBoundingClientRect();
-    const x = event.clientX;
-    const y = event.clientY;
-
-    // コンテンツエリアの外側をクリックした場合のみ閉じる
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+    // シークバー操作中は閉じない
+    if (isSeekingGlobal) return;
+    // page-container自体へのクリック（子要素以外）の場合のみ閉じる
+    if (event.target === event.currentTarget) {
       modalStore.close();
     }
   }
@@ -152,8 +146,6 @@
   {#if $mediaViewerTarget}
     <div
       class="content-area"
-      bind:this={contentArea}
-      on:click|stopPropagation
       on:keydown|stopPropagation
       role="presentation">
       <div class="media-container" bind:this={mediaContainer}>
@@ -237,10 +229,15 @@
     flex-direction: column;
     gap: 1rem;
     align-items: center;
+    pointer-events: none;
+  }
+  .content-area > * {
+    pointer-events: auto;
   }
   .media-container {
     width: 80svw;
     height: 80svh;
+    pointer-events: none;
   }
   .video-controls,
   .image-controls {

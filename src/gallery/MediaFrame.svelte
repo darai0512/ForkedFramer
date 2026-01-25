@@ -24,8 +24,11 @@
 
   let canvas: HTMLCanvasElement;
   let containerDiv: HTMLDivElement;
+  let imgElement: HTMLImageElement;
   let imageDataUrl: string | null = null; // imgモード用
   let isMissing = false;
+  let computedWidth: number | null = null;
+  let computedHeight: number | null = null;
 
   // iOS Safari向けベンダー属性を型安全に付与するためのアクション
   function webkitPlaysinline(node: HTMLVideoElement) {
@@ -37,26 +40,31 @@
     };
   }
 
+  function updateComputedSize() {
+    if (!media || !containerDiv) return;
+    const rect = containerDiv.getBoundingClientRect();
+    const [mediaWidth, mediaHeight] = media.size;
+    if (rect && mediaWidth > 0 && mediaHeight > 0) {
+      const { width: targetWidth, height: targetHeight } = computeAspectFitSize(rect, media.size);
+      computedWidth = targetWidth;
+      computedHeight = targetHeight;
+      const controlWidth = Math.max(targetWidth, 1);
+      const controlScale = Math.min(1, Math.max(0.35, controlWidth / 480));
+      containerDiv.style.setProperty('--media-controls-scale', controlScale.toString());
+    } else {
+      const fallbackScale = Math.min(1, Math.max(0.35, rect.width / 480));
+      containerDiv?.style.setProperty('--media-controls-scale', fallbackScale.toString());
+    }
+  }
+
   function drawFrame() {
     if (!media) return;
 
-    const rect = containerDiv?.getBoundingClientRect();
-    const [mediaWidth, mediaHeight] = media.size;
-    if (rect) {
-      if (mediaWidth > 0 && mediaHeight > 0) {
-        const { width: targetWidth, height: targetHeight } = computeAspectFitSize(rect, media.size);
-        const controlWidth = Math.max(targetWidth, 1);
-        const controlScale = Math.min(1, Math.max(0.35, controlWidth / 480));
-        containerDiv?.style.setProperty('--media-controls-scale', controlScale.toString());
+    updateComputedSize();
 
-        if (canvas) {
-          canvas.style.width = `${targetWidth}px`;
-          canvas.style.height = `${targetHeight}px`;
-        }
-      } else {
-        const fallbackScale = Math.min(1, Math.max(0.35, rect.width / 480));
-        containerDiv?.style.setProperty('--media-controls-scale', fallbackScale.toString());
-      }
+    if (canvas && computedWidth && computedHeight) {
+      canvas.style.width = `${computedWidth}px`;
+      canvas.style.height = `${computedHeight}px`;
     }
 
     if (!canvas) return;
@@ -94,6 +102,27 @@
 
   // メディアが変わったら一度描画（以降はrAF）
   $: if (media) { drawFrame(); }
+  // img/video用のサイズ更新（canvasを使わないとき）
+  $: if (media && containerDiv && !usingCanvasNow()) { updateComputedSize(); }
+
+  // コンテナのリサイズに対応
+  let resizeObserver: ResizeObserver | null = null;
+  function setupResizeObserver(node: HTMLDivElement) {
+    resizeObserver = new ResizeObserver(() => {
+      if (usingCanvasNow()) {
+        drawFrame();
+      } else {
+        updateComputedSize();
+      }
+    });
+    resizeObserver.observe(node);
+    return {
+      destroy() {
+        resizeObserver?.disconnect();
+        resizeObserver = null;
+      }
+    };
+  }
 
   // ローディングスピナーのアニメーション更新
   let rafId: number | null = null;
@@ -242,7 +271,7 @@
   });
 </script>
 
-<div class="media-frame" bind:this={containerDiv}>
+<div class="media-frame" bind:this={containerDiv} use:setupResizeObserver>
   {#if media.type === 'video' && media.drawSource instanceof HTMLVideoElement}
     <!-- 読み込み完了: ネイティブvideoを表示 -->
     <div class="video-container">
@@ -255,6 +284,8 @@
         use:initVideo
         class="media-element"
         draggable="true"
+        style:width={computedWidth ? `${computedWidth}px` : undefined}
+        style:height={computedHeight ? `${computedHeight}px` : undefined}
         on:click
       />
       {#if showControls}
@@ -325,10 +356,13 @@
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <img
+        bind:this={imgElement}
         src={imageDataUrl}
         class="media-element"
         alt=""
         draggable="true"
+        style:width={computedWidth ? `${computedWidth}px` : undefined}
+        style:height={computedHeight ? `${computedHeight}px` : undefined}
         on:click
       />
     {:else}
@@ -356,6 +390,7 @@
     overflow: hidden;
     position: relative;
     --media-controls-scale: 1;
+    pointer-events: none;
   }
   .missing-overlay {
     position: absolute;
@@ -372,9 +407,9 @@
     pointer-events: none;
   }
   .media-element {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
+    pointer-events: auto;
   }
 
   .video-container {
@@ -382,11 +417,9 @@
     height: 100%;
     position: relative;
     display: flex;
-    flex-direction: column;
-  }
-
-  .video-container video {
-    flex: 1;
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
   }
 
   .custom-controls {
