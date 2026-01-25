@@ -1,6 +1,6 @@
 <script lang="ts">
   import { redrawToken } from '../bookeditor/workspaceStore';
-  import type { Media } from "../lib/layeredCanvas/dataModels/media";
+  import { type Media, isMissingMediaReference } from "../lib/layeredCanvas/dataModels/media";
   import { canvasToBlob, computeAspectFitSize } from "../lib/layeredCanvas/tools/imageUtil";
   import { onMount, onDestroy } from 'svelte';
 
@@ -25,6 +25,7 @@
   let canvas: HTMLCanvasElement;
   let containerDiv: HTMLDivElement;
   let imageDataUrl: string | null = null; // imgモード用
+  let isMissing = false;
 
   // iOS Safari向けベンダー属性を型安全に付与するためのアクション
   function webkitPlaysinline(node: HTMLVideoElement) {
@@ -88,6 +89,8 @@
   $: if (media) { updateImageUrlIfNeeded(); }
   $: if ($redrawToken) { updateImageUrlIfNeeded(); }
   onDestroy(() => { if (imageDataUrl) URL.revokeObjectURL(imageDataUrl); });
+
+  $: isMissing = media ? isMissingMediaReference(media.persistentSource) : false;
 
   // メディアが変わったら一度描画（以降はrAF）
   $: if (media) { drawFrame(); }
@@ -338,6 +341,9 @@
       />
     {/if}
   {/if}
+  {#if isMissing}
+    <div class="missing-overlay" aria-hidden="true">欠損メディア</div>
+  {/if}
 </div>
 
 <style>
@@ -350,6 +356,20 @@
     overflow: hidden;
     position: relative;
     --media-controls-scale: 1;
+  }
+  .missing-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.65);
+    color: #b42318;
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.8);
+    pointer-events: none;
   }
   .media-element {
     width: 100%;

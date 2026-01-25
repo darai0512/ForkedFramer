@@ -10,7 +10,7 @@ import {
   packBubbleMedias, unpackBubbleMedias,
   packNotebookMedias, unpackNotebookMedias,
 } from "../lib/book/imagePacking";
-import type { RemoteMediaReference } from "../lib/layeredCanvas/dataModels/media";
+import { type RemoteMediaReference, createMissingMediaReference, isMissingMediaReference } from "../lib/layeredCanvas/dataModels/media";
 import { type NotebookLocal, type SerializedNotebook } from "../lib/book/book";
 import { developmentFlag } from "../utils/developmentFlagStore";
 import { get } from "svelte/store";
@@ -91,7 +91,11 @@ async function loadMediaResource(fileSystem: FileSystem, mediaResourceId: NodeId
     return mediaResource;
   } else {
     try {
-      const file = (await fileSystem.getNode(mediaResourceId as NodeId))!.asFile()!;
+      const node = await fileSystem.getNode(mediaResourceId as NodeId);
+      if (!node) {
+        throw new Error(`loadMediaResource: node not found (${mediaResourceId})`);
+      }
+      const file = node.asFile()!;
       const mediaResource = await file.readMediaResource();
 
       const r: any = mediaResource;
@@ -110,21 +114,27 @@ async function loadMediaResource(fileSystem: FileSystem, mediaResourceId: NodeId
         }
       }
       if (get(developmentFlag)) {
-        console.error("loadMediaResource: 画像読み込みでエラーが発生しました。productionでは無視します", e);
-        throw e;
+        console.error("loadMediaResource: 画像読み込みでエラーが発生しました。欠損として扱います", e);
+      } else {
+        console.error("loadMediaResource: 読み込みエラー。欠損として扱います", e);
       }
 
-      console.error("loadMediaResource: ここでエラーにするとファイルが読めなくなるので仕方なく握りつぶす", e)
-      return null;
+      const missing = createMissingMediaReference(mediaType, {
+        reason: 'read-failed',
+        missingId: mediaResourceId,
+      });
+      const r: any = missing;
+      r["fileId"] = r["fileId"] ?? {};
+      r["fileId"][fileSystem.id] = mediaResourceId;
+      r["clean"] = r["clean"] ?? {};
+      r["clean"][fileSystem.id] = true;
+      mediaResourceCache[fileSystem.id][mediaResourceId] = missing;
+      return missing;
     }
   }
 }
 
 async function saveMediaResource(fileSystem: FileSystem, imageFolder: Folder, videoFolder: Folder, mediaResource: MediaResource, mediaType: MediaType): Promise<NodeId> {
-  if (mediaResource == null) {
-    throw new Error("saveCanvas: mediaResource is null (unexpected error)");
-  }
-  
   const r = mediaResource as any;
 
   mediaResourceCache[fileSystem.id] ??= {};
@@ -140,6 +150,10 @@ async function saveMediaResource(fileSystem: FileSystem, imageFolder: Folder, vi
       return fileId;
     }
     if (mediaResourceCache[fileSystem.id][fileId]) {
+      return fileId;
+    }
+    if (isMissingMediaReference(mediaResource)) {
+      mediaResourceCache[fileSystem.id][fileId] = mediaResource;
       return fileId;
     }
     // ここには来ないはず
@@ -160,4 +174,3 @@ async function saveMediaResource(fileSystem: FileSystem, imageFolder: Folder, vi
     return file.id;
   }
 }
-

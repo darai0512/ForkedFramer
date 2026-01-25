@@ -12,9 +12,12 @@ export type EmbodiedEntry = [BindId, string, Node];
 // 詳細な型定義は上位モジュール(media.ts等)に任せる
 export type MediaType  = 'image' | 'video';
 
+export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure' | 'missing';
+
 export type RemoteMediaReference = {
   mediaType: MediaType;
-  mode: string;
+  mode: RemoteMediaMode;
+  [key: string]: unknown;
 };
 
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;

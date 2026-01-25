@@ -2,11 +2,11 @@ import type { Vector } from "../layeredCanvas/tools/geometry/geometry";
 import { FrameElement } from "../layeredCanvas/dataModels/frameTree";
 import { Bubble } from "../layeredCanvas/dataModels/bubble";
 import { Film } from "../layeredCanvas/dataModels/film";
-import { ImageMedia, VideoMedia, type RemoteMediaReference, buildNullableMedia } from "../layeredCanvas/dataModels/media";
+import { ImageMedia, VideoMedia, type MediaResource as LayeredMediaResource, type MediaType as LayeredMediaType, buildNullableMedia, buildMedia, createMissingMediaReference } from "../layeredCanvas/dataModels/media";
 import { Effect } from "../layeredCanvas/dataModels/effect";
 import type { SerializedCharacter, SerializedNotebook, NotebookLocal, CharacterLocal } from "./book";
 
-export type MediaType = 'image' | 'video';
+export type MediaType = LayeredMediaType;
 
 interface FilmMarkUp {
   ulid: string;
@@ -21,32 +21,32 @@ interface FilmMarkUp {
   effects: any[];
 }
 
-export type MediaResource = HTMLCanvasElement | HTMLVideoElement | RemoteMediaReference | null;
+export type MediaResource = LayeredMediaResource;
 export type LoadMediaFunc = (imageId: string, mediaType: MediaType) => Promise<MediaResource>;
 export type SaveMediaFunc = (mediaResource: MediaResource, mediaType: MediaType) => Promise<string>;
   
 export async function dryUnpackFrameMedias(paperSize: Vector, markUp: any, loadedImageList: string[]): Promise<void> {
-  const dryLoadMediaResource: LoadMediaFunc = async (imageId: string): Promise<MediaResource> => {
+  const dryLoadMediaResource: LoadMediaFunc = async (imageId: string, mediaType: MediaType): Promise<MediaResource> => {
     loadedImageList.push(imageId);
-    return null;
+    return createMissingMediaReference(mediaType, { reason: 'dry-load', missingId: imageId });
   };
 
   await unpackFrameMedias(paperSize, markUp, dryLoadMediaResource);
 }
 
 export async function dryUnpackBubbleMedias(paperSize: Vector, markUps: any[], loadedImageList: string[]): Promise<void> {
-  const dryLoadMediaResource: LoadMediaFunc = async (imageId: string): Promise<MediaResource> => {
+  const dryLoadMediaResource: LoadMediaFunc = async (imageId: string, mediaType: MediaType): Promise<MediaResource> => {
     loadedImageList.push(imageId);
-    return null;
+    return createMissingMediaReference(mediaType, { reason: 'dry-load', missingId: imageId });
   };
 
   await unpackBubbleMedias(paperSize, markUps, dryLoadMediaResource);
 }
 
 export async function dryUnpackNotebookMedias(serializedNotebook: SerializedNotebook, loadedImageList: string[]): Promise<void> {
-  const dryLoadMediaResource: LoadMediaFunc = async (imageId: string): Promise<MediaResource> => {
+  const dryLoadMediaResource: LoadMediaFunc = async (imageId: string, mediaType: MediaType): Promise<MediaResource> => {
     loadedImageList.push(imageId);
-    return null;
+    return createMissingMediaReference(mediaType, { reason: 'dry-load', missingId: imageId });
   };
 
   await unpackNotebookMedias(serializedNotebook, dryLoadMediaResource);
@@ -65,8 +65,8 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
   if (markUp.image || markUp.scribble) {
     if (typeof markUp.image === 'string' || typeof markUp.scribble === 'string') {
       // 旧バージョンはvideoに対応していない
-      function newFilm(anyCanvas: HTMLCanvasElement): Film {
-        const s_imageSize = Math.min(anyCanvas.width, anyCanvas.height) ;
+      function newFilmFromMedia(media: ReturnType<typeof buildMedia>): Film {
+        const s_imageSize = Math.min(media.naturalWidth, media.naturalHeight);
         const s_pageSize = Math.min(paperSize[0], paperSize[1]);
         const scale = s_imageSize / s_pageSize;
     
@@ -76,7 +76,7 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
         const markUpTranlation = markUp.translation ?? [0,0];
         const n_translation: Vector = [markUpTranlation[0] * scale, markUpTranlation[1] * scale];
     
-        const film = Film.fromMedia(new ImageMedia(anyCanvas));
+        const film = Film.fromMedia(media);
         film.n_scale = n_scale;
         film.n_translation = n_translation;
         film.rotation = markUp.rotation;
@@ -87,23 +87,21 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
 
       // 初期バージョン処理
       if (markUp.image) {
-        const canvas = await loadMediaFunc(markUp.image, 'image');
-        if (canvas) {
-          const film = newFilm(canvas as HTMLCanvasElement);
-          frameTree.filmStack.films.push(film);
-        }
+        const mediaResource = await loadMediaFunc(markUp.image, 'image');
+        const media = buildMedia(mediaResource);
+        const film = newFilmFromMedia(media);
+        frameTree.filmStack.films.push(film);
       }
       if (markUp.scribble) {
-        const scribble = await loadMediaFunc(markUp.scribble, 'image');
-        if (scribble) {
-          const film = newFilm(scribble as HTMLCanvasElement);
-          frameTree.filmStack.films.push(film);
-        }
+        const mediaResource = await loadMediaFunc(markUp.scribble, 'image');
+        const media = buildMedia(mediaResource);
+        const film = newFilmFromMedia(media);
+        frameTree.filmStack.films.push(film);
       } 
     } else {
       // 前期バージョン処理(このときVideoMediaはない)
-      function newFilm(anyCanvas: HTMLCanvasElement): Film {
-        const film = Film.fromMedia(new ImageMedia(anyCanvas));
+      function newFilmFromMedia(media: ReturnType<typeof buildMedia>): Film {
+        const film = Film.fromMedia(media);
         film.n_scale = markUp.image.n_scale;
         film.n_translation = markUp.image.n_translation;
         film.rotation = markUp.image.rotation;
@@ -113,18 +111,16 @@ export async function unpackFrameMedias(paperSize: Vector, markUp: any, loadMedi
       }
 
       if (markUp.image.image) {
-        const image = await loadMediaFunc(markUp.image.image, 'image');
-        if (image) {
-          const film = newFilm(image as HTMLCanvasElement);
-          frameTree.filmStack.films.push(film);
-        }
+        const mediaResource = await loadMediaFunc(markUp.image.image, 'image');
+        const media = buildMedia(mediaResource);
+        const film = newFilmFromMedia(media);
+        frameTree.filmStack.films.push(film);
       }
       if (markUp.image.scribble) {
-        const scribble = await loadMediaFunc(markUp.image.scribble, 'image');
-        if (scribble) {
-          const film = newFilm(scribble as HTMLCanvasElement);
-          frameTree.filmStack.films.push(film);
-        }
+        const mediaResource = await loadMediaFunc(markUp.image.scribble, 'image');
+        const media = buildMedia(mediaResource);
+        const film = newFilmFromMedia(media);
+        frameTree.filmStack.films.push(film);
       } 
     }
   } else {
@@ -173,8 +169,9 @@ export async function unpackBubbleMedias(paperSize: Vector, markUps: any[], Load
     if (imageMarkUp) {
       // 旧バージョンはvideoに対応していない
       const mediaResource = await LoadMediaFunc(imageMarkUp.image, 'image');
-      if (mediaResource instanceof HTMLCanvasElement) {
-        const s_imageSize = Math.min(mediaResource.width, mediaResource.height) ;
+      const media = buildMedia(mediaResource);
+      if (media.type === 'image') {
+        const s_imageSize = Math.min(media.naturalWidth, media.naturalHeight);
         const s_pageSize = Math.min(paperSize[0], paperSize[1]);
 
         let n_scale = imageMarkUp.n_scale;
@@ -189,7 +186,7 @@ export async function unpackBubbleMedias(paperSize: Vector, markUps: any[], Load
           const scale = s_imageSize / s_pageSize;
           n_translation = [markUpTranslationVector[0] * scale, markUpTranslationVector[1] * scale];
         }
-        const film = Film.fromMedia(new ImageMedia(mediaResource　as HTMLCanvasElement));
+        const film = Film.fromMedia(media);
         film.n_scale = n_scale;
         film.n_translation = n_translation;
         bubble.filmStack.films.push(film);
@@ -272,8 +269,6 @@ export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Pr
       });
     } else {
       const mediaResource = await loadMediaFunc(filmMarkUp.image, filmMarkUp.mediaType ?? 'image');
-      if (!mediaResource) { continue; }
-
       const media = 
         filmMarkUp.mediaType === 'video' ? // 古いデータはundefined
         new VideoMedia(mediaResource as any) : 

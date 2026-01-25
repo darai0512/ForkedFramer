@@ -2,8 +2,8 @@ import type { Node, EmbodiedEntry, BindId, Folder } from '../lib/filesystem/file
 import { waitDialog } from '../utils/waitDialog';
 import { get } from 'svelte/store';
 import { gadgetFileSystem, saveMaterialToFolder as saveToFolder, deleteMaterialFromFolder as deleteFromFolder } from '../filemanager/fileManagerStore';
-import type { Media } from '../lib/layeredCanvas/dataModels/media';
-import { buildMedia, ImageMedia, VideoMedia, type RemoteMediaReference } from '../lib/layeredCanvas/dataModels/media';
+import type { Media, MediaType } from '../lib/layeredCanvas/dataModels/media';
+import { buildMedia, ImageMedia, VideoMedia, type RemoteMediaReference, createMissingMediaReference } from '../lib/layeredCanvas/dataModels/media';
 import { copyCanvas } from '../lib/layeredCanvas/tools/imageUtil';
 import { materialCollectionUpdateToken } from './materialBucketStore';
 import { pollMediaStatus, getMaterialsUrl, recordMaterial } from '../supabase';
@@ -120,12 +120,22 @@ export async function loadMaterialsFromFolder(
   const materials = await folder.listEmbodied();
   const items: MaterialGalleryItem[] = [];
   
-  for (const [bindId, _, node] of materials) {
+  for (const [bindId, name, node] of materials) {
     const file = node.asFile();
     if (!file) continue;
+    const guessedMediaType: MediaType = name?.toLowerCase().endsWith('.mp4') ? 'video' : 'image';
     
     const loadMedia = async (): Promise<Media[]> => {
-      const mediaResource = await file.readMediaResource();
+      let mediaResource;
+      try {
+        mediaResource = await file.readMediaResource();
+      } catch (e) {
+        console.error("loadMaterialsFromFolder: media read failed, treated as missing", e);
+        mediaResource = createMissingMediaReference(guessedMediaType, {
+          reason: 'read-failed',
+          missingId: file.id,
+        });
+      }
       const media = buildMedia(mediaResource);
       if (!media.isLoaded) {
         // Unmaterializedメディアの場合、ロード

@@ -5,15 +5,20 @@
   import { collectGarbage } from '../utils/garbageCollection';
   import { mainBookFileSystem } from '../filemanager/fileManagerStore';
   import type { NodeId, File } from '../lib/filesystem/fileSystem';
-  import { buildMedia, type Media } from '../lib/layeredCanvas/dataModels/media';
+  import { buildMedia, type Media, createMissingMediaReference } from '../lib/layeredCanvas/dataModels/media';
   import { _ } from 'svelte-i18n';
 
   let usedMedias: (() => Promise<Media[]>)[] = [];
   let strayMedias: (() => Promise<Media[]>)[] = [];
 
   async function loadMedia(file: File): Promise<Media[]> {
-    const media = await file.readMediaResource();
-    return [buildMedia(media)];
+    try {
+      const media = await file.readMediaResource();
+      return [buildMedia(media)];
+    } catch (e) {
+      console.error("FileBrowser: media read failed, treated as missing", e);
+      return [buildMedia(createMissingMediaReference('image', { reason: 'read-failed', missingId: file.id }))];
+    }
   }
 
   onMount(async () => {

@@ -3,16 +3,41 @@ import type { Vector } from "../tools/geometry/geometry";
 // リモートメディア=fal.aiなどの画像生成サービス側にあり、まだダウンロードしていないファイル
 // 詳細な型定義は上位モジュール(imaging関連)に任せる
 export type MediaType = 'image' | 'video';
-export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure';
+export type RemoteMediaMode = 'beforeRequest' | 'afterRequest' | 'failure' | 'missing';
 
 export type RemoteMediaReference = {
   mediaType: MediaType;
-  mode: string;
+  mode: RemoteMediaMode;
   [key: string]: unknown;  // 他のプロパティへのアクセスを許可
 };
 
 export type MaterializedType = HTMLCanvasElement | HTMLVideoElement;
 export type MediaResource = MaterializedType | RemoteMediaReference;
+
+export type MissingMediaReference = RemoteMediaReference & {
+  mode: 'missing';
+  reason?: string;
+  missingId?: string;
+};
+
+export function createMissingMediaReference(
+  mediaType: MediaType,
+  options: { reason?: string; missingId?: string } = {}
+): MissingMediaReference {
+  return {
+    mediaType,
+    mode: 'missing',
+    ...options,
+  };
+}
+
+export function isMissingMediaReference(mediaResource: MediaResource): mediaResource is MissingMediaReference {
+  return (
+    !(mediaResource instanceof HTMLCanvasElement) &&
+    !(mediaResource instanceof HTMLVideoElement) &&
+    (mediaResource as RemoteMediaReference).mode === 'missing'
+  );
+}
 
 export interface Media {
   readonly player: Player | null;
@@ -241,6 +266,10 @@ export class ImageMedia extends MediaBase {
       this.setCanvas(mediaResource);
     } else {
       this.remoteMediaReference = mediaResource;
+      if (mediaResource.mode === 'failure' || mediaResource.mode === 'missing') {
+        this.setLoaded(false);
+        this.setFailed(true);
+      }
     }
   }
 
@@ -296,6 +325,10 @@ export class VideoMedia extends MediaBase {
       this.setVideo(mediaResource);
     } else {
       this.remoteMediaReference = mediaResource;
+      if (mediaResource.mode === 'failure' || mediaResource.mode === 'missing') {
+        this.setLoaded(false);
+        this.setFailed(true);
+      }
     }
   }
 

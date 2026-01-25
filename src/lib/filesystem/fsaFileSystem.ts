@@ -281,12 +281,28 @@ export class FSAFileSystem extends FileSystem {
           // content or blob
           if (file.inlineContent) {
             const json = JSON.parse(file.inlineContent);
-            item.content = (await internalizeBlobsInObject(json, this.blobStore)).data;
+            if (file.mediaType === 'remote') {
+              item.content = json;
+              item.mediaType = 'remote';
+            } else {
+              item.content = (await internalizeBlobsInObject(json, this.blobStore)).data;
+            }
           } else if (file.blobPath) {
-            const blob = await this.blobStore.read(node.id);
-            // Blobオブジェクトをそのまま設定（serializeBlobsで適切に変換される）
-            item.blob = blob;
-            item.mediaType = file.mediaType ?? null;
+            try {
+              const blob = await this.blobStore.read(node.id);
+              // Blobオブジェクトをそのまま設定（serializeBlobsで適切に変換される）
+              item.blob = blob;
+              item.mediaType = file.mediaType ?? null;
+            } catch (e) {
+              console.error("dump: blob read failed, treated as missing", e);
+              item.content = {
+                mediaType: file.mediaType ?? 'image',
+                mode: 'missing',
+                reason: 'dump-read-failed',
+                missingId: node.id,
+              };
+              item.mediaType = 'remote';
+            }
           }
         }
       } else if (node.type === 'folder') {
@@ -399,7 +415,19 @@ export class FSAFileSystem extends FileSystem {
               );
             } else if (content !== undefined) {
               // contentの種類に応じて処理
-              if (typeof content === 'string' && content.startsWith('data:')) {
+              if (mediaType === 'remote') {
+                let remotePayload: any = content;
+                if (remotePayload && typeof remotePayload === 'object' && 'data' in remotePayload) {
+                  remotePayload = (remotePayload as any).data;
+                }
+                const remoteString = typeof remotePayload === 'string'
+                  ? remotePayload
+                  : JSON.stringify(remotePayload ?? {});
+                await this.sqlite.run(
+                  "INSERT INTO files(id, inlineContent, blobPath, mediaType) VALUES (?, ?, NULL, ?)",
+                  [id, remoteString, mediaType]
+                );
+              } else if (typeof content === 'string' && content.startsWith('data:')) {
                 // dataURL形式の画像データ → Blobとして保存
                 const actualBlob = await this.mediaConverter.dataURLtoBlob(content);
                 await this.blobStore.write(id, actualBlob);
@@ -540,6 +568,13 @@ export class FSAFile extends File {
     if (!file) throw new Error('File not found');
 
     if (file.inlineContent) {
+      if (file.mediaType === 'remote') {
+        try {
+          return JSON.parse(file.inlineContent) as MediaResource;
+        } catch {
+          // fallback to content handling
+        }
+      }
       return await this.mediaConverter.fromStorable({ content: file.inlineContent, mediaType: file.mediaType });
     }
     if (file.blobPath) {

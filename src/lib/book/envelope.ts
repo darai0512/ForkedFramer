@@ -1,12 +1,13 @@
 import { decode, encode } from 'cbor-x'
 import { ulid } from 'ulid';
 import { unpackFrameMedias, unpackBubbleMedias, unpackNotebookMedias, packFrameMedias, packBubbleMedias, packNotebookMedias } from "./imagePacking";
-import type { SaveMediaFunc, MediaResource, MediaType } from "./imagePacking";
+import type { SaveMediaFunc, MediaResource, MediaType, LoadMediaFunc } from "./imagePacking";
 import type { Book, Page, WrapMode, ReadingDirection, SerializedPage, SerializedNotebook, SerializedNewPageProperty, NotebookLocal, EnvelopeBookAttributes } from "./book";
 import { emptyNotebook, trivialNewPageProperty } from "./book";
 import { Bubble } from "../layeredCanvas/dataModels/bubble";
 import { FrameElement } from "../layeredCanvas/dataModels/frameTree";
 import { createCanvasFromImage, getFirstFrameOfVideo, canvasToBlob } from "../layeredCanvas/tools/imageUtil";
+import { createMissingMediaReference } from "../layeredCanvas/dataModels/media";
 
 // 互換性維持のため、imagesは残してmediasを追加する
 
@@ -32,6 +33,15 @@ export type EnvelopedBookWithMedias = EnvelopedBookBase & {
 export type EnvelopedBook = EnvelopedBookWithImages | EnvelopedBookWithMedias;
 
 export type CanvasBag = { [fileId: string]: { type: MediaType, data: HTMLCanvasElement | HTMLVideoElement } };
+
+function getEnvelopeFileId(mediaResource: MediaResource): string | null {
+  const r = mediaResource as any;
+  return r?.envelopeFileId ?? r?.missingId ?? null;
+}
+
+function isMaterializedMedia(mediaResource: MediaResource): mediaResource is HTMLCanvasElement | HTMLVideoElement {
+  return mediaResource instanceof HTMLCanvasElement || mediaResource instanceof HTMLVideoElement;
+}
 
 export async function readEnvelope(blob: Blob, progress: (n: number) => void): Promise<Book> {
   const uint8Array = new Uint8Array(await blob.arrayBuffer());
@@ -75,14 +85,23 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
         const video = document.createElement('video');
         video.src = url;
         await getFirstFrameOfVideo(video);
+        (video as any)["envelopeFileId"] = mediaId;
         bag[mediaId] = { type: 'video', data: video };
       }
       progress(Object.keys(bag).length / Object.keys(envelopedBook.medias).length);
     }
   }
 
+  const loadMedia: LoadMediaFunc = async (imageId: string, mediaType: MediaType) => {
+    const entry = bag[imageId];
+    if (!entry) {
+      return createMissingMediaReference(mediaType, { reason: 'envelope-missing', missingId: imageId });
+    }
+    return entry.data;
+  };
+
   const notebook = envelopedBook.notebook 
-    ? await unpackNotebookMedias(envelopedBook.notebook, async (imageId: string) => bag[imageId].data) 
+    ? await unpackNotebookMedias(envelopedBook.notebook, loadMedia) 
     : emptyNotebook();
 
   // attributes は publishUrl を含まないため、Book側で publishUrl のみ既定値を付与
@@ -101,7 +120,13 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
     newPageProperty: envelopedBook.newPageProperty ?? {...trivialNewPageProperty},
   };
 
-  const getCanvas = async (imageId: string) => bag[imageId].data;
+  const getCanvas: LoadMediaFunc = async (imageId: string, mediaType: MediaType) => {
+    const entry = bag[imageId];
+    if (!entry) {
+      return createMissingMediaReference(mediaType, { reason: 'envelope-missing', missingId: imageId });
+    }
+    return entry.data;
+  };
 
   for (const envelopedPage of envelopedBook.pages) {
     const frameTree = await unpackFrameMedias(envelopedPage.paperSize, envelopedPage.frameTree, getCanvas);
@@ -165,8 +190,11 @@ export async function writeEnvelope(book: Book, progress: (n: number) => void): 
 
 async function putFrameMedias(frameTree: FrameElement, medias: { [fileId: string]: { type: MediaType, data: Uint8Array, format?: string } }, parentDirection: 'h' | 'v'): Promise<any> {
   const f: SaveMediaFunc = async (mediaResource, mediaType) => {
+    const fileId = getEnvelopeFileId(mediaResource) ?? ulid();
+    if (!isMaterializedMedia(mediaResource)) {
+      return fileId;
+    }
     const array = await mediaResourceToUint8Array(mediaResource, mediaType);
-    const fileId = ulid();
     medias[fileId] = { type: mediaType, data: array, format: 'webp' };
     return fileId;
   };
@@ -189,8 +217,11 @@ async function putFrameMedias(frameTree: FrameElement, medias: { [fileId: string
 
 async function putBubbleMedias(bubbles: Bubble[], images: { [fileId: string]: { type: MediaType, data: Uint8Array } }): Promise<any[]> {
   const f: SaveMediaFunc = async (mediaResource, mediaType) => {
+    const fileId = getEnvelopeFileId(mediaResource) ?? ulid();
+    if (!isMaterializedMedia(mediaResource)) {
+      return fileId;
+    }
     const array = await mediaResourceToUint8Array(mediaResource, mediaType);
-    const fileId = ulid();
     images[fileId] = { type: mediaType, data: array };
     return fileId;
   };
@@ -199,8 +230,11 @@ async function putBubbleMedias(bubbles: Bubble[], images: { [fileId: string]: { 
 
 async function putNotebookMedias(notebook: NotebookLocal, images: { [fileId: string]: { type: MediaType, data: Uint8Array } }): Promise<SerializedNotebook> {
   const f: SaveMediaFunc = async (mediaResource, mediaType) => {
+    const fileId = getEnvelopeFileId(mediaResource) ?? ulid();
+    if (!isMaterializedMedia(mediaResource)) {
+      return fileId;
+    }
     const array = await mediaResourceToUint8Array(mediaResource, mediaType);
-    const fileId = ulid();
     images[fileId] = { type: mediaType, data: array };
     return fileId;
   };
@@ -252,7 +286,13 @@ export async function readOldEnvelope(json: string): Promise<Book> {
     newPageProperty: {...trivialNewPageProperty},
   };
 
-  const getCanvas = async (imageId: string) => bag[imageId].data;
+  const getCanvas: LoadMediaFunc = async (imageId: string, mediaType: MediaType) => {
+    const entry = bag[imageId];
+    if (!entry) {
+      return createMissingMediaReference(mediaType, { reason: 'envelope-missing', missingId: imageId });
+    }
+    return entry.data;
+  };
 
   for (const envelopedPage of envelopedBook.pages) {
     const frameTree = await unpackFrameMedias(envelopedPage.paperSize, envelopedPage.frameTree, getCanvas);
