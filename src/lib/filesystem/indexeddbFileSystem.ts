@@ -409,9 +409,11 @@ export class IndexedDBFileSystem extends FileSystem {
     onProgress(0);
 
     await this.useDb(async db => {
-      const tx = db.transaction('nodes', 'readwrite');
-      const store = tx.objectStore('nodes');
-      await store.clear();
+      const tx = db.transaction(['nodes', 'metadata'], 'readwrite');
+      const nodesStore = tx.objectStore('nodes');
+      const metadataStore = tx.objectStore('metadata');
+      await nodesStore.clear();
+      await metadataStore.clear();
       await tx.done;  // ここでトランザクション確実に終了
     });
 
