@@ -149,6 +149,8 @@ ignoreErrors: [
 2. **D案も併用**: Sentryの`ignoreErrors`に`AbortError`を追加（ユーザー操作によるキャンセルは報告不要）
 3. **保存失敗時のユーザー通知**: 保存処理でエラーが発生した場合、ユーザーに通知するUIを検討
 
+
+
 ## 関連Issue: JAVASCRIPT-SVELTE-EE (EncodingError)
 
 ### 概要

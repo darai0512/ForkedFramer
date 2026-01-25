@@ -31,7 +31,7 @@ export class FSABlobStore implements BlobStore {
     // メタファイルを書き込む（データ書き込み成功後）
     const metaHandle = await this.dirHandle.getFileHandle(metaFileName, { create: true });
     const metaWritable = await metaHandle.createWritable({ keepExistingData: false });
-    await metaWritable.write(JSON.stringify({ type: blob.type }));
+    await metaWritable.write(JSON.stringify({ type: blob.type, size: blob.size }));
     await metaWritable.close();
 
     return `blobs/${fileName}`;
@@ -51,6 +51,10 @@ export class FSABlobStore implements BlobStore {
     const metaText = await metaFile.text();
     const meta = JSON.parse(metaText);
     mimeType = meta.type || 'application/octet-stream';
+    const expectedSize = meta.size;
+    if (typeof expectedSize === 'number' && file.size !== expectedSize) {
+      throw new Error(`Blob size mismatch: expected ${expectedSize}, got ${file.size}`);
+    }
     
     // 正しいMIME typeでBlobを再構築
     const arrayBuffer = await file.arrayBuffer();
@@ -157,4 +161,3 @@ export async function internalizeBlobsInObject(
     return obj;
   }
 }
-

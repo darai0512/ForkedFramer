@@ -6,6 +6,7 @@ import { initializeApp } from "./firebase";
 import { initializeSupabase } from "./supabase";
 import { initPaperJs } from "./lib/layeredCanvas/tools/draw/bubbleGraphic"
 import { initI18n } from './locales';
+import { registerBlobDebugCommands } from "./debug/blobDebugCommands";
 
 import { computePosition, autoUpdate, offset, shift, flip, arrow } from '@floating-ui/dom';
   
@@ -131,4 +132,5 @@ import { outputMainBook } from "./bookeditor/workspaceStore";
 
 window.doIt = function() {
   outputMainBook();
-} 
+}
+registerBlobDebugCommands();
