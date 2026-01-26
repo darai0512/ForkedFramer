@@ -10,12 +10,26 @@
   import MediaFrame from "../gallery/MediaFrame.svelte";
   import { _ } from 'svelte-i18n';
   import { saveCharacterToFile, loadCharacterFromFile } from "./characterExport";
-  import { toastStore } from "@skeletonlabs/skeleton";
+  import { toastStore, Accordion, AccordionItem } from "@skeletonlabs/skeleton";
+  import { postToPublicActors } from "../materialBucket/materialOperations";
+  import { onlineStatus } from "../utils/accountStore";
+  import postIcon from '../assets/post.webp';
   import { sortableList } from "../utils/sortableList";
   import { moveInArray } from "../utils/moveInArray";
+  import PublicActorsGallery from "../materialBucket/PublicActorsGallery.svelte";
 
   let opened = false;
   let characters: CharacterLocal[] = [];
+  let localRosterOpen = true;
+  let publicActorsOpen = false;
+
+  // ダウンロード済みの役者IDリスト
+  $: downloadedActorIds = characters.map(c => c.ulid);
+
+  // みんなの役者からダウンロード完了時にローカルを再読み込み
+  async function onActorDownloaded() {
+    characters = await loadCharactersFromRoster($gadgetFileSystem!);
+  }
   
   async function onSortUpdate(e: { oldIndex: number | undefined; newIndex: number | undefined }) {
     if (e.oldIndex == null || e.newIndex == null) return;
@@ -70,6 +84,10 @@
     }
   }
 
+  async function shareCharacter(c: CharacterLocal) {
+    await postToPublicActors(c);
+  }
+
   onMount(() => {
     return rosterOpen.subscribe(async (newOpened) => {
       if (newOpened) {
@@ -98,66 +116,96 @@
           キャラクターをインポート
         </button>
       </div>
-      <div 
-        class="character-list"
-        use:sortableList={{ 
-          animation: 150, 
-          handle: ".character-header", 
-          filter: ".header-buttons, .header-buttons *", 
-          preventOnFilter: false,
-          fallbackOnBody: true,
-          fallbackTolerance: 8,
-          ghostClass: "sortable-ghost",
-          chosenClass: "sortable-chosen",
-          onUpdate: onSortUpdate 
-        }}
-      >
-        {#each characters as character (character.ulid)}
-          <div class="character-card">
-            <div class="character-header" style="border-left: 4px solid {character.themeColor};" title="ドラッグして並べ替え">
-              <div class="character-name-container">
-                <span class="character-name">{character.name}</span>
-                <div
-                  class="color-display"
-                  style="background-color: {character.themeColor};"
-                ></div>
-              </div>
-              <div class="header-buttons">
-                <button class="export-btn" on:click={() => exportCharacter(character)} title="エクスポート">
-                  <img src={downloadIcon} alt="エクスポート" class="download-icon" />
-                </button>
-                <button class="delete-btn" on:click={() => remove(character)}>
-                  <img src={trashIcon} alt={$_('notebook.delete')} class="trash-icon" />
-                </button>
-              </div>
+
+      <Accordion>
+        <AccordionItem bind:open={localRosterOpen}>
+          <svelte:fragment slot="summary">
+            <h3 class="accordion-title">{$_('publicActors.localActors')}</h3>
+          </svelte:fragment>
+          <svelte:fragment slot="content">
+            <div
+              class="character-list"
+              use:sortableList={{
+                animation: 150,
+                handle: ".character-header",
+                filter: ".header-buttons, .header-buttons *",
+                preventOnFilter: false,
+                fallbackOnBody: true,
+                fallbackTolerance: 8,
+                ghostClass: "sortable-ghost",
+                chosenClass: "sortable-chosen",
+                onUpdate: onSortUpdate
+              }}
+            >
+              {#each characters as character (character.ulid)}
+                <div class="character-card">
+                  <div class="character-header" style="border-left: 4px solid {character.themeColor};" title="ドラッグして並べ替え">
+                    <div class="character-name-container">
+                      <span class="character-name">{character.name}</span>
+                      <div
+                        class="color-display"
+                        style="background-color: {character.themeColor};"
+                      ></div>
+                    </div>
+                    <div class="header-buttons">
+                      {#if $onlineStatus === 'signed-in' && character.portrait && character.portrait !== 'loading'}
+                        <button class="share-btn" on:click={() => shareCharacter(character)} title={$_('publicActors.postButton')}>
+                          <img src={postIcon} alt={$_('publicActors.postButton')} class="post-icon" />
+                        </button>
+                      {/if}
+                      <button class="export-btn" on:click={() => exportCharacter(character)} title="エクスポート">
+                        <img src={downloadIcon} alt="エクスポート" class="download-icon" />
+                      </button>
+                      <button class="delete-btn" on:click={() => remove(character)}>
+                        <img src={trashIcon} alt={$_('notebook.delete')} class="trash-icon" />
+                      </button>
+                    </div>
+                  </div>
+                  <div class="character-content">
+                    <div class="portrait-container">
+                      <div class="portrait">
+                        {#if character.portrait && character.portrait != 'loading'}
+                          <MediaFrame
+                            media={character.portrait}
+                          />
+                        {:else}
+                          <div class="no-portrait">{$_('notebook.noPortrait')}</div>
+                        {/if}
+                      </div>
+                      <button class="offer-btn" on:click={() => offer(character)}>{$_('notebook.offer')}</button>
+                    </div>
+                    <div class="character-details">
+                      <div class="detail-section">
+                        <div class="detail-label">{$_('notebook.personality')}</div>
+                        <div class="textarea-display">{character.personality}</div>
+                      </div>
+                      <div class="detail-section">
+                        <div class="detail-label">{$_('notebook.appearance2')}</div>
+                        <div class="textarea-display">{character.appearance}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {/each}
             </div>
-            <div class="character-content">
-              <div class="portrait-container">
-                <div class="portrait">
-                  {#if character.portrait && character.portrait != 'loading'}
-                    <MediaFrame
-                      media={character.portrait}
-                    />
-                  {:else}
-                    <div class="no-portrait">{$_('notebook.noPortrait')}</div>
-                  {/if}
-                </div>
-                <button class="offer-btn" on:click={() => offer(character)}>{$_('notebook.offer')}</button>
-              </div>
-              <div class="character-details">
-                <div class="detail-section">
-                  <div class="detail-label">{$_('notebook.personality')}</div>
-                  <div class="textarea-display">{character.personality}</div>
-                </div>
-                <div class="detail-section">
-                  <div class="detail-label">{$_('notebook.appearance2')}</div>
-                  <div class="textarea-display">{character.appearance}</div>
-                </div>
-              </div>
+          </svelte:fragment>
+        </AccordionItem>
+
+        <AccordionItem bind:open={publicActorsOpen}>
+          <svelte:fragment slot="summary">
+            <h3 class="accordion-title">{$_('materialBucket.publicActors')}</h3>
+          </svelte:fragment>
+          <svelte:fragment slot="content">
+            <div class="public-actors-container">
+              <PublicActorsGallery
+                columnWidth={160}
+                downloadedActorIds={downloadedActorIds}
+                onDownloaded={onActorDownloaded}
+              />
             </div>
-          </div>
-        {/each}
-      </div>
+          </svelte:fragment>
+        </AccordionItem>
+      </Accordion>
     </div>
   </Drawer>
 </div>
@@ -190,6 +238,19 @@
     font-weight: 600;
     color: rgb(var(--color-primary-700));
     margin: 0;
+  }
+
+  .accordion-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: rgb(var(--color-primary-600));
+    margin: 0;
+  }
+
+  .public-actors-container {
+    min-height: 300px;
+    max-height: 500px;
+    overflow-y: auto;
   }
   
   .import-btn {
@@ -272,6 +333,26 @@
     align-items: center;
   }
   
+  .share-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 4px;
+  }
+
+  .share-btn:hover {
+    opacity: 1;
+    background-color: rgba(128, 0, 255, 0.1);
+    border-radius: 4px;
+  }
+
+  .post-icon {
+    width: 20px;
+    height: 20px;
+  }
+
   .export-btn {
     background: none;
     border: none;
@@ -280,13 +361,13 @@
     transition: opacity 0.2s;
     padding: 4px;
   }
-  
+
   .export-btn:hover {
     opacity: 1;
     background-color: rgba(0, 100, 255, 0.1);
     border-radius: 4px;
   }
-  
+
   .download-icon {
     width: 20px;
     height: 20px;

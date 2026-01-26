@@ -13,6 +13,7 @@ export type GetUploadUrlRequest = z.infer<typeof GetUploadUrlRequestSchema>;
 
 export const GetUploadUrlResponseSchema = z.object({
   apiUrl: z.string(),
+  downloadUrl: z.string(),
   url: z.string(),
   token: z.string(),
   filename: z.string(),

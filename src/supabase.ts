@@ -18,6 +18,7 @@ import {
 } from "./utils/edgeFunctions/types/imagingTypes.d";
 import { EraseFileResponseSchema, GetDownloadUrlResponseSchema, GetUploadUrlResponseSchema } from "$protocolTypes/cloudFileTypes.d";
 import { type ListMaterialsRequest, ListMaterialsRequestSchema, ListMaterialsResponseSchema, type RecordMaterialRequest, RecordMaterialRequestSchema, RecordMaterialResponseSchema } from "$protocolTypes/materialTypes.d";
+import { type ListActorsRequest, ListActorsRequestSchema, ListActorsResponseSchema, type RecordActorRequest, RecordActorRequestSchema, RecordActorResponseSchema } from "./utils/edgeFunctions/types/actorTypes.d";
 import { NotebookRequestSchema, NotebookWithInstructionRequestSchema, type NotebookRequest, type NotebookWithInstructionRequest, AdviseThemeResponseSchema, type AdviseThemeResponse, AdvisePageGenerationResponseSchema } from "$protocolTypes/adviseTypes.d";
 import { FunctionsHttpError } from '@supabase/supabase-js'
 
@@ -197,6 +198,14 @@ export async function recordMaterial(req: RecordMaterialRequest) {
 
 export async function listMaterials(req: ListMaterialsRequest) {
   return await invoke("tools/listmaterials", req, ListMaterialsRequestSchema, ListMaterialsResponseSchema);
+}
+
+export async function recordActor(req: RecordActorRequest) {
+  return await invoke("tools/recordactor", req, RecordActorRequestSchema, RecordActorResponseSchema);
+}
+
+export async function listActors(req: ListActorsRequest) {
+  return await invoke("tools/listactors", req, ListActorsRequestSchema, ListActorsResponseSchema);
 }
 
 export async function notifyShare(text: string) {

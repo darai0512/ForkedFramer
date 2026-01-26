@@ -78,6 +78,7 @@
   import NewStorageWizard from './filemanager/NewStorageWizard.svelte';
   import ConfirmDialog from './utils/ConfirmDialog.svelte';
   import PostToPublicMaterials from './gallery/PostToPublicMaterials.svelte';
+  import PostToPublicActors from './gallery/PostToPublicActors.svelte';
 
   //const advertiser = "thumbnail_stories";
   const advertiser = "jonigata";
@@ -152,6 +153,9 @@
     },
     postToPublicMaterials: {
       ref: PostToPublicMaterials,
+    },
+    postToPublicActors: {
+      ref: PostToPublicActors,
     }
   };
 

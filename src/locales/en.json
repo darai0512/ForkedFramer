@@ -352,7 +352,9 @@
   },
   "materialBucket": {
     "generationHistory": "Generation History",
-    "publicMaterials": "Public Materials"
+    "publicMaterials": "Public Materials",
+    "roster": "Actors",
+    "publicActors": "Public Actors"
   },
   "gallery": {
     "delete": "Delete",
@@ -365,6 +367,7 @@
     "copyToClipboard": "Copy to clipboard",
     "delete": "Delete",
     "appearance": "Appearance",
+    "characterName": "Character Name",
     "registerToRoster": "Register to Character Roster",
     "addCharacter": "Add Character",
     "addCharacterQuestion": "Add Character?",
@@ -467,6 +470,39 @@
       "background": "Background",
       "effect": "Effect",
       "item": "Item"
+    }
+  },
+  "publicActors": {
+    "localActors": "Local Actors",
+    "postButton": "Post to Public Actors",
+    "signInRequired": "Sign in required to use<br>public actors gallery",
+    "noApprovedActors": "No approved actors yet",
+    "loadingMore": "Loading...",
+    "loadError": "Failed to load public actors",
+    "download": "Download",
+    "downloadSuccess": "Added \"{name}\" to your Character Roster",
+    "downloadError": "Failed to download actor",
+    "noFileSystem": "File system not available",
+    "dialog": {
+      "title": "Post to Public Actors",
+      "confirmText": "This actor will be posted to the public actors gallery.<br>Once posted, other users will be able to use this actor.<br>※Please do not post content for which you do not own the copyright.<br>※Please also refrain from posting adult content or content that violates public order and morals.",
+      "submitButton": "Post",
+      "displayName": "Display Name",
+      "displayNamePlaceholder": "Enter actor display name",
+      "category": "Category",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter actor description (optional)",
+      "selectionRewardPrefix": "If selected, ",
+      "selectionRewardSuffix": " reward!",
+      "notSet": "Not Set"
+    },
+    "categories": {
+      "all": "All",
+      "general": "General",
+      "protagonist": "Protagonist",
+      "supporting": "Supporting",
+      "comedy": "Comedy",
+      "serious": "Serious"
     }
   },
   "dialogs": {

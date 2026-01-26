@@ -354,7 +354,9 @@
     "materialCollection": "素材集",
     "generationHistory": "生成履歴",
     "closeOnDrag": "ドラッグ時にウィンドウを閉じる",
-    "publicMaterials": "みんなの素材集"
+    "publicMaterials": "みんなの素材集",
+    "roster": "役者",
+    "publicActors": "みんなの役者"
   },
   "gallery": {
     "delete": "削除",
@@ -367,6 +369,7 @@
     "copyToClipboard": "クリップボードにコピー",
     "delete": "削除",
     "appearance": "見た目",
+    "characterName": "キャラクター名",
     "registerToRoster": "キャラ名簿に登録",
     "addCharacter": "キャラクター追加",
     "addCharacterQuestion": "キャラクター追加？",
@@ -469,6 +472,39 @@
       "background": "背景",
       "effect": "エフェクト",
       "item": "アイテム"
+    }
+  },
+  "publicActors": {
+    "localActors": "ローカルの役者",
+    "postButton": "みんなの役者に投稿",
+    "signInRequired": "みんなの役者を利用するには<br>サインインが必要です",
+    "noApprovedActors": "承認済みの役者はまだいません",
+    "loadingMore": "読み込み中...",
+    "loadError": "みんなの役者の読み込みに失敗しました",
+    "download": "ダウンロード",
+    "downloadSuccess": "「{name}」をキャラクター名簿に追加しました",
+    "downloadError": "役者のダウンロードに失敗しました",
+    "noFileSystem": "ファイルシステムが利用できません",
+    "dialog": {
+      "title": "みんなの役者に投稿",
+      "confirmText": "この役者をみんなの役者に投稿します。<br>投稿した役者は他のユーザーが利用できるようになります。<br>※著作権が自分にないものは投稿しないでください。<br>※18禁・公序良俗に反するものも投稿しないでください。",
+      "submitButton": "投稿する",
+      "displayName": "表示名",
+      "displayNamePlaceholder": "役者の表示名を入力",
+      "category": "カテゴリ",
+      "description": "説明",
+      "descriptionPlaceholder": "役者の説明を入力（任意）",
+      "selectionRewardPrefix": "採用された場合、",
+      "selectionRewardSuffix": "プレゼント！",
+      "notSet": "未設定"
+    },
+    "categories": {
+      "all": "すべて",
+      "general": "その他",
+      "protagonist": "主人公向け",
+      "supporting": "脇役向け",
+      "comedy": "ギャグ向け",
+      "serious": "シリアス向け"
     }
   },
   "dialogs": {
