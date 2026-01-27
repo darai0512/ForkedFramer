@@ -27,6 +27,12 @@
   let offset = 0;
   const limit = 50;
 
+  function withQueryParam(url: string, key: string, value: string): string {
+    const parsed = new URL(url);
+    parsed.searchParams.set(key, value);
+    return parsed.toString();
+  }
+
   async function loadPublicActors(append: boolean = false) {
     if (!append) {
       loading.set(true);
@@ -75,19 +81,18 @@
     loading.set(true);
     try {
       // ポートレート画像を取得（表示用<img>の非CORSキャッシュを回避するためURLを分離）
-      const downloadUrl = new URL(actor.portrait_url);
-      downloadUrl.searchParams.set('download', '1');
+      const downloadUrl = withQueryParam(actor.portrait_url, 'download', '1');
       let response: Response;
       let blob: Blob;
       try {
-        response = await fetch(downloadUrl.toString());
+        response = await fetch(downloadUrl);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         blob = await response.blob();
       } catch (error) {
-        console.warn(`Failed to fetch portrait for ${downloadUrl.toString()}, retrying with cache reload:`, error);
-        response = await fetch(downloadUrl.toString(), { cache: 'reload' });
+        console.warn(`Failed to fetch portrait for ${downloadUrl}, retrying with cache reload:`, error);
+        response = await fetch(downloadUrl, { cache: 'reload' });
         if (!response.ok) {
           throw new Error(`Failed to fetch portrait after retry: ${response.status}`);
         }
@@ -168,7 +173,7 @@
         {#each filteredActors as actor (actor.id)}
           <div class="actor-card">
             <div class="portrait-container">
-              <img src={actor.portrait_url} alt={actor.display_name} class="portrait" crossorigin="anonymous" />
+              <img src={withQueryParam(actor.portrait_url, 'view', '1')} alt={actor.display_name} class="portrait" crossorigin="anonymous" />
             </div>
             <div class="actor-info">
               <div class="actor-name" style="border-left: 3px solid {actor.theme_color};">
