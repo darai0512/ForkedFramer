@@ -91,6 +91,7 @@
   onMount(() => {
     return rosterOpen.subscribe(async (newOpened) => {
       if (newOpened) {
+        publicActorsOpen = false;
         if (!opened) {
           opened = true;
           characters = await loadCharactersFromRoster($gadgetFileSystem!);
