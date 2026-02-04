@@ -286,10 +286,19 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
     notebook!.storyboard = null;
   }
 
+  async function saveNotebookPreferences() {
+    if (!notebook) return;
+    const formatPref = createPreference<"4koma" | "standard">('imaging', 'notebookFormat');
+    const pageNumberPref = createPreference<number | null>('imaging', 'notebookPageNumber');
+    await formatPref.set(notebook.format);
+    await pageNumberPref.set(notebook.pageNumber);
+  }
+
   async function onBuildStoryboard() {
     console.log('build storyboard');
     try {
       storyboardWaiting = true;
+      await saveNotebookPreferences();
       const result = await adviseStoryboard(makeRequest());
       notebook!.storyboard = result as Storyboard;
       storyboardWaiting = false;
@@ -383,6 +392,7 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
     console.log('onCreatePages called (inline mode)');
     try {
       storyboardWaiting = true;
+      await saveNotebookPreferences();
       const pages = await advisePageGeneration(makeRequest());
       storyboardWaiting = false;
 

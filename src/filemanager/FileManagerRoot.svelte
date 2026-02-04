@@ -267,7 +267,7 @@
         }
 
         // 初起動またはFSA/クラウドストレージ接続失敗の場合デスクトップにセーブ
-        book = newBook('not visited', "initial-", "standard");
+        book = newBook('not visited', "initial-", "standard", null);
         // localFoldersが初期化されてない可能性があるので自力
         const root = await localFileSystem.getRoot();
         const desktop = (await root.getEmbodiedEntryByName("デスクトップ"))![2].asFolder()!;

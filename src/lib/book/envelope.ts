@@ -100,9 +100,9 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
     return entry.data;
   };
 
-  const notebook = envelopedBook.notebook 
-    ? await unpackNotebookMedias(envelopedBook.notebook, loadMedia) 
-    : emptyNotebook();
+  const notebook = envelopedBook.notebook
+    ? await unpackNotebookMedias(envelopedBook.notebook, loadMedia)
+    : emptyNotebook(null);
 
   // attributes は publishUrl を含まないため、Book側で publishUrl のみ既定値を付与
   const envelopeAttributes: EnvelopeBookAttributes | null = envelopedBook.attributes ?? null;
@@ -281,7 +281,7 @@ export async function readOldEnvelope(json: string): Promise<Book> {
     direction: envelopedBook.direction,
     wrapMode: envelopedBook.wrapMode,
     chatLogs: [],
-    notebook: envelopedBook.notebook ?? emptyNotebook(),
+    notebook: envelopedBook.notebook ?? emptyNotebook(null),
     attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: {...trivialNewPageProperty},
   };

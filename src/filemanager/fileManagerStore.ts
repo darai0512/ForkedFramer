@@ -132,10 +132,10 @@ export async function loadBookFrom(fileSystem: FileSystem, file: File): Promise<
 
   const chatLogs = protocolChatLogToRichChatLog(serializedBook.chatLogs ?? []);
 
-  const notebook = 
-    serializedBook.notebook 
-    ? await fetchNotebookImages(serializedBook.notebook, fileSystem) 
-    : emptyNotebook();
+  const notebook =
+    serializedBook.notebook
+    ? await fetchNotebookImages(serializedBook.notebook, fileSystem)
+    : emptyNotebook(null);
 
   if (!serializedBook.newPageProperty) {
     const p = serializedBook.pages[0];
@@ -224,7 +224,7 @@ async function wrapPageAsBook(serializedPage: any, frameTree: FrameElement, bubb
     direction: 'right-to-left',
     wrapMode: 'none',
     chatLogs: [],
-    notebook: emptyNotebook(),
+    notebook: emptyNotebook(null),
     attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: {
       paperSize: [840, 1188],

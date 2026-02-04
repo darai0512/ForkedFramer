@@ -7,6 +7,8 @@ A11y警告はsvelte-ignoreでOK
 関数のシグネチャで、デフォルト引数は使わない。
 命じていないのに勝手にコミットしてはならない
 
+src/lib以下は他プロジェクトからライブラリとして利用される可能性があるので、svelte関連のコード(storeなど)を使わないでください。
+
 ## Project Overview
 
 FramePlanner is a manga creation tool that allows users to define manga frame structures as tree data (JSON) and arrange images within frames like windows. This is a Svelte-based web application with a complex layered canvas system for interactive manga editing.

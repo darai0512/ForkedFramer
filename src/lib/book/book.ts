@@ -171,7 +171,12 @@ export interface NotebookLocal extends NotebookBase {
   characters: CharacterLocal[];
 };
 
-export function emptyNotebook(): NotebookLocal {
+export type NotebookOptions = {
+  format?: "4koma" | "standard";
+  pageNumber?: number | null;
+};
+
+export function emptyNotebook(options: NotebookOptions | null): NotebookLocal {
   return {
     theme: "",
     characters: [],
@@ -179,8 +184,8 @@ export function emptyNotebook(): NotebookLocal {
     scenario: "",
     critique: "",
     storyboard: null,
-    pageNumber: null,
-    format: "standard",
+    pageNumber: options?.pageNumber ?? null,
+    format: options?.format ?? "standard",
   };
 }
 
@@ -258,7 +263,7 @@ export function newPage(frameTree: FrameElement, bubbles: Bubble[]) {
   return page;
 }
 
-export function newBook(id: string, prefix: Prefix, exampleName: string): Book {
+export function newBook(id: string, prefix: Prefix, exampleName: string, notebookOptions: NotebookOptions | null): Book {
   const example = frameExamples[exampleName];
   const frameTree = FrameElement.compile(example.frameTree);
   const page = newPage(frameTree, []);
@@ -269,7 +274,7 @@ export function newBook(id: string, prefix: Prefix, exampleName: string): Book {
     direction: 'right-to-left',
     wrapMode: 'two-pages',
     chatLogs: [],
-    notebook: emptyNotebook(),
+    notebook: emptyNotebook(notebookOptions),
     attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty: {...trivialNewPageProperty},
   }
@@ -277,7 +282,7 @@ export function newBook(id: string, prefix: Prefix, exampleName: string): Book {
   return book;
 }
 
-export function newImageBook(id: string, media: (HTMLCanvasElement | HTMLVideoElement)[], prefix: Prefix): Book {
+export function newImageBook(id: string, media: (HTMLCanvasElement | HTMLVideoElement)[], prefix: Prefix, notebookOptions: NotebookOptions | null): Book {
   const paperSize = mediaResourceSize(media[0])!;
   console.log(paperSize, media[0]);
 
@@ -286,7 +291,7 @@ export function newImageBook(id: string, media: (HTMLCanvasElement | HTMLVideoEl
     const frameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
     const film = Film.fromMedia(buildMedia(m));
     frameTree.children[0].filmStack.films = [film];
-  
+
     const page = newPage(frameTree, []);
     page.paperSize = paperSize!;
     pages.push(page);
@@ -302,7 +307,7 @@ export function newImageBook(id: string, media: (HTMLCanvasElement | HTMLVideoEl
     direction: 'right-to-left',
     wrapMode: 'none',
     chatLogs: [],
-    notebook: emptyNotebook(),
+    notebook: emptyNotebook(notebookOptions),
     attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
     newPageProperty,
   }
