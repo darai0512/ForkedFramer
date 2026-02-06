@@ -26,11 +26,29 @@ export async function runResilientTask<R>(
 
   const sleep = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
+  // タブが非表示になったことを追跡し、復帰時に即座にポーリングするため
+  let wasHidden = false;
+  const trackVisibility = () => {
+    if (document.hidden) {
+      wasHidden = true;
+    }
+  };
+  document.addEventListener('visibilitychange', trackVisibility);
+
   const waitVisibleOrTimeout = (ms: number): Promise<void> =>
     new Promise<void>(resolve => {
+      // API呼出中にタブが非表示→表示に戻った場合、即座にresolve
+      if (wasHidden && !document.hidden) {
+        wasHidden = false;
+        console.log(`[DIAG resilientTask] wait(${ms}ms) → wasHiddenスキップ`);
+        resolve();
+        return;
+      }
+      console.log(`[DIAG resilientTask] wait(${ms}ms) 開始, hidden=${document.hidden}`);
+
       let timerId: number | null = null;
       let finished = false;
-  
+
       const cleanup = () => {
         if (finished) return;
         finished = true;
@@ -38,27 +56,33 @@ export async function runResilientTask<R>(
         document.removeEventListener('visibilitychange', onVisibility);
         resolve();
       };
-  
+
       const onVisibility = () => {
-        console.log('runResilientTask: visibilitychange', document.hidden);
         if (!document.hidden) {
+          wasHidden = false;
+          console.log(`[DIAG resilientTask] wait(${ms}ms) → タブ復帰で即resolve`);
           // 休止中 → 可視化されたら即再開
           cleanup();
         } else if (timerId !== null) {
           // 可視 → 非可視に変わったらタイマーを止める
           clearTimeout(timerId);
           timerId = null;
+          console.log(`[DIAG resilientTask] wait(${ms}ms) → タブ非表示でタイマー停止`);
         }
       };
-  
+
       document.addEventListener('visibilitychange', onVisibility);
-  
+
       // 最初が可視ならタイマーを掛ける。非可視なら onVisibility が処理する
       if (!document.hidden) {
-        timerId = window.setTimeout(cleanup, ms);
+        timerId = window.setTimeout(() => {
+          console.log(`[DIAG resilientTask] wait(${ms}ms) → タイマー満了`);
+          cleanup();
+        }, ms);
       }
     });
 
+  try {
   while (true) {
     const gen = taskFn(); // AsyncGenerator を開始
     try {
@@ -85,5 +109,8 @@ export async function runResilientTask<R>(
         await gen.return(undefined as any);
       }
     }
+  }
+  } finally {
+    document.removeEventListener('visibilitychange', trackVisibility);
   }
 }

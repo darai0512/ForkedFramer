@@ -226,8 +226,26 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
   const maxInterval = isVideo ? 60000 : 20000; // 合計インターバルの上限
   const growth = 1.1; // 緩やかな増加率
 
+  // タブが非表示になったことを追跡し、復帰時に即座にポーリングするため
+  let wasHidden = false;
+  const trackVisibility = () => {
+    if (document.hidden) {
+      wasHidden = true;
+    }
+  };
+  document.addEventListener('visibilitychange', trackVisibility);
+
   const waitVisibleOrTimeout = (ms: number): Promise<void> =>
     new Promise<void>((resolve) => {
+      // API呼出中にタブが非表示→表示に戻った場合、即座にresolve
+      if (wasHidden && !document.hidden) {
+        wasHidden = false;
+        console.log(`[DIAG pollMedia] extraWait(${ms}ms) → wasHiddenスキップ`);
+        resolve();
+        return;
+      }
+      console.log(`[DIAG pollMedia] extraWait(${ms}ms) 開始, hidden=${document.hidden}`);
+
       let timerId: number | null = null;
       let finished = false;
 
@@ -241,17 +259,23 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
 
       const onVisibility = () => {
         if (!document.hidden) {
+          wasHidden = false;
+          console.log(`[DIAG pollMedia] extraWait(${ms}ms) → タブ復帰で即resolve`);
           cleanup();
         } else if (timerId !== null) {
           clearTimeout(timerId);
           timerId = null;
+          console.log(`[DIAG pollMedia] extraWait(${ms}ms) → タブ非表示でタイマー停止`);
         }
       };
 
       document.addEventListener('visibilitychange', onVisibility);
 
       if (!document.hidden) {
-        timerId = window.setTimeout(cleanup, ms);
+        timerId = window.setTimeout(() => {
+          console.log(`[DIAG pollMedia] extraWait(${ms}ms) → タイマー満了`);
+          cleanup();
+        }, ms);
       }
     });
 
@@ -259,7 +283,7 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
     console.log("doit");
     let urls: string[] | undefined;
     while (!urls) {
-      console.log("polling...");
+      console.log(`[DIAG pollMedia] poll実行 ${new Date().toLocaleTimeString()}`);
       const status = await imagingStatus(mediaReference);
       console.log(status);
       switch (status.status) {
@@ -317,8 +341,10 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
       return true;
     }, 
     {interval});
+  document.removeEventListener('visibilitychange', trackVisibility);
 
-  console.log("[DEBUG pollMediaStatus] Fetching images from urls:", urls);
+  const fetchStart = performance.now();
+  console.log("[DIAG pollMedia] COMPLETED → fetch開始", urls.length, "件");
 
   // たまにfetchが失敗することがあるので、指数バックオフでリトライ
   const retryDelays = [1000, 4000, 16000]; // 1秒、4秒、16秒後にリトライ
@@ -362,7 +388,7 @@ export async function pollMediaStatus(mediaReference: { mediaType: 'image' | 'vi
       });
     }));
 
-  console.log("[DEBUG pollMediaStatus] mediaResources count:", mediaResources.length);
+  console.log(`[DIAG pollMedia] fetch完了 ${(performance.now() - fetchStart).toFixed(0)}ms, ${mediaResources.length}件`);
   return { urls, mediaResources };
 }
 
