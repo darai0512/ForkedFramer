@@ -479,6 +479,7 @@ $: {
                 placeholder={$_('dolphinRoom.generation.promptPlaceholder')}
                 bind:value={draft}
                 on:paste={handleTextareaPaste}
+                on:keydown={(e) => { if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); handleModeButtonClick(); } }}
                 use:promptHistoryAction={{ storeKey: 'dolphinRoomPromptHistory', valueBinding: draftBinding, submitTrigger: promptSubmitTrigger }}
                 aria-label={$_('dolphinRoom.generation.promptPlaceholder')}
                 rows={5}

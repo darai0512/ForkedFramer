@@ -622,7 +622,7 @@
       "applyStyle": "Apply Style",
       "stylePlaceholder": "e.g., Japanese anime style",
       "promptPlaceholder": "Enter prompt",
-      "historyHint": "Ctrl + ↑/↓ to browse history",
+      "historyHint": "Ctrl + ↑/↓ to browse history ・ Ctrl + Enter to generate",
       "imageType": "Image",
       "videoType": "Video",
       "typeLabel": {

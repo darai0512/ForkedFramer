@@ -624,7 +624,7 @@
       "applyStyle": "スタイルを適用",
       "stylePlaceholder": "例: Japanese anime style",
       "promptPlaceholder": "プロンプトを入力してください",
-      "historyHint": "Ctrl + ↑/↓ で履歴を移動",
+      "historyHint": "Ctrl + ↑/↓ で履歴を移動 ・ Ctrl + Enter で生成",
       "imageType": "画像",
       "videoType": "動画",
       "typeLabel": {
