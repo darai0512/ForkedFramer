@@ -86,6 +86,38 @@ let promptRequired = true;
 
 const allocateId: AllocateId = () => nextId++;
 
+let scrollObserverCleanup: (() => void) | null = null;
+
+function beginScrollToBottom() {
+  scrollObserverCleanup?.();
+  if (!logElement) return;
+
+  const el = logElement;
+  const scroll = () => { el.scrollTop = el.scrollHeight; };
+
+  // 子要素の追加を検知
+  const observer = new MutationObserver(scroll);
+  observer.observe(el, { childList: true, subtree: true });
+
+  // 画像・動画のloadイベントを検知（loadはバブルしないのでcaptureで）
+  el.addEventListener('load', scroll, { capture: true });
+
+  // 現在のSvelte更新を待って即スクロール
+  tick().then(scroll);
+
+  // 3秒後に自動クリーンアップ
+  const timer = setTimeout(cleanup, 3000);
+
+  function cleanup() {
+    clearTimeout(timer);
+    observer.disconnect();
+    el.removeEventListener('load', scroll, { capture: true });
+    if (scrollObserverCleanup === cleanup) scrollObserverCleanup = null;
+  }
+
+  scrollObserverCleanup = cleanup;
+}
+
 const getTimelineItems = () => timelineItems;
 const setTimelineItems = (items: TimelineItem[]) => {
   queueMicrotask(() => {
@@ -176,6 +208,7 @@ const { handleModelButtonClick: originalHandleModelButtonClick } = createGenerat
   getIsGenerating: () => isGenerating,
   setIsGenerating: (value) => {
     isGenerating = value;
+    beginScrollToBottom();
   },
   getImageWidth: () => imageWidth,
   getImageHeight: () => imageHeight,
@@ -417,6 +450,7 @@ function handleSubmit(event: Event) {
 }
 
 onDestroy(() => {
+  scrollObserverCleanup?.();
   objectUrls.revokeAll();
   mediaElements.clear();
   unsubscribeVideoModel();
