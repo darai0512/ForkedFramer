@@ -85,16 +85,20 @@
   $: messageTimestamp = messageItem ? formatTimestamp(messageItem.timestamp) : '';
 
   let expandedMediaIds = new Set<number>();
+  let autoExpandedIds = new Set<number>();
   $: {
     if (!mediaItems) {
       expandedMediaIds = new Set();
+      autoExpandedIds = new Set();
     } else {
       const validIds = new Set(mediaItems.map((item) => item.id));
       expandedMediaIds = new Set([...expandedMediaIds].filter((id) => validIds.has(id)));
-      // 生成完了した画像（プレースホルダーではなくmediaを持つ、かつユーザーが追加したものでない）を自動的に展開する
+      autoExpandedIds = new Set([...autoExpandedIds].filter((id) => validIds.has(id)));
+      // 生成完了した画像（プレースホルダーではなくmediaを持つ、かつユーザーが追加したものでない）を初回のみ自動的に展開する
       const completedImages = mediaItems.filter((item) => item.media && !item.placeholder && !item.userAdded);
       for (const item of completedImages) {
-        if (!expandedMediaIds.has(item.id)) {
+        if (!autoExpandedIds.has(item.id)) {
+          autoExpandedIds.add(item.id);
           expandedMediaIds.add(item.id);
         }
       }
