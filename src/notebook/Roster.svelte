@@ -51,7 +51,7 @@
   function offer(c: CharacterLocal) {
     console.log("offer");
     $rosterSelectedCharacter = c;
-    $rosterOpen = false;
+    toastStore.trigger({ message: `「${c.name}」を採用しました`, timeout: 1500 });
   }
 
   function remove(c: CharacterLocal) {
