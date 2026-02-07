@@ -195,8 +195,6 @@ const { handleModelButtonClick: originalHandleModelButtonClick } = createGenerat
 async function handleModeButtonClick() {
   promptSubmitTrigger++;
   await originalHandleModelButtonClick();
-  // 生成処理が完了した後にdraftをクリア
-  draft = '';
 }
 
 function handleVideoModelChange(nextModel: ImageToVideoModel) {
