@@ -22,6 +22,7 @@ export interface MediaItem extends BaseTimelineItem {
   placeholder?: boolean;
   promptId?: number;
   userAdded?: boolean; // ドロップ/ペーストでユーザーが追加した画像
+  model?: string; // 生成に使用したモデル名
 }
 
 export type TimelineItem = MessageItem | MediaItem;

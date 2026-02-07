@@ -44,8 +44,9 @@ export function createPlaceholderMediaItems(params: {
   allocateId: AllocateId;
   promptId?: number;
   kind?: MediaItem['kind'];
+  model?: string;
 }): { placeholders: MediaItem[]; timelineItems: TimelineItem[] } {
-  const { timelineItems, count, allocateId, promptId, kind = 'image' } = params;
+  const { timelineItems, count, allocateId, promptId, kind = 'image', model } = params;
   if (count <= 0) {
     return { placeholders: [], timelineItems };
   }
@@ -63,6 +64,7 @@ export function createPlaceholderMediaItems(params: {
       timestamp: baseTimestamp + i,
       placeholder: true,
       promptId,
+      model,
     });
   }
 

@@ -108,6 +108,7 @@ export function createGenerationActions(deps: GenerationDeps) {
       count: batchCount,
       allocateId: deps.allocateId,
       promptId,
+      model: deps.getImagingModel(),
     });
     deps.setTimelineItems(timelineItems);
     try {
@@ -172,6 +173,7 @@ export function createGenerationActions(deps: GenerationDeps) {
       count: batchCount,
       allocateId: deps.allocateId,
       promptId,
+      model: imagingMode,
     });
     deps.setTimelineItems(timelineItems);
     try {
@@ -250,12 +252,14 @@ export function createGenerationActions(deps: GenerationDeps) {
 
     const baseItem = selectedItems[0];
     deps.setIsGenerating(true);
+    const videoModelName = get(deps.videoModelStore);
     const { placeholders, timelineItems } = createPlaceholderMediaItems({
       timelineItems: deps.getTimelineItems(),
       count: DEFAULT_VIDEO_COUNT,
       allocateId: deps.allocateId,
       promptId,
       kind: 'video',
+      model: videoModelName,
     });
     deps.setTimelineItems(timelineItems);
     try {

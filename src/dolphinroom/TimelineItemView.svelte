@@ -236,6 +236,9 @@
       </div>
       <div class="message-footer">
         <span class="timestamp">{messageTimestamp}</span>
+        {#if groupItems[0]?.model}
+          <span class="model-label">{groupItems[0].model}</span>
+        {/if}
       </div>
     </div>
   </div>
@@ -329,6 +332,11 @@
         </div>
       {/each}
     </div>
+    {#if groupItems[0]?.model}
+      <div class="message-footer standalone-footer">
+        <span class="model-label">{groupItems[0].model}</span>
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -495,7 +503,6 @@
 
   .attachment.expanded {
     aspect-ratio: auto;
-    min-height: 320px;
   }
 
   .attachment:hover,
@@ -527,6 +534,15 @@
   .attachment-media :global(.media-element) {
     width: 100%;
     height: auto;
+  }
+
+  .attachment.expanded .attachment-media :global(.media-frame) {
+    height: auto;
+  }
+
+  .attachment.expanded .attachment-media :global(.media-element) {
+    width: 100% !important;
+    height: auto !important;
   }
 
   .attachment-placeholder {
@@ -683,7 +699,27 @@
     height: 16px;
     filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
   }
-  
+
+  .message-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    align-self: stretch;
+  }
+
+  .model-label {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .standalone-footer {
+    justify-content: flex-end;
+  }
+
+  .standalone-footer .model-label {
+    color: rgb(var(--color-surface-400));
+  }
+
   p {
     font-family: '源暎アンチック';
     margin-left: 32px;
