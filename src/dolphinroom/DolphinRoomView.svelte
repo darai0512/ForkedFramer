@@ -97,7 +97,7 @@ $: imageTemplates = [
   {
     id: 'characterSheet',
     label: $_('dolphinRoom.templates.characterSheet'),
-    imagingModel: 'nano-banana' as ImagingModel,
+    imagingModel: 'nano-banana-pro' as ImagingModel,
     prompt: $_('dolphinRoom.templates.characterSheetPrompt'),
     templateImageUrl: '/assets/charactersheet.webp',
   },
