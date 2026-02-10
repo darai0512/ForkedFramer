@@ -658,7 +658,7 @@
       "lineArt": "Line Art",
       "lineArtPrompt": "Convert to line art",
       "characterSheet": "Character Sheet",
-      "characterSheetPrompt": "Character sheet of ◯◯. Three-directional view and expressions",
+      "characterSheetPrompt": "Character sheet. Three-directional full body view and expressions",
       "turntable": "Turntable",
       "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject",
       "angleEdit": "Angle Edit",

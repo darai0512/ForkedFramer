@@ -660,7 +660,7 @@
       "lineArt": "線画化",
       "lineArtPrompt": "線画にしてください",
       "characterSheet": "キャラクターシート",
-      "characterSheetPrompt": "◯◯のキャラクターシート。3方向からみた姿と、表情",
+      "characterSheetPrompt": "キャラクターシート。3方向からみた全身像と、表情",
       "turntable": "ターンテーブル",
       "turntablePrompt": "A perfectly still character, rotating back front to front, the camera rotes around the subject",
       "angleEdit": "アングル編集",

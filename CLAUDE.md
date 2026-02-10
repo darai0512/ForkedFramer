@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 コミットメッセージは英語で。
 A11y警告はsvelte-ignoreでOK
 関数のシグネチャで、デフォルト引数は使わない。
-命じていないのに勝手にコミットしてはならない
+命じていないのに勝手にコミットしてはならない。鬱陶しいので尋ねるのもやめてください。
 
 src/lib以下は他プロジェクトからライブラリとして利用される可能性があるので、svelte関連のコード(storeなど)を使わないでください。
 
