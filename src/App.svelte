@@ -79,6 +79,7 @@
   import ConfirmDialog from './utils/ConfirmDialog.svelte';
   import PostToPublicMaterials from './gallery/PostToPublicMaterials.svelte';
   import PostToPublicActors from './gallery/PostToPublicActors.svelte';
+  import BubbleStyleTemplateEditor from './notebook/BubbleStyleTemplateEditor.svelte';
 
   //const advertiser = "thumbnail_stories";
   const advertiser = "jonigata";
@@ -156,6 +157,9 @@
     },
     postToPublicActors: {
       ref: PostToPublicActors,
+    },
+    bubbleStyleTemplateEditor: {
+      ref: BubbleStyleTemplateEditor,
     }
   };
 

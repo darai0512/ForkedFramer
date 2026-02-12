@@ -6,30 +6,12 @@ import type * as Storyboard from '$bookTypes/storyboard';
 import { trapezoidBoundingRect } from '../lib/layeredCanvas/tools/geometry/trapezoid';
 import { mainBook } from '../bookeditor/workspaceStore';
 import { get } from "svelte/store";
-import parseColor from 'color-parse';
 import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
-
-function whitenColor(s: string, ratio: number): string {
-  const c = parseColor(s);
-  if (ratio < 0 || ratio > 1) {
-    throw new Error("Ratio must be between 0 and 1");
-  }
-  
-  // 白との混合
-  const r = Math.round(c.values[0] * (1 - ratio) + 255 * ratio);
-  const g = Math.round(c.values[1] * (1 - ratio) + 255 * ratio);
-  const b = Math.round(c.values[2] * (1 - ratio) + 255 * ratio);
-
-  // hexで返す
-  return "#" + 
-    r.toString(16).padStart(2, '0') + 
-    g.toString(16).padStart(2, '0') + 
-    b.toString(16).padStart(2, '0');
-}
+import { type BubbleStyleTemplate, resolveStyleForShape, resolveStyleForSemantics, resolveFillColor } from '../lib/layeredCanvas/dataModels/bubbleStyleTemplate';
 
 export type FourPanelTemplate = '4koma' | '4koma-wide' | '4koma-splash';
 
-export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourPanelTemplate: FourPanelTemplate, theme: string) {
+export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourPanelTemplate: FourPanelTemplate, theme: string, bubbleStyleTemplate: BubbleStyleTemplate) {
   console.log(JSON.stringify(storyboard));
   console.log(storyboard.format);
   const paperSize = get(mainBook)!.newPageProperty.paperSize;
@@ -72,11 +54,28 @@ export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourP
           } else {
             const bubble = new Bubble();
             bubble.text = b.speech.replace(/\\n/g, '\n');
-            bubble.n_fontSize = 0.03;
+            bubble.shape = b.shape;
+
+            const style = resolveStyleForShape(bubbleStyleTemplate, b.shape);
+            bubble.fontFamily = style.fontFamily;
+            bubble.fontWeight = style.fontWeight;
+            bubble.n_fontSize = style.n_fontSize;
+            bubble.fontColor = style.fontColor;
+            bubble.direction = style.direction;
+            bubble.n_outlineWidth = style.n_outlineWidth;
+            bubble.outlineColor = style.outlineColor;
+            bubble.n_strokeWidth = style.n_strokeWidth;
+            bubble.strokeColor = style.strokeColor;
+            bubble.fillColor = resolveFillColor(style.fillColorMode, b.color);
+
             bubble.initOptions();
+            for (const [key, value] of Object.entries(style.optionOverrides)) {
+              bubble.optionContext[key] = value;
+            }
+
             const cc: Vector = [x0 + w * (n - i) / (n+1), y0 + h / 2];
             if (index % 2 == 0) {
-              cc[0] += w*0.25; 
+              cc[0] += w*0.25;
             } else {
               cc[0] -= w*0.25;
             }
@@ -86,17 +85,8 @@ export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourP
             size[1] *= 1.1;
             bubble.setPhysicalSize(paperSize, size);
 
-            bubble.shape = b.shape;
-            bubble.fontFamily = "源暎エムゴ"
-            bubble.n_outlineWidth = 0.005;
-            bubble.outlineColor = '#ffffff';
-            bubble.fillColor = whitenColor(b.color, 0.85);
-            bubble.optionContext['shapeExpand'] = 0.06;
-
             // ３つ以上のピリオドが連続している場合、……に変換
             bubble.text = bubble.text.replace(/\.{3,}/g, '……');
-
-            bubble.initOptions();
 
             page.bubbles.push(bubble);
           }
@@ -106,10 +96,28 @@ export function makePagesFromStoryboard(storyboard: Storyboard.Storyboard, fourP
 
     page.source = storyboardPage;
 
-    // semantics === 'title' の bubble にテーマを設定
-    if (theme) {
-      for (const bubble of page.bubbles) {
-        if (bubble.semantics === 'title') {
+    // semanticsに応じたスタイルを適用
+    for (const bubble of page.bubbles) {
+      if (bubble.semantics) {
+        const semStyle = resolveStyleForSemantics(bubbleStyleTemplate, bubble.semantics);
+        if (semStyle) {
+          bubble.fontFamily = semStyle.fontFamily;
+          bubble.fontWeight = semStyle.fontWeight;
+          bubble.n_fontSize = semStyle.n_fontSize;
+          bubble.fontColor = semStyle.fontColor;
+          bubble.direction = semStyle.direction;
+          bubble.n_outlineWidth = semStyle.n_outlineWidth;
+          bubble.outlineColor = semStyle.outlineColor;
+          bubble.n_strokeWidth = semStyle.n_strokeWidth;
+          bubble.strokeColor = semStyle.strokeColor;
+          bubble.fillColor = resolveFillColor(semStyle.fillColorMode, '#000000');
+          bubble.initOptions();
+          for (const [key, value] of Object.entries(semStyle.optionOverrides)) {
+            bubble.optionContext[key] = value;
+          }
+        }
+        // semantics === 'title' の bubble にテーマを設定
+        if (bubble.semantics === 'title' && theme) {
           bubble.text = theme;
         }
       }

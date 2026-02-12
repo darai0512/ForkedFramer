@@ -36,6 +36,8 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
   import ThinkerSelector from './ThinkerSelector.svelte';
   import { toolTip } from '../utils/passiveToolTipStore';
   import bellIcon from '../assets/bell.webp';
+  import { type BubbleStyleTemplate, DEFAULT_BUBBLE_STYLE_TEMPLATES } from '../lib/layeredCanvas/dataModels/bubbleStyleTemplate';
+  import { waitDialog } from '../utils/waitDialog';
 
   let notebook: NotebookLocal | null;
   $: notebook = $mainBook?.notebook ?? null;
@@ -72,6 +74,8 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
   let pageNumberValue: number = 1;
   let drawingMode: number | null = null; // null: 未選択, 0: コマごとに作画, 1: ページごとに作画
   let fourPanelTemplate: FourPanelTemplate = '4koma'; // 4コマテンプレート選択
+  let bubbleStyleTemplates: BubbleStyleTemplate[] = JSON.parse(JSON.stringify(DEFAULT_BUBBLE_STYLE_TEMPLATES));
+  let selectedBubbleStyleIndex: number = 0;
 
   // Reactive translations for non-component contexts
   $: aiErrorMessage = $_('notebook.errors.aiError');
@@ -294,6 +298,35 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
     await pageNumberPref.set(notebook.pageNumber);
   }
 
+  async function onEditBubbleStyleTemplate(addNew: boolean) {
+    const result = await waitDialog<{ templates: BubbleStyleTemplate[], selectedIndex: number } | null>('bubbleStyleTemplateEditor', {
+      templates: bubbleStyleTemplates,
+      selectedIndex: selectedBubbleStyleIndex,
+      addNew,
+    });
+    if (result) {
+      bubbleStyleTemplates = result.templates;
+      selectedBubbleStyleIndex = result.selectedIndex;
+      const templatesPref = createPreference<BubbleStyleTemplate[]>('imaging', 'bubbleStyleTemplates');
+      await templatesPref.set(bubbleStyleTemplates);
+      const indexPref = createPreference<number>('imaging', 'bubbleStyleTemplateIndex');
+      await indexPref.set(selectedBubbleStyleIndex);
+    }
+  }
+
+  async function onBubbleStyleTemplateChange(e: Event) {
+    const value = (e.target as HTMLSelectElement).value;
+    if (value === '__add__') {
+      // 選択を元に戻す
+      selectedBubbleStyleIndex = selectedBubbleStyleIndex;
+      await onEditBubbleStyleTemplate(true);
+    } else {
+      selectedBubbleStyleIndex = Number(value);
+      const indexPref = createPreference<number>('imaging', 'bubbleStyleTemplateIndex');
+      await indexPref.set(selectedBubbleStyleIndex);
+    }
+  }
+
   async function onBuildStoryboard() {
     console.log('build storyboard');
     try {
@@ -303,7 +336,7 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
       notebook!.storyboard = result as Storyboard;
       storyboardWaiting = false;
       console.log(result);
-      const receivedPages = makePagesFromStoryboard(result as Storyboard, fourPanelTemplate, notebook!.theme);
+      const receivedPages = makePagesFromStoryboard(result as Storyboard, fourPanelTemplate, notebook!.theme, bubbleStyleTemplates[selectedBubbleStyleIndex]);
       let marks = $bookOperators!.getMarks();
       const newPages = $mainBook!.pages.filter((_p, i) => !marks[i]);
       const oldLength = newPages.length;
@@ -529,6 +562,17 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
 
     const preference = createPreference<string>('imaging', 'style');
     postfix = await preference.getOrDefault('Japanese anime style');
+
+    const templatesPref = createPreference<BubbleStyleTemplate[]>('imaging', 'bubbleStyleTemplates');
+    const savedTemplates = await templatesPref.get();
+    if (savedTemplates && savedTemplates.length > 0) {
+      bubbleStyleTemplates = savedTemplates;
+    }
+    const indexPref = createPreference<number>('imaging', 'bubbleStyleTemplateIndex');
+    selectedBubbleStyleIndex = await indexPref.getOrDefault(0);
+    if (selectedBubbleStyleIndex >= bubbleStyleTemplates.length) {
+      selectedBubbleStyleIndex = 0;
+    }
   });
 
   // 選択中のモードに応じて参照画像上限を同期
@@ -698,6 +742,16 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
               </select>
             </div>
           {/if}
+          <div class="flex items-center gap-2 mb-2 ml-4">
+            <span class="text-sm">フキダシスタイル</span>
+            <select class="select text-sm py-1 px-2" style="width: auto;" value={selectedBubbleStyleIndex} on:change={onBubbleStyleTemplateChange}>
+              {#each bubbleStyleTemplates as t, i}
+                <option value={i}>{t.name}</option>
+              {/each}
+              <option value="__add__">+ 新規追加...</option>
+            </select>
+            <button class="btn btn-sm variant-ghost" on:click={() => onEditBubbleStyleTemplate(false)}>編集</button>
+          </div>
           <div class="flex justify-center">
             <button class="btn variant-filled-primary action-btn" on:click={onBuildStoryboard} use:toolTip={"1コマずつ画像生成する方式でページを作成"}><img src={bellIcon} alt="bell" class="bell-icon"/>{$_('notebook.manual.createStoryboard')}</button>
           </div>
