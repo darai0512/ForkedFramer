@@ -31,9 +31,18 @@
 
   let internalModel: ImagingModel = coerceMode(model);
   onMount(async () => {
-    const saved = await preference.getOrDefault(model);
-    internalModel = coerceMode(saved);
-    model = internalModel;
+    // マウント時点の値を記録し、非同期ロード中にユーザー選択が変わった場合は上書きしない
+    const mountedModel = coerceMode(model);
+    const saved = await preference.getOrDefault(mountedModel);
+    const savedModel = coerceMode(saved);
+
+    // 非同期ロード中に model/internalModel が変化していたら、遅延した保存値で上書きしない
+    if (coerceMode(model) !== mountedModel || internalModel !== mountedModel) {
+      return;
+    }
+
+    internalModel = savedModel;
+    model = savedModel;
   });
 
   type DisplayModeOption = { value: ImagingModel; label: string; cost: number; uiType?: ImagingProvider; supportsGenerate: boolean; supportsEdit: boolean; refRange: { min: number; max: number } };

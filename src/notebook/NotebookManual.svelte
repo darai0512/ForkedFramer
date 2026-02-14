@@ -759,7 +759,7 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
         <div class="section">
           <h2>{$_('notebook.manual.imageGeneration')}</h2>
           <div class="ml-4">
-            <ImagingModes bind:model={imagingMode} group="ref" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top" width={350}/>
+            <ImagingModes bind:model={imagingMode} group="ref" preferenceKey="notebookMode" imageSize={{width: 1024, height: 1024}} comment={$_('generator.perPanel')} placement="top" width={350}/>
             <p class="text-xs mt-1 mb-2">☆マークは登場人物画像を参照します</p>
             <div class="flex flex-col mt-2 gap-1">
               <span>{$_('notebook.manual.style')}</span>
