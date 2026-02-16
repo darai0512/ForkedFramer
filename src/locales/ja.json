@@ -518,7 +518,7 @@
       "placeholder": "画像の変更内容を入力してください",
       "model": "モデル",
       "referenceImages": "参考画像",
-      "dropReferenceImages": "ここに参考画像をドロップしてください",
+      "dropReferenceImages": "参考画像をドロップまたはペーストしてください",
       "referenceImageCount": "参考画像数",
       "historyHint": "Ctrl + ↑↓ で履歴を表示"
     },

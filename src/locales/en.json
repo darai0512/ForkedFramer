@@ -516,7 +516,7 @@
       "placeholder": "Enter image modification instructions",
       "model": "Model",
       "referenceImages": "Reference Images",
-      "dropReferenceImages": "Drop reference images here",
+      "dropReferenceImages": "Drop or paste reference images here",
       "referenceImageCount": "Reference images",
       "historyHint": "Ctrl + ↑↓ to browse history"
     },

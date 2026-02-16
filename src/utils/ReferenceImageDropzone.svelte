@@ -6,7 +6,7 @@
   import Gallery from '../gallery/Gallery.svelte';
   import type { GalleryItem } from '../gallery/gallery';
   import { _ } from 'svelte-i18n';
-  import { createEventDispatcher } from 'svelte';
+  import { createEventDispatcher, onMount, onDestroy } from 'svelte';
   import { toolTip } from '../utils/passiveToolTipStore';
   import trash from '../assets/trash.webp';
 
@@ -20,47 +20,79 @@
   // GalleryItem(ローダ関数 or Media) と 実体Mediaの対応を保持
   const mediaMap: WeakMap<GalleryItem, Media[]> = new WeakMap();
 
-  async function onFileDrop(files: FileList) {
+  // マウスオーバートラッキング（Ctrl+Vペースト用）
+  let isMouseOver = false;
+
+  function addMediaFromBlobs(blobs: { blob: Blob, type: string }[]) {
     const newGalleryItems: GalleryItem[] = [];
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (file.type.startsWith('image/svg')) continue;
-      
-      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
-        // 非同期関数を作成して referenceImages に追加し、
-        // 実行時に referenceMedias を更新する
+    for (const { blob, type } of blobs) {
+      if (type.startsWith('image/svg')) continue;
+
+      if (type.startsWith('image/') || type.startsWith('video/')) {
         const loadMedia = async (): Promise<Media[]> => {
           let media: Media;
-          if (file.type.startsWith('image/')) {
-            const canvas = await createCanvasFromBlob(file);
+          if (type.startsWith('image/')) {
+            const canvas = await createCanvasFromBlob(blob);
             media = new ImageMedia(canvas);
           } else {
-            const video = await createVideoFromBlob(file);
+            const video = await createVideoFromBlob(blob);
             media = new VideoMedia(video);
           }
-          // 実際にロードされたタイミングでメディアを更新
           referenceMedias = [...referenceMedias, media];
-          // ローダ関数とMediaの対応を保存
           try {
             const existing = mediaMap.get(loadMedia) ?? [];
             mediaMap.set(loadMedia, [...existing, media]);
           } catch {}
-          // 親へ反映
           dispatch('update', { referenceImages, referenceMedias });
           return [media];
         };
-        
+
         newGalleryItems.push(loadMedia);
       }
     }
 
     if (newGalleryItems.length > 0) {
       referenceImages = [...referenceImages, ...newGalleryItems];
-      // 親コンポーネントに変更を通知（画像リストの更新）
       dispatch('update', { referenceImages, referenceMedias });
     }
   }
+
+  async function onFileDrop(files: FileList) {
+    const blobs = Array.from(files).map(f => ({ blob: f as Blob, type: f.type }));
+    addMediaFromBlobs(blobs);
+  }
+
+  // ペーストイベントハンドラ（マウスオーバー時にクリップボードから画像を受け取る）
+  async function onWindowPaste(event: ClipboardEvent) {
+    if (!isMouseOver) return;
+    const clipboardData = event.clipboardData;
+    if (!clipboardData) return;
+
+    const blobs: { blob: Blob, type: string }[] = [];
+    for (const item of Array.from(clipboardData.items)) {
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (!file) continue;
+        if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+          blobs.push({ blob: file, type: file.type });
+        }
+      }
+    }
+
+    if (blobs.length > 0) {
+      event.preventDefault();
+      addMediaFromBlobs(blobs);
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('paste', onWindowPaste);
+  });
+
+  onDestroy(() => {
+    window.removeEventListener('paste', onWindowPaste);
+  });
   
   function onReferenceImageDelete(e: CustomEvent<GalleryItem>) {
     // Galleryアイテムと対応するメディアを削除（マップベースで確実に対応づけ）
@@ -95,7 +127,11 @@
 </script>
 
 <div class="reference-container">
-  <div class="reference-images-container" use:dropzone={onFileDrop} style="max-height: {maxHeight}px;">
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div class="reference-images-container" use:dropzone={onFileDrop} style="max-height: {maxHeight}px;"
+    on:mouseenter={() => isMouseOver = true}
+    on:mouseleave={() => isMouseOver = false}
+  >
     {#if referenceImages.length > 0}
       <Gallery 
         columnWidth={100} 
