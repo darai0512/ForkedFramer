@@ -43,6 +43,7 @@ const COST_SPEC: Record<ImagingModel, CostSpec> = {
     "chrono-edit": { kind: 'fixed', value: 3 },
     "seedream/v4": { kind: 'fixed', value: 5 },
     "seedream/v4.5": { kind: 'fixed', value: 6 },
+    "seedream/v5-lite": { kind: 'fixed', value: 5 },
     // FLUX 2 系
     "flux-2-dev": { kind: 'perMP/IO', input: 2, output:2 },
     "flux-2-pro": { kind: 'perMP/IO', input: 2, output:5 },

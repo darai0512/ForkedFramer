@@ -37,6 +37,7 @@ export type ImagingModel =
   | "chrono-edit"
   | "seedream/v4"
   | "seedream/v4.5"
+  | "seedream/v5-lite"
   | "qwen-image-edit/multiple-angles"
   | "flux-2-dev"
   | "flux-2-pro"

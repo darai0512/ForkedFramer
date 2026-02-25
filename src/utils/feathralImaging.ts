@@ -94,7 +94,7 @@ export function inferProvider(m: ImagingModel): ImagingProvider {
   if (m.startsWith('gpt-image-1/')) return 'gpt-image-1';
   if (m.startsWith('gpt-image-1.5/')) return 'gpt-image-1.5';
   if (m.startsWith('qwen-image')) return 'qwen';
-  if (m === 'seedream/v4') return 'seedream';
+  if (m.startsWith('seedream/')) return 'seedream';
   return 'flux';
 }
 
@@ -358,6 +358,7 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
   { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
   // Seedream
   { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
+  { value: 'seedream/v5-lite', name: 'Seedream v5 Lite', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 10 }, timeFactor: 12, pageImaging: true },
   { value: 'seedream/v4.5', name: 'Seedream v4.5', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
   // Kling
   { value: 'kling-image/o1', name: 'Kling Image O1', uiType: 'flux', textedit: true, refRange: { min: 1, max: 4 }, timeFactor: 12, pageImaging: false },
