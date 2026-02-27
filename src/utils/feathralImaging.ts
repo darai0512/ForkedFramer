@@ -354,7 +354,8 @@ export function isModeGroup(item: ModeTreeItem): item is ModeGroup {
 export const modeOptionsTree: readonly ModeTreeItem[] = [
   // Z Image
   { value: 'z-image', name: 'Z Image', uiType: 'flux', textedit: false, refRange: { min: 0, max: 0 }, timeFactor: 12, pageImaging: false },
-  // Nano Banana Pro
+  // Nano Banana
+  { value: 'nano-banana-2', name: 'Nano Banana 2', uiType: 'flux', textedit: true, refRange: { min: 0, max: 14 }, timeFactor: 12, pageImaging: true },
   { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
   // Seedream
   { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },

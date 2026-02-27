@@ -14,7 +14,17 @@ function calculateCostFromMegapixels(size: { width: number; height: number }, co
     return Math.ceil(pixels / (1024 * 1024) * costPerMegapixel);
 }
 
-type CostSpec = { kind: 'fixed', value: number } | { kind: 'perMP', value: number } | { kind: 'perMP/IO', input: number, output: number } ;
+export type NanoBananaResolution = "0.5K" | "1K" | "2K" | "4K";
+
+export function getResolutionFromSize(size: { width: number; height: number }): NanoBananaResolution {
+    const mp = (size.width * size.height) / (1024 * 1024);
+    if (mp < 0.5) return "0.5K";
+    if (mp < 2) return "1K";
+    if (mp < 8) return "2K";
+    return "4K";
+}
+
+type CostSpec = { kind: 'fixed', value: number } | { kind: 'perMP', value: number } | { kind: 'perMP/IO', input: number, output: number } | { kind: 'perResolution', tiers: Record<NanoBananaResolution, number> };
 
 // モード単位で単一仕様に一般化（ref画像数には非依存）
 const COST_SPEC: Record<ImagingModel, CostSpec> = {
@@ -39,7 +49,8 @@ const COST_SPEC: Record<ImagingModel, CostSpec> = {
     "kontext/max": { kind: 'fixed', value: 13 },
     "kontext/inscene": { kind: 'perMP', value: 7 },
     "nano-banana": { kind: 'fixed', value: 6 },
-    "nano-banana-pro": { kind: 'fixed', value: 22 },
+    "nano-banana-pro": { kind: 'perResolution', tiers: { "0.5K": 22, "1K": 22, "2K": 22, "4K": 45 } },
+    "nano-banana-2": { kind: 'perResolution', tiers: { "0.5K": 8, "1K": 11, "2K": 16, "4K": 22 } },
     "chrono-edit": { kind: 'fixed', value: 3 },
     "seedream/v4": { kind: 'fixed', value: 5 },
     "seedream/v4.5": { kind: 'fixed', value: 6 },
@@ -162,6 +173,8 @@ function calcFromSpec(spec: CostSpec, outputSize: ImageSize, inputSizes: ImageSi
             }
             return cost;
         }
+        case 'perResolution':
+            return spec.tiers[getResolutionFromSize(outputSize)];
     }
 }
 
