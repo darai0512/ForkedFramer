@@ -8,7 +8,7 @@ import ImagingModes from '../generator/ImagingModes.svelte';
 import VideoGenerationModes from '../generator/VideoGenerationModes.svelte';
 import MaterialBucketContent from '../materialBucket/MaterialBucketContent.svelte';
 import PlainDropdown from '../utils/PlainDropdown.svelte';
-import SliderEdit from '../utils/SliderEdit.svelte';
+import ImageSizeControls from '../generator/ImageSizeControls.svelte';
 import { RadioGroup, RadioItem, SlideToggle, toastStore } from '@skeletonlabs/skeleton';
 import { slide } from 'svelte/transition';
 import AngleControls from './components/AngleControls.svelte';
@@ -451,15 +451,7 @@ $: {
                   disabled={!applyStyle}
                 />
               </div>
-              <div class="sliders-wrapper">
-                <div class="size-sliders">
-                  <SliderEdit label={$_('dolphinRoom.options.width')} bind:value={imageWidth} min={512} max={1536} step={128}/>
-                  <SliderEdit label={$_('dolphinRoom.options.height')} bind:value={imageHeight} min={512} max={1536} step={128}/>
-                </div>
-                <div class="count-slider">
-                  <SliderEdit label={$_('dolphinRoom.options.imageCount')} bind:value={batchCount} min={1} max={4} step={1}/>
-                </div>
-              </div>
+              <ImageSizeControls model={imagingModel} bind:width={imageWidth} bind:height={imageHeight} bind:batchCount />
             {/if}
           </div>
         {/if}
@@ -957,19 +949,22 @@ $: {
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.3rem 0.5rem;
-    border: none;
-    background-color: transparent;
-    color: rgb(var(--color-surface-500));
-    font-size: 0.75rem;
-    font-weight: 400;
+    margin-left: auto;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid rgb(var(--color-surface-400));
+    border-radius: 0.25rem;
+    background-color: rgb(var(--color-surface-100));
+    color: rgb(var(--color-surface-600));
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
     white-space: nowrap;
   }
 
   .more-button:hover {
-    color: rgb(var(--color-surface-700));
+    background-color: rgb(var(--color-surface-200));
+    border-color: rgb(var(--color-surface-500));
   }
 
   .more-button:focus {
@@ -989,27 +984,13 @@ $: {
   }
 
   .more-options-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 0.75rem;
     background-color: rgb(var(--color-surface-100));
     border-radius: 0.5rem;
     border: 1px solid rgb(var(--color-surface-300));
   }
 
-  .sliders-wrapper {
-    display: flex;
-    gap: 1.5rem;
-    align-items: flex-start;
-  }
-
-  .size-sliders {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    width: 400px;
-  }
-
-  .count-slider {
-    display: flex;
-    flex-direction: column;
-  }
 </style>

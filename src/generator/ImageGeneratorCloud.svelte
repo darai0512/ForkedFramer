@@ -11,8 +11,8 @@
   import type { ImagingModel, ImagingProvider, ImagingBackground } from '$protocolTypes/imagingTypes';
   import { calculateCost, generateImage, modeOptions as unifiedModeOptions, isContentsPolicyViolationError, getRefMaxForMode, supportsRefImages, getTimeFactorForMode } from '../utils/feathralImaging';
   import { toolTip } from '../utils/passiveToolTipStore';
-  import SliderEdit from '../utils/SliderEdit.svelte';
   import ImagingModes from './ImagingModes.svelte';
+  import ImageSizeControls from './ImageSizeControls.svelte';
   import { ImageMedia, type Media } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
   import ReferenceImageDropzone from '../utils/ReferenceImageDropzone.svelte';
@@ -40,26 +40,6 @@
   let uiType: ImagingProvider | undefined;
   let sizeText = "1024x1024";
   let background: ImagingBackground = "opaque";
-
-  // nano-banana系: アスペクト比＋解像度指定
-  const NANO_BANANA_ASPECT_RATIOS = ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"] as const;
-  const RESOLUTION_TARGET_MP: Record<string, number> = { "0.5K": 0.25, "1K": 1.0, "2K": 4.0, "4K": 9.0 };
-  let aspectRatio = "1:1";
-  let nanoBananaResolution: "0.5K" | "1K" | "2K" | "4K" = "1K";
-  $: isNanoBanana = model === 'nano-banana' || model === 'nano-banana-pro' || model === 'nano-banana-2';
-  // nano-banana-proは0.5K非対応→1Kにフォールバック
-  $: if (model === 'nano-banana-pro' && nanoBananaResolution === '0.5K') {
-    nanoBananaResolution = '1K';
-  }
-  // アスペクト比と解像度からwidth/heightを計算（サーバーがgetClosestAspectRatio/getResolutionFromSizeで逆変換）
-  $: if (isNanoBanana) {
-    const res = model === 'nano-banana' ? '1K' : nanoBananaResolution;
-    const [aw, ah] = aspectRatio.split(':').map(Number);
-    const ratio = aw / ah;
-    const targetPixels = RESOLUTION_TARGET_MP[res] * 1024 * 1024;
-    height = Math.max(64, Math.round(Math.sqrt(targetPixels / ratio) / 64) * 64);
-    width = Math.max(64, Math.round(height * ratio / 64) * 64);
-  }
 
   // 参考画像UI用（UIのみ。生成処理への結線は未対応）
   let referenceImages: GalleryItem[] = [];
@@ -206,37 +186,7 @@
   {/if}
 
   <div class="hbox gap-5 mt-4">
-    {#if isNanoBanana}
-      <select class="select h-8 p-0 w-32" bind:value={aspectRatio}>
-        {#each NANO_BANANA_ASPECT_RATIOS as ar}
-          <option value={ar}>{ar}</option>
-        {/each}
-      </select>
-      {#if model !== 'nano-banana'}
-        <select class="select h-8 p-0 w-24" bind:value={nanoBananaResolution}>
-          {#if model === 'nano-banana-2'}
-            <option value="0.5K">0.5K</option>
-          {/if}
-          <option value="1K">1K</option>
-          <option value="2K">2K</option>
-          <option value="4K">4K</option>
-        </select>
-      {/if}
-      <div class="vbox">
-        <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
-      </div>
-    {:else if uiType == 'flux' || uiType == 'seedream'}
-      <div class="hbox gap-5">
-        <div class="vbox" style="width: 400px;">
-          <SliderEdit label="width" bind:value={width} min={512} max={1536} step={128}/>
-          <SliderEdit label="height" bind:value={height} min={512} max={1536} step={128}/>
-        </div>
-      </div>
-
-      <div class="vbox">
-        <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
-      </div>
-    {:else if uiType == 'gpt-image-1' || uiType == 'gpt-image-1.5'}
+    {#if uiType == 'gpt-image-1' || uiType == 'gpt-image-1.5'}
       <select class="select h-8 p-0 w-64" bind:value={sizeText}>
         <option value="1024x1024">{$_('generator.square')}</option>
         <option value="1536x1024">{$_('generator.landscape')}</option>
@@ -246,6 +196,8 @@
         <option value="opaque">{$_('generator.normalBackground')}</option>
         <option value="transparent">{$_('generator.transparentBackground')}</option>
       </select>
+    {:else}
+      <ImageSizeControls {model} bind:width bind:height bind:batchCount />
     {/if}
   </div>
 
