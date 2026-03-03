@@ -32,6 +32,8 @@ export const ImagingModelSchema = z.enum([
   "gpt-image-1.5/medium",
   "gpt-image-1.5/high",
   "qwen-image",
+  "qwen-image-2",
+  "qwen-image-2/pro",
   "kontext/pro",
   "kontext/max",
   "kontext/inscene",
