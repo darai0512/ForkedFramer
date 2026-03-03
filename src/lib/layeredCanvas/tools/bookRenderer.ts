@@ -42,7 +42,7 @@ export function buildBookRenderer(canvas: HTMLCanvasElement, book: Book, startIn
   const focusKeeper = new FocusKeeper();
   const layeredCanvas = new LayeredCanvas(viewport, true);
 
-  const floorLayer = new FloorLayer(layeredCanvas.viewport, () => {}, () => {}, focusKeeper);
+  const floorLayer = new FloorLayer(layeredCanvas.viewport, () => {}, () => {}, focusKeeper, "rgb(240,240,240)");
   layeredCanvas.rootPaper.addLayer(floorLayer);
 
   let papers: Paper[] = [];

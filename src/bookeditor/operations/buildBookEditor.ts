@@ -30,7 +30,8 @@ export function buildBookEditor(
     layeredCanvas.viewport,
     editor.viewportChanged.bind(editor),
     editor.rescueResidual.bind(editor),
-    focusKeeper
+    focusKeeper,
+    "rgb(240,240,240)"
   );
   layeredCanvas.rootPaper.addLayer(floorLayer);
 

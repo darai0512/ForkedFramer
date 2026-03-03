@@ -8,12 +8,14 @@ export class FloorLayer extends LayerBase {
   viewport: Viewport;
   onViewportChanged: () => void; // ここで責任とれないこと（例えばsvelteUI)
   onResidual: (media: HTMLCanvasElement | HTMLVideoElement | string) => void;
+  backgroundColor: string;
 
-  constructor(viewport: Viewport, onViewportChanged: () => void, onResidual: (media: HTMLCanvasElement | HTMLVideoElement | string) => void, private focusKeeper: FocusKeeper) {
+  constructor(viewport: Viewport, onViewportChanged: () => void, onResidual: (media: HTMLCanvasElement | HTMLVideoElement | string) => void, private focusKeeper: FocusKeeper, backgroundColor: string) {
     super();
     this.viewport = viewport;
     this.onViewportChanged = onViewportChanged;
     this.onResidual = onResidual;
+    this.backgroundColor = backgroundColor;
   }
 
   acceptDepths(): number[] {
@@ -24,7 +26,7 @@ export class FloorLayer extends LayerBase {
 
   render(ctx: CanvasRenderingContext2D, depth: number) {
     const canvas = ctx.canvas;
-    ctx.fillStyle = "rgb(240,240,240)";
+    ctx.fillStyle = this.backgroundColor;
     // transformに関係なく一色にしたい
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
