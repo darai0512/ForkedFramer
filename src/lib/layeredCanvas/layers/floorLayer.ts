@@ -48,15 +48,15 @@ export class FloorLayer extends LayerBase {
     return true;
   }
 
-  wheel(_position: Vector, delta: number) {
-    let scale = this.viewport.scale;
-    scale -= delta * 0.0001;
-    if (scale < 0.1) scale = 0.1;
-    if (scale > 10) scale = 10;
-    scale = Math.round(scale * 100) / 100;
-    this.viewport.translate[0] *= scale / this.viewport.scale;
-    this.viewport.translate[1] *= scale / this.viewport.scale;
-    this.viewport.scale = scale;
+  wheel(position: Vector, delta: number) {
+    const oldScale = this.viewport.scale;
+    let newScale = oldScale - delta * 0.0001;
+    if (newScale < 0.1) newScale = 0.1;
+    if (newScale > 10) newScale = 10;
+    newScale = Math.round(newScale * 100) / 100;
+    this.viewport.translate[0] += position[0] * (oldScale - newScale);
+    this.viewport.translate[1] += position[1] * (oldScale - newScale);
+    this.viewport.scale = newScale;
     this.viewport.dirty = true;
     this.redraw();
     this.onViewportChanged();
