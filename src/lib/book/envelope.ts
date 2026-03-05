@@ -7,7 +7,7 @@ import { emptyNotebook, trivialNewPageProperty } from "./book";
 import { Bubble } from "../layeredCanvas/dataModels/bubble";
 import { FrameElement } from "../layeredCanvas/dataModels/frameTree";
 import { createCanvasFromImage, getFirstFrameOfVideo, canvasToBlob } from "../layeredCanvas/tools/imageUtil";
-import { createMissingMediaReference } from "../layeredCanvas/dataModels/media";
+import { createMissingMediaReference, type Media, type RemoteMediaReference } from "../layeredCanvas/dataModels/media";
 
 // 互換性維持のため、imagesは残してmediasを追加する
 
@@ -147,6 +147,213 @@ export async function readEnvelope(blob: Blob, progress: (n: number) => void): P
   }
 
   return book;
+}
+
+// --- Progressive loading ---
+
+export type ProgressiveEnvelope = {
+  book: Book;
+  totalMediaCount: number;
+  decodePageMedias: (pageIndex: number) => Promise<number>;
+  decodeAllRemainingMedias: (
+    onProgress: (decoded: number, total: number) => void
+  ) => Promise<void>;
+  isPageDecoded: (pageIndex: number) => boolean;
+};
+
+type PendingMedia = { mediaId: string; mediaType: MediaType; media: Media };
+
+type RawMediaEntry = { type: MediaType; data: Uint8Array; format?: string };
+
+function collectMediasFromFrameTree(element: FrameElement, result: PendingMedia[]): void {
+  for (const film of element.filmStack.films) {
+    if (film.content.kind === 'media') {
+      const media = film.content.media;
+      if (!media.isLoaded && !media.isFailed) {
+        const persistent = media.persistentSource;
+        if (!(persistent instanceof HTMLCanvasElement) && !(persistent instanceof HTMLVideoElement)) {
+          const ref = persistent as RemoteMediaReference;
+          const mediaId = ref.envelopeMediaId as string | undefined;
+          if (mediaId) {
+            result.push({ mediaId, mediaType: media.type, media });
+          }
+        }
+      }
+    }
+  }
+  for (const child of element.children) {
+    collectMediasFromFrameTree(child, result);
+  }
+}
+
+function collectMediasFromBubbles(bubbles: Bubble[], result: PendingMedia[]): void {
+  for (const bubble of bubbles) {
+    for (const film of bubble.filmStack.films) {
+      if (film.content.kind === 'media') {
+        const media = film.content.media;
+        if (!media.isLoaded && !media.isFailed) {
+          const persistent = media.persistentSource;
+          if (!(persistent instanceof HTMLCanvasElement) && !(persistent instanceof HTMLVideoElement)) {
+            const ref = persistent as RemoteMediaReference;
+            const mediaId = ref.envelopeMediaId as string | undefined;
+            if (mediaId) {
+              result.push({ mediaId, mediaType: media.type, media });
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+function collectMediasFromPage(page: Page): PendingMedia[] {
+  const result: PendingMedia[] = [];
+  collectMediasFromFrameTree(page.frameTree, result);
+  collectMediasFromBubbles(page.bubbles, result);
+  return result;
+}
+
+export async function readEnvelopeProgressive(blob: Blob): Promise<ProgressiveEnvelope> {
+  const uint8Array = new Uint8Array(await blob.arrayBuffer());
+  const envelopedBook: EnvelopedBook = decode(uint8Array);
+
+  // 生メディアデータを保持(デコードしない)
+  const rawMediaMap = new Map<string, RawMediaEntry>();
+  if ("images" in envelopedBook && envelopedBook.images) {
+    for (const imageId in envelopedBook.images) {
+      rawMediaMap.set(imageId, { type: 'image', data: envelopedBook.images[imageId], format: 'png' });
+    }
+  }
+  if ("medias" in envelopedBook && envelopedBook.medias) {
+    for (const mediaId in envelopedBook.medias) {
+      const m = envelopedBook.medias[mediaId];
+      rawMediaMap.set(mediaId, { type: m.type, data: m.data, format: m.format });
+    }
+  }
+
+  // プレースホルダーを返すLoadMediaFunc
+  const placeholderLoadMedia: LoadMediaFunc = async (imageId: string, mediaType: MediaType) => {
+    if (!rawMediaMap.has(imageId)) {
+      return createMissingMediaReference(mediaType, { reason: 'envelope-missing', missingId: imageId });
+    }
+    return { mediaType, mode: 'beforeRequest', envelopeMediaId: imageId } as RemoteMediaReference;
+  };
+
+  // notebook はビューアでは使わないので未デコードのまま
+  const notebook = envelopedBook.notebook
+    ? await unpackNotebookMedias(envelopedBook.notebook, placeholderLoadMedia)
+    : emptyNotebook(null);
+
+  const envelopeAttributes: EnvelopeBookAttributes | null = envelopedBook.attributes ?? null;
+
+  const book: Book = {
+    revision: { id: 'not visited', revision: 1, prefix: 'envelope-' },
+    pages: [],
+    history: { entries: [], cursor: 0 },
+    direction: envelopedBook.direction,
+    wrapMode: envelopedBook.wrapMode,
+    chatLogs: [],
+    notebook,
+    attributes: { publishUrl: null, ...(envelopeAttributes ?? {}) },
+    newPageProperty: envelopedBook.newPageProperty ?? {...trivialNewPageProperty},
+  };
+
+  // 各ページをプレースホルダーMediaで構築
+  const pageMediaTracking = new Map<number, PendingMedia[]>();
+  for (let i = 0; i < envelopedBook.pages.length; i++) {
+    const envelopedPage = envelopedBook.pages[i];
+    const frameTree = await unpackFrameMedias(envelopedPage.paperSize, envelopedPage.frameTree, placeholderLoadMedia);
+    const bubbles = await unpackBubbleMedias(envelopedPage.paperSize, envelopedPage.bubbles, placeholderLoadMedia);
+
+    const page: Page = {
+      id: envelopedPage.id ?? ulid(),
+      frameTree,
+      bubbles,
+      paperSize: envelopedPage.paperSize,
+      paperColor: envelopedPage.paperColor,
+      frameColor: envelopedPage.frameColor,
+      frameWidth: envelopedPage.frameWidth,
+      fontSizeCoefficient: envelopedPage.fontSizeCoefficient ?? 1.0,
+      source: null,
+    };
+    book.pages.push(page);
+
+    // ページ内のMediaオブジェクトとメディアIDの対応を収集
+    pageMediaTracking.set(i, collectMediasFromPage(page));
+  }
+
+  // デコード済みキャッシュ(共有メディア対応)
+  const decodedMediaCache = new Map<string, HTMLCanvasElement | HTMLVideoElement>();
+  const decodedPages = new Set<number>();
+
+  async function decodePageMedias(pageIndex: number): Promise<number> {
+    if (decodedPages.has(pageIndex)) return 0;
+
+    const pending = pageMediaTracking.get(pageIndex);
+    if (!pending || pending.length === 0) {
+      decodedPages.add(pageIndex);
+      return 0;
+    }
+
+    let decoded = 0;
+    for (const entry of pending) {
+      let materialized = decodedMediaCache.get(entry.mediaId);
+
+      if (!materialized) {
+        const rawEntry = rawMediaMap.get(entry.mediaId);
+        if (!rawEntry) continue;
+
+        if (rawEntry.type === 'image') {
+          const b = new Blob([new Uint8Array(rawEntry.data)], { type: `image/${rawEntry.format ?? 'png'}` });
+          const url = URL.createObjectURL(b);
+          const image = new Image();
+          image.src = url;
+          await image.decode();
+          URL.revokeObjectURL(url);
+          materialized = createCanvasFromImage(image);
+          (materialized as any)["envelopeFileId"] = entry.mediaId;
+        } else {
+          const b = new Blob([new Uint8Array(rawEntry.data)], { type: 'video/mp4' });
+          const url = URL.createObjectURL(b);
+          const video = document.createElement('video');
+          video.src = url;
+          await getFirstFrameOfVideo(video);
+          (video as any)["envelopeFileId"] = entry.mediaId;
+          materialized = video;
+        }
+
+        decodedMediaCache.set(entry.mediaId, materialized);
+      }
+
+      entry.media.setMedia(materialized as any);
+      decoded++;
+    }
+
+    decodedPages.add(pageIndex);
+    return decoded;
+  }
+
+  async function decodeAllRemainingMedias(
+    onProgress: (decoded: number, total: number) => void
+  ): Promise<void> {
+    const total = book.pages.length;
+    for (let i = 0; i < total; i++) {
+      if (!decodedPages.has(i)) {
+        await decodePageMedias(i);
+      }
+      onProgress(decodedPages.size, total);
+      // UIスレッドに譲る
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  return {
+    book,
+    totalMediaCount: rawMediaMap.size,
+    decodePageMedias,
+    decodeAllRemainingMedias,
+    isPageDecoded: (pageIndex: number) => decodedPages.has(pageIndex),
+  };
 }
 
 export async function writeEnvelope(book: Book, progress: (n: number) => void): Promise<Blob> {
