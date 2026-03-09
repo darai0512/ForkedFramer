@@ -116,6 +116,8 @@ export function revert() {
 
 // undo操作（bookの状態のみ）
 export function undoBookState(focusKeeper: FocusKeeper) {
+  delayedCommiter.force();
+
   mainBook.update(book => {
     if (book) {
       undoBookHistory(book);
@@ -135,6 +137,8 @@ export function undoBookState(focusKeeper: FocusKeeper) {
 
 // redo操作（bookの状態のみ）
 export function redoBookState(focusKeeper: FocusKeeper) {
+  delayedCommiter.force();
+
   mainBook.update(book => {
     if (book) {
       redoBookHistory(book);
