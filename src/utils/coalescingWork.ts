@@ -1,9 +1,25 @@
+export type CoalescingWork = {
+  request: () => void;
+  whenIdle: () => Promise<void>;
+};
+
 export function createCoalescingWork(
   job: () => Promise<unknown>,
   onError: (err: unknown) => void = console.error,
-): () => void {
+): CoalescingWork {
   let running = false;
   let pending = false;
+  let idleResolvers: Array<() => void> = [];
+
+  function resolveIdle(): void {
+    if (running || pending) {
+      return;
+    }
+    for (const resolve of idleResolvers) {
+      resolve();
+    }
+    idleResolvers = [];
+  }
 
   async function runLoop(): Promise<void> {
     try {
@@ -24,6 +40,8 @@ export function createCoalescingWork(
       if (pending) {
         // 再スケジュール（request() が running を立て直す）
         request();
+      } else {
+        resolveIdle();
       }
     }
   }
@@ -38,5 +56,17 @@ export function createCoalescingWork(
     }
   }
 
-  return request;
+  async function whenIdle(): Promise<void> {
+    if (!running && !pending) {
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      idleResolvers.push(resolve);
+    });
+  }
+
+  return {
+    request,
+    whenIdle,
+  };
 }

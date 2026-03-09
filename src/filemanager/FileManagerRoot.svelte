@@ -291,7 +291,7 @@
       }
 
       console.log("book changed", book.revision, currentRevision, getHistoryWeight(book));
-      coalescingSaveWork();
+      coalescingSaveWork.request();
     }
   }
 
@@ -375,6 +375,7 @@
     if (book) {
       console.tag("new book request", "green");
       $newBookToken = null;
+      await coalescingSaveWork.whenIdle();
       const desktop = localFolders.desktop[2].asFolder()!;
       const title = getCurrentDateTime();
       const { file } = await newFile(localFileSystem, desktop, title, book);
@@ -407,6 +408,7 @@
   async function onLoadRequest(lt: LoadToken | null) {
     if (!lt) { return; }
     $loadToken = null;
+    await coalescingSaveWork.whenIdle();
 
     $loading = true;
     const fsType = getFileSystemType(lt.fileSystem.id);
@@ -423,7 +425,7 @@
     $mainBookExceptionHandler = loadExceptionHandler; // onChangeBookが一回実行されると消去される
     $mainBook = book;
     $mainBookTitle = title;
-    recordCurrentFileInfo({id: book.revision.id as NodeId, fileSystem: getFileSystemType(lt.fileSystem.id), title});
+    await recordCurrentFileInfo({id: book.revision.id as NodeId, fileSystem: getFileSystemType(lt.fileSystem.id), title});
     $frameInspectorTarget = null;
     $loading = false;
     // NOTICE:
