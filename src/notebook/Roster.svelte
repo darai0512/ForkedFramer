@@ -7,7 +7,7 @@
   import { rm } from "../lib/filesystem/fileSystem";
   import trashIcon from '../assets/trash.webp';
   import downloadIcon from '../assets/download.webp';
-  import MediaFrame from "../gallery/MediaFrame.svelte";
+  import CharacterEditor from "./CharacterEditor.svelte";
   import { _ } from 'svelte-i18n';
   import { saveCharacterToFile, loadCharacterFromFile } from "./characterExport";
   import { toastStore, Accordion, AccordionItem } from "@skeletonlabs/skeleton";
@@ -17,6 +17,30 @@
   import { sortableList } from "../utils/sortableList";
   import { moveInArray } from "../utils/moveInArray";
   import PublicActorsGallery from "../materialBucket/PublicActorsGallery.svelte";
+
+  let saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  function debouncedSave(character: CharacterLocal) {
+    const existing = saveTimers.get(character.ulid);
+    if (existing) clearTimeout(existing);
+    saveTimers.set(character.ulid, setTimeout(async () => {
+      saveTimers.delete(character.ulid);
+      if ($gadgetFileSystem) {
+        await saveCharacterToRoster($gadgetFileSystem, character);
+      }
+    }, 1000));
+  }
+
+  function onCharacterChange(character: CharacterLocal) {
+    debouncedSave(character);
+  }
+
+  function onErasePortrait(e: CustomEvent<CharacterLocal>) {
+    const character = e.detail;
+    character.portrait = null;
+    characters = characters;
+    debouncedSave(character);
+  }
 
   let opened = false;
   let characters: CharacterLocal[] = [];
@@ -143,10 +167,6 @@
                   <div class="character-header" style="border-left: 4px solid {character.themeColor};" title="ドラッグして並べ替え">
                     <div class="character-name-container">
                       <span class="character-name">{character.name}</span>
-                      <div
-                        class="color-display"
-                        style="background-color: {character.themeColor};"
-                      ></div>
                     </div>
                     <div class="header-buttons">
                       {#if $onlineStatus === 'signed-in' && character.portrait && character.portrait !== 'loading'}
@@ -163,28 +183,16 @@
                     </div>
                   </div>
                   <div class="character-content">
-                    <div class="portrait-container">
-                      <div class="portrait">
-                        {#if character.portrait && character.portrait != 'loading'}
-                          <MediaFrame
-                            media={character.portrait}
-                          />
-                        {:else}
-                          <div class="no-portrait">{$_('notebook.noPortrait')}</div>
-                        {/if}
-                      </div>
-                      <button class="offer-btn" on:click={() => offer(character)}>{$_('notebook.offer')}</button>
-                    </div>
-                    <div class="character-details">
-                      <div class="detail-section">
-                        <div class="detail-label">{$_('notebook.personality')}</div>
-                        <div class="textarea-display">{character.personality}</div>
-                      </div>
-                      <div class="detail-section">
-                        <div class="detail-label">{$_('notebook.appearance2')}</div>
-                        <div class="textarea-display">{character.appearance}</div>
-                      </div>
-                    </div>
+                    <CharacterEditor
+                      bind:character={character}
+                      showPortraitGeneration={false}
+                      on:change={() => onCharacterChange(character)}
+                      on:erasePortrait={onErasePortrait}
+                    >
+                      <svelte:fragment slot="belowPortrait">
+                        <button class="offer-btn" on:click={() => offer(character)}>{$_('notebook.offer')}</button>
+                      </svelte:fragment>
+                    </CharacterEditor>
                   </div>
                 </div>
               {/each}
@@ -320,14 +328,6 @@
     color: rgb(var(--color-primary-700));
   }
   
-  .color-display {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
-  }
-  
   .header-buttons {
     display: flex;
     gap: 0.5rem;
@@ -402,37 +402,9 @@
   }
   
   .character-content {
-    display: flex;
     padding: 1rem;
-    gap: 1rem;
   }
-  
-  .portrait-container {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-  }
-  
-  .portrait {
-    width: 144px;
-    height: 144px;
-    border-radius: 6px;
-    overflow: hidden;
-    border: 1px solid rgb(var(--color-surface-300));
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: rgb(var(--color-surface-100));
-  }
-  
-  .no-portrait {
-    color: rgb(var(--color-surface-700));
-    font-size: 0.9rem;
-  }
-  
+
   .offer-btn {
     background-color: rgb(var(--color-secondary-500));
     color: white;
@@ -450,36 +422,4 @@
     background-color: rgb(var(--color-secondary-600));
   }
   
-  .character-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .detail-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  
-  .detail-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: rgb(var(--color-surface-700));
-  }
-  
-  .textarea-display {
-    min-height: 24px;
-    padding: 0.5rem;
-    border: 1px solid rgb(var(--color-surface-300));
-    border-radius: 4px;
-    white-space: pre-wrap;
-    background-color: rgb(var(--color-surface-50));
-    font-size: 0.9rem;
-    line-height: 1.4;
-    flex: 1;
-    overflow-y: auto;
-    max-height: 120px;
-  }
 </style>
