@@ -90,8 +90,7 @@
     margin-top: 16px;
   }
   .bulk-rename-dialog {
-    min-width: 180px;
-    max-width: 280px;
+    width: 320px;
   }
   .preview {
     background: rgba(0, 0, 0, 0.05);
