@@ -72,6 +72,7 @@
     if (acceptable) {
       console.log(ev);
       await moveToHere(null);
+      collapsed = false;
     } else {
       // jsonだったら、jsonの中身を見て、適切な処理をする
       if (ev.dataTransfer?.files.length === 1) {
@@ -87,6 +88,7 @@
             await saveBookTo(book, fileSystem, newFile);
             await node.link("パッケージ", newFile.id);
             node = node;
+            collapsed = false;
           }
           finally {
             $loading = false;
@@ -108,6 +110,7 @@
             console.log("importing envelope done")
             await node.link(basename, newFile.id);
             node = node;
+            collapsed = false;
             toastStore.trigger({ message: $_('fileManager.envelopeImported'), timeout: 2000});
           }
           finally {
@@ -133,6 +136,7 @@
             
             // 更新を反映
             node = node;
+            collapsed = false;
             toastStore.trigger({ message: $_('fileManager.folderImported'), timeout: 2000});
           }
           catch (error) {
@@ -208,6 +212,12 @@
   async function onInsert(e: CustomEvent<{ dataTransfer: DataTransfer, index: number }>) {
     console.log("insert", e.detail);
     await moveToHere(e.detail.index);
+  }
+
+  async function onCollapsedInsert(e: CustomEvent<{ dataTransfer: DataTransfer, index: number }>) {
+    console.log("collapsed insert", e.detail);
+    await moveToHere(e.detail.index);
+    collapsed = false;
   }
 
   async function moveToHere(index: number | null) {
@@ -433,7 +443,7 @@
   on:drop={onDropHere}
 >
   <div
-    class="folder-title-line" 
+    class="folder-title-line"
     class:no-select={removability === "unremovable"}
     draggable={removability === "removable"}
   >
@@ -488,7 +498,11 @@
       <FileManagerInsertZone on:drop={onInsertToParent} bind:acceptable={acceptable} depth={path.length}/>
     {/if}
   </div>
-  {#if !collapsed}
+  {#if collapsed}
+  <div class="folder-contents">
+    <FileManagerFolderTail index={embodiedEntries.length} on:insert={onCollapsedInsert} path={[...path, 'tail']}/>
+  </div>
+  {:else}
   <div class="folder-contents"
     class:acceptable={isDraggingOver && acceptable}
   >
