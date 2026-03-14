@@ -41,6 +41,7 @@
   let isRootTrash = false;
   let embodiedEntries: EmbodiedEntry[] = [];
   let collapsed = removability === "removable";
+  let folderDropZoneDraggingOver = false;
 
   const dispatch = createEventDispatcher();
 
@@ -218,6 +219,27 @@
     console.log("collapsed insert", e.detail);
     await moveToHere(e.detail.index);
     collapsed = false;
+  }
+
+  function onFolderDropZoneDragOver(ev: DragEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    folderDropZoneDraggingOver = true;
+  }
+
+  function onFolderDropZoneDragLeave() {
+    folderDropZoneDraggingOver = false;
+  }
+
+  async function onFolderDropZoneDrop(ev: DragEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    folderDropZoneDraggingOver = false;
+    if (acceptable) {
+      await moveToHere(null);
+      collapsed = false;
+    }
+    $fileManagerDragging = null;
   }
 
   async function moveToHere(index: number | null) {
@@ -445,6 +467,7 @@
   <div
     class="folder-title-line"
     class:no-select={removability === "unremovable"}
+    class:folder-drop-highlight={folderDropZoneDraggingOver}
     draggable={removability === "removable"}
   >
     <div class="folder-title">
@@ -496,6 +519,16 @@
     </div>
     {#if removability === 'removable'}
       <FileManagerInsertZone on:drop={onInsertToParent} bind:acceptable={acceptable} depth={path.length}/>
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div
+        class="folder-drop-zone"
+        class:acceptable={acceptable}
+        class:folder-dragging-over={folderDropZoneDraggingOver}
+        on:dragover={onFolderDropZoneDragOver}
+        on:dragleave={onFolderDropZoneDragLeave}
+        on:drop={onFolderDropZoneDrop}
+        style="z-index: {path.length + 1}"
+      ></div>
     {/if}
   </div>
   {#if collapsed}
@@ -533,6 +566,10 @@
   }
   .folder-title-line:hover {
     background-color: #fff4;
+  }
+  .folder-title-line.folder-drop-highlight {
+    background-color: #ee84;
+    box-shadow: 0 0 0 2px #444 inset;
   }
   .folder-title {
     font-size: 16px;
@@ -589,6 +626,17 @@
   }
   .toggle.collapsed {
     transform: rotate(-90deg);
+  }
+  .folder-drop-zone {
+    position: absolute;
+    top: 33%;
+    left: 0;
+    right: 0;
+    height: 34%;
+    display: none;
+  }
+  .folder-drop-zone.acceptable {
+    display: block;
   }
   .no-select {
     user-select: none; /* 標準のCSS */
