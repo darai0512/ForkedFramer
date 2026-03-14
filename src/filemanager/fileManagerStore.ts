@@ -138,6 +138,42 @@ export async function renameSelectedEntries(fileSystem: FileSystem, dialogResult
   }
 }
 
+export async function exportSelectedEntries(
+  fileSystem: FileSystem,
+  progress: (n: number) => void
+): Promise<Blob | null> {
+  const selected = get(selectedEntries);
+  if (selected.size === 0) { return null; }
+  const nodes: HierarchyNode[] = [];
+  const elements = document.querySelectorAll<HTMLElement>('[data-node-id]');
+  for (const el of elements) {
+    const nid = el.dataset.nodeId as NodeId;
+    if (!selected.has(nid)) { continue; }
+    const bid = el.dataset.bindId as BindId;
+    const pid = el.dataset.parentId as NodeId;
+    if (!bid || !pid) { continue; }
+    const parentFolder = (await fileSystem.getNode(pid)) as Folder;
+    const entry = await parentFolder.getEntry(bid);
+    if (!entry) { continue; }
+    const [, name, nodeId] = entry;
+    const node = await fileSystem.getNode(nodeId);
+    if (!node) { continue; }
+    if (node.getType() === 'folder') {
+      const childNode = await createHierarchyFromFolder(fileSystem, node.asFolder()!, name);
+      nodes.push(childNode);
+    } else {
+      try {
+        const book = await loadBookFrom(fileSystem, node.asFile()!);
+        nodes.push({ name, book, isFolder: false });
+      } catch (error) {
+        console.error(`Failed to load book from ${name}:`, error);
+      }
+    }
+  }
+  if (nodes.length === 0) { return null; }
+  return await writeHierarchicalEnvelopeZip(nodes, progress);
+}
+
 export function clearSelection(): void {
   selectedEntries.update(s => { s.clear(); return s; });
   lastSelectedEntry.set(null);
@@ -567,11 +603,8 @@ export async function exportFolderAsEnvelopeZip(
   folderName: string,
   progress: (n: number) => void = () => {}
 ): Promise<Blob> {
-  // 階層構造を構築
   const hierarchy = await createHierarchyFromFolder(fileSystem, folder, folderName);
-  
-  // ZIPファイルを生成
-  return await writeHierarchicalEnvelopeZip(hierarchy, progress);
+  return await writeHierarchicalEnvelopeZip([hierarchy], progress);
 }
 
 /**
@@ -584,13 +617,12 @@ export async function exportFolderAsEnvelopeZip(
 export async function saveHierarchyToFolder(
   fileSystem: FileSystem,
   parentFolder: Folder,
-  node: HierarchyNode,
+  nodes: HierarchyNode[],
   progress: (n: number) => void = () => {}
 ): Promise<void> {
   let total = 0;
   let current = 0;
-  
-  // ノードの総数を計算
+
   function countAllNodes(n: HierarchyNode): number {
     let count = 1;
     if (n.children) {
@@ -600,29 +632,18 @@ export async function saveHierarchyToFolder(
     }
     return count;
   }
-  
-  total = countAllNodes(node);
+
+  for (const node of nodes) { total += countAllNodes(node); }
   
   // 再帰的に保存
   async function saveNodeToFolder(folder: Folder, node: HierarchyNode): Promise<void> {
     if (node.isFolder) {
-      // ルートノード（空の名前）の場合は親フォルダをそのまま使用
-      let targetFolder: Folder;
-      
-      if (node.name === '') {
-        // 空の名前のノード（ルートノード）は新しいフォルダを作らない
-        targetFolder = folder;
-      } else {
-        // 通常のフォルダの場合は新しいフォルダを作成
-        const newFolder = await fileSystem.createFolder();
-        await folder.link(node.name, newFolder.id);
-        targetFolder = newFolder;
-      }
-      
-      // 子ノードを処理
+      const newFolder = await fileSystem.createFolder();
+      await folder.link(node.name, newFolder.id);
+
       if (node.children) {
         for (const child of node.children) {
-          await saveNodeToFolder(targetFolder, child);
+          await saveNodeToFolder(newFolder, child);
         }
       }
     } else if (node.book) {
@@ -638,7 +659,9 @@ export async function saveHierarchyToFolder(
     progress(current / total);
   }
   
-  await saveNodeToFolder(parentFolder, node);
+  for (const node of nodes) {
+    await saveNodeToFolder(parentFolder, node);
+  }
 }
 
 /**

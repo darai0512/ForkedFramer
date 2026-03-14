@@ -52,15 +52,10 @@ async function processNode(
   if (node.isFolder) {
     // フォルダの場合は新しいZIPフォルダを作成
     const newPath = currentPath ? `${currentPath}/${safeName}` : safeName;
-    // ルートノードの場合は特別処理（空の名前を使う）
-    const folderPath = node.name === 'root' ? '' : newPath;
-    const folder = node.name === 'root' ? zip : zip.folder(folderPath)!;
-    
+
     if (node.children) {
       for (const child of node.children) {
-        // 子ノードには新しいフォルダオブジェクトと新しいパスを渡す
-        const childPath = node.name === 'root' ? '' : newPath;
-        await processNode(child, zip, childPath, onProgress);
+        await processNode(child, zip, newPath, onProgress);
       }
     }
   } else if (node.book) {
@@ -76,21 +71,22 @@ async function processNode(
  * 階層構造をZIPに変換するメイン関数
  */
 export async function writeHierarchicalEnvelopeZip(
-  rootNode: HierarchyNode, 
+  nodes: HierarchyNode[],
   progress: (n: number) => void
 ): Promise<Blob> {
   const zip = new JSZip();
   let processedCount = 0;
-  const totalNodes = countNodes(rootNode);
-  
-  // 再帰的に階層構造を処理
-  await processNode(rootNode, zip, '', () => {
-    processedCount++;
-    progress(processedCount / totalNodes);
-  });
-  
-  // ZIPを生成して返す
-  return await zip.generateAsync({ 
+  let totalNodes = 0;
+  for (const node of nodes) { totalNodes += countNodes(node); }
+
+  for (const node of nodes) {
+    await processNode(node, zip, '', () => {
+      processedCount++;
+      progress(processedCount / totalNodes);
+    });
+  }
+
+  return await zip.generateAsync({
     type: 'blob',
     compression: 'DEFLATE',
     compressionOptions: { level: 6 }
@@ -169,42 +165,36 @@ function ensurePathInHierarchy(
  * ZIPから階層構造を読み込む関数
  */
 export async function readHierarchicalEnvelopeZip(
-  blob: Blob, 
+  blob: Blob,
   progress: (n: number) => void
-): Promise<HierarchyNode> {
+): Promise<HierarchyNode[]> {
   const zip = await JSZip.loadAsync(blob);
-  const rootNode: HierarchyNode = {
-    name: '',  // 空の名前を使用して余計な階層を作らないようにする
+  const virtualRoot: HierarchyNode = {
+    name: '',
     isFolder: true,
     children: []
   };
-  
+
   // 全てのファイルを収集
   const files = Object.keys(zip.files).filter(
     path => !zip.files[path].dir && path.endsWith('.envelope')
   );
-  
+
   let processedCount = 0;
   const totalFiles = files.length;
-  
+
   // 各ファイルを処理
   for (const filePath of files) {
-    // 階層構造にノードを作成
-    const fileNode = ensurePathInHierarchy(rootNode, filePath);
-    
-    // ZIPからファイルを読み込み
+    const fileNode = ensurePathInHierarchy(virtualRoot, filePath);
     const envelopeBlob = await zip.files[filePath].async('blob');
-    
-    // Bookオブジェクトに変換
     const book = await readEnvelope(envelopeBlob, () => {});
     fileNode.book = book;
-    
-    // 進捗を更新
+
     processedCount++;
     progress(processedCount / totalFiles);
   }
-  
-  return rootNode;
+
+  return virtualRoot.children || [];
 }
 
 /**
