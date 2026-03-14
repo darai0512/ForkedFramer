@@ -148,35 +148,37 @@
       {filename}
     {/if}
   </div>
-  {#if $fileManagerMarkedFlag}
+  {#if $selectedFile === nodeId}
+    {#if $fileManagerMarkedFlag}
+      <div class="button-container">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="button" src={pasteIcon} alt="rename" on:click={copyMarkedPages} use:toolTip={$_('fileManager.selectPagesCopy')}/>
+      </div>
+    {/if}
     <div class="button-container">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img class="button" src={pasteIcon} alt="rename" on:click={copyMarkedPages} use:toolTip={$_('fileManager.selectPagesCopy')}/>
-    </div>  
-  {/if}
-  <div class="button-container">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <img class="button" src={packageIcon} alt="rename" on:click={makePackage} use:toolTip={$_('fileManager.createPackage')}/>
-  </div>  
-  <div class="button-container">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <img class="button" src={duplicateIcon} alt="duplicate" on:click={duplicateFile} use:toolTip={$_('fileManager.duplicate')}/>
-  </div>
-  <div class="button-container">
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-    <img class="button" src={renameIcon} alt="rename" on:click={startRename} use:toolTip={$_('fileManager.changeFileName')}/>
-  </div>  
-  <div class="button-container">
-    {#if isDiscardable}
+      <img class="button" src={packageIcon} alt="rename" on:click={makePackage} use:toolTip={$_('fileManager.createPackage')}/>
+    </div>
+    <div class="button-container">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img class="button" src={trashIcon} alt="trash" on:click={removeFile} use:toolTip={$_('fileManager.discard')}/>
-    {/if}
-  </div>
+      <img class="button" src={duplicateIcon} alt="duplicate" on:click={duplicateFile} use:toolTip={$_('fileManager.duplicate')}/>
+    </div>
+    <div class="button-container">
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <img class="button" src={renameIcon} alt="rename" on:click={startRename} use:toolTip={$_('fileManager.changeFileName')}/>
+    </div>
+    <div class="button-container">
+      {#if isDiscardable}
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="button" src={trashIcon} alt="trash" on:click={removeFile} use:toolTip={$_('fileManager.discard')}/>
+      {/if}
+    </div>
+  {/if}
   <FileManagerInsertZone on:drop={onDrop} bind:acceptable={acceptable} depth={path.length}/>
 </div>
 
