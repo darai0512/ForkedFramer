@@ -382,6 +382,13 @@
     renaming = false;
   }
 
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.key === 'F2' && node && $lastSelectedEntry === node.id && isDiscardable && !renaming) {
+      e.preventDefault();
+      startRename();
+    }
+  }
+
   const watcher = {
     onInsert: (bindId: BindId, index: number, sourceParent: Folder | null) => {
       console.log("onInsert", bindId, index, sourceParent);
@@ -481,6 +488,7 @@
   }
 </script>
 
+<svelte:window on:keydown={onKeyDown}/>
 {#if node}
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="folder"

@@ -152,11 +152,20 @@
     $progress = null;
   }
 
+  function onKeyDown(e: KeyboardEvent) {
+    if (e.key === 'F2' && $lastSelectedEntry === nodeId && isDiscardable && !renaming) {
+      e.preventDefault();
+      startRename();
+    }
+  }
+
   onMount(async () => {
     isDiscardable = removability === "removable" && trash != null;
   });
 
 </script>
+
+<svelte:window on:keydown={onKeyDown}/>
 
 <div class="file" class:selected={$selectedEntries.has(nodeId)} data-node-id={nodeId} data-bind-id={bindId} data-parent-id={parent.id}>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
