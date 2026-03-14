@@ -70,7 +70,7 @@
     ev.stopPropagation();
     if (acceptable) {
       console.log(ev);
-      await moveToHere(0);
+      await moveToHere(null);
     } else {
       // jsonだったら、jsonの中身を見て、適切な処理をする
       if (ev.dataTransfer?.files.length === 1) {
