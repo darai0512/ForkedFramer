@@ -160,6 +160,7 @@
     const nf = await fileSystem.createFolder();
     await node.link("new folder", nf.id);
     node = node;
+    collapsed = false;
   }
 
   async function addFile() {
@@ -167,6 +168,7 @@
     const book = newBook("not visited", "add-in-folder-", "standard", null);
     await newFile(fileSystem, node, getCurrentDateTime(), book);
     node = node;
+    collapsed = false;
   }
 
   async function removeFolder() {
@@ -471,10 +473,10 @@
     draggable={removability === "removable"}
   >
     <div class="folder-title">
-      <div class="foldername" use:toolTip={$_('fileManager.moveByDrag')}>
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
-        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-        <img class="button toggle" class:collapsed={collapsed} src={folderIcon} alt="symbol" on:click={() => collapsed = !collapsed}/>
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <div class="foldername" use:toolTip={$_('fileManager.moveByDrag')} on:click={() => { if (!renaming) collapsed = !collapsed; }}>
+        <img class="button toggle" class:collapsed={collapsed} src={folderIcon} alt="symbol"/>
         <RenameEdit bind:this={renameEdit} bind:editing={renaming} value={filename} on:submit={submitRename}/>
       </div>
       {#if isRootTrash}
@@ -592,6 +594,7 @@
     display: flex;
     flex-direction: row;
     margin-right: 8px;
+    cursor: pointer;
   }
   .folder-contents {
     padding-left: 16px;
