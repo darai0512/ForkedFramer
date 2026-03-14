@@ -12,7 +12,7 @@
 
   $: ondrag($fileManagerDragging);
   function ondrag(dragging: Dragging | null) {
-    acceptable = dragging != null && !path.includes(dragging.bindId);
+    acceptable = dragging != null && !dragging.entries.some(e => path.includes(e.bindId));
   }
 
   function onDrop(ev: CustomEvent<DataTransfer>) {

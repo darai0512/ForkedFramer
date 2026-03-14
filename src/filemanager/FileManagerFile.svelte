@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, handleEntryClick, type Dragging } from "./fileManagerStore";
+  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, type Dragging } from "./fileManagerStore";
   import type { NodeId, BindId, FileSystem, Folder } from "../lib/filesystem/fileSystem";
   import { mainBook, bookOperators } from '../bookeditor/workspaceStore';
   import { createEventDispatcher, onMount } from 'svelte';
@@ -43,7 +43,7 @@
 
   $: ondrag($fileManagerDragging);
   function ondrag(dragging: Dragging | null) {
-    acceptable = dragging != null && !path.includes(dragging.bindId);
+    acceptable = dragging != null && !dragging.entries.some(e => path.includes(e.bindId));
   }
 
 	async function onDragStart (ev: DragEvent) {
@@ -57,7 +57,7 @@
     ev.stopPropagation();
     setTimeout(() => {
       // こうしないとなぜかdragendが即時発火してしまう
-      $fileManagerDragging = { fileSystem, bindId, parent: parent.id };
+      $fileManagerDragging = buildDragging(fileSystem, nodeId, bindId, parent.id);
     }, 0);
 	}
 
@@ -138,7 +138,7 @@
   
 </script>
 
-<div class="file" class:selected={$selectedEntries.has(nodeId)} data-node-id={nodeId}>
+<div class="file" class:selected={$selectedEntries.has(nodeId)} data-node-id={nodeId} data-bind-id={bindId} data-parent-id={parent.id}>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div class="file-title" class:loaded={loaded} use:toolTip={$_('fileManager.moveByDragEditByDoubleClick')}
@@ -152,7 +152,7 @@
       {filename}
     {/if}
   </div>
-  {#if $selectedEntries.has(nodeId)}
+  {#if $lastSelectedEntry === nodeId}
     <div class="floating-actions">
       {#if $fileManagerMarkedFlag}
         <!-- svelte-ignore a11y-click-events-have-key-events -->

@@ -3,7 +3,7 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, handleEntryClick } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging } from "./fileManagerStore";
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
   import { mainBook, mainBookTitle } from '../bookeditor/workspaceStore';
@@ -54,7 +54,7 @@
 
   $: ondrag($fileManagerDragging);
   function ondrag(dragging: Dragging | null) {
-    acceptable = dragging != null && !path.includes(dragging.bindId);
+    acceptable = dragging != null && !dragging.entries.some(e => path.includes(e.bindId));
   }
 
   async function onDragOver(ev: DragEvent) {
@@ -208,7 +208,7 @@
     ev.stopPropagation();
     setTimeout(() => {
       // こうしないとなぜかdragendが即時発火してしまう
-      $fileManagerDragging = { fileSystem, bindId, parent: parent.id };
+      $fileManagerDragging = buildDragging(fileSystem, node.id, bindId, parent.id);
     }, 0);
   }
 
@@ -248,28 +248,33 @@
     const dragging = $fileManagerDragging!;
     console.log("++++++++++++ moveToHere", dragging, index);
 
-    const sourceParent = (await dragging.fileSystem.getNode(dragging.parent)) as Folder;
-    const mover = (await sourceParent.getEntry(dragging.bindId))!;
-
     if (index === null) {
-      index = (await node.list()).length;      
+      index = (await node.list()).length;
     }
 
-    if (fileSystem.id === dragging.fileSystem.id) {
-      console.log("same filesystem move", node.id, "target index =", index);
+    for (const entry of dragging.entries) {
+      const sourceParent = (await dragging.fileSystem.getNode(entry.parent)) as Folder;
+      const mover = (await sourceParent.getEntry(entry.bindId))!;
 
-      await sourceParent.unlink(dragging.bindId);
-      await node.insert(mover[1], mover[2], index);
-      console.log("insert done");
-    } else {
-      console.log("different filesystem move (is copy)", node.id, "target index =", index);
+      if (fileSystem.id === dragging.fileSystem.id) {
+        console.log("same filesystem move", node.id, "target index =", index);
 
-      $loading = true;
-      const sourceNodeId = mover[2];
-      const targetFileId = await copyBookOrFolderInterFileSystem(dragging.fileSystem, fileSystem, sourceNodeId);
-      await node.insert(mover[1], targetFileId, index);
-      $loading = false;
+        await sourceParent.unlink(entry.bindId);
+        await node.insert(mover[1], mover[2], index);
+        index++;
+        console.log("insert done");
+      } else {
+        console.log("different filesystem move (is copy)", node.id, "target index =", index);
+
+        $loading = true;
+        const sourceNodeId = mover[2];
+        const targetFileId = await copyBookOrFolderInterFileSystem(dragging.fileSystem, fileSystem, sourceNodeId);
+        await node.insert(mover[1], targetFileId, index);
+        index++;
+        $loading = false;
+      }
     }
+    $selectedEntries = new Set();
   }
 
   async function recycle() {
@@ -475,6 +480,8 @@
     draggable={removability === "removable"}
     on:click={(e) => { handleEntryClick(node.id, e); }}
     data-node-id={node.id}
+    data-bind-id={bindId}
+    data-parent-id={parent.id}
   >
     <div class="folder-title">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -499,7 +506,7 @@
         {/if}
       </div> 
     </div>
-    {#if $selectedEntries.has(node.id) && isDiscardable}
+    {#if $lastSelectedEntry === node.id && isDiscardable}
       <div class="floating-actions">
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->

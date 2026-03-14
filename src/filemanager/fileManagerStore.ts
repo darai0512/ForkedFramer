@@ -13,10 +13,14 @@ import { writeHierarchicalEnvelopeZip, readHierarchicalEnvelopeZip, type Hierarc
 import { dryUnpackBubbleMedias, dryUnpackFrameMedias, dryUnpackNotebookMedias } from "../lib/book/imagePacking";
 import type { Media } from "../lib/layeredCanvas/dataModels/media";
 
-export type Dragging = {
-  fileSystem: FileSystem;
+export type DraggingEntry = {
   bindId: BindId;
   parent: NodeId;
+}
+
+export type Dragging = {
+  fileSystem: FileSystem;
+  entries: DraggingEntry[];
 }
 
 export type LoadToken = {
@@ -63,6 +67,28 @@ export function shiftSelectEntries(nodeId: NodeId): void {
   const range = ids.slice(start, end + 1);
   selectedEntries.update(s => { s.clear(); for (const id of range) { s.add(id); } return s; });
   // lastSelectedEntry is not updated on shift+click
+}
+
+export function buildDragging(fileSystem: FileSystem, nodeId: NodeId, bindId: BindId, parentId: NodeId): Dragging {
+  const selected = get(selectedEntries);
+  if (selected.has(nodeId) && selected.size > 1) {
+    // ドラッグ元が選択中 → 全選択エントリをまとめる
+    const entries: DraggingEntry[] = [];
+    const elements = document.querySelectorAll<HTMLElement>('[data-node-id]');
+    for (const el of elements) {
+      const nid = el.dataset.nodeId as NodeId;
+      if (selected.has(nid)) {
+        const bid = el.dataset.bindId as BindId;
+        const pid = el.dataset.parentId as NodeId;
+        if (bid && pid) {
+          entries.push({ bindId: bid, parent: pid });
+        }
+      }
+    }
+    return { fileSystem, entries };
+  }
+  // ドラッグ元が未選択 or 単一選択 → そのエントリだけ
+  return { fileSystem, entries: [{ bindId, parent: parentId }] };
 }
 
 export function handleEntryClick(nodeId: NodeId, e: MouseEvent): void {
