@@ -3,7 +3,7 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, type BulkRenameResult } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, exportSelectedEntries, type BulkRenameResult } from "./fileManagerStore";
   import { waitDialog } from '../utils/waitDialog';
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
@@ -434,19 +434,25 @@
       // プログレスバーの表示
       $loading = true;
       $progress = 0;
-      
-      // ZIPファイルの生成
-      const zipBlob = await exportFolderAsEnvelopeZip(
-        fileSystem,
-        node,
-        filename,
-        (value) => { $progress = value; }
-      );
-      
-      // ファイル名のサニタイズ
-      const safeFilename = sanitizeFileName(filename || 'folder');
-      const dateStr = new Date().toISOString().replace(/[-:]/g, '').substring(0, 15);
-      const downloadFilename = `${safeFilename}_${dateStr}.zip`;
+
+      let zipBlob: Blob;
+      let downloadFilename: string;
+
+      if ($selectedEntries.size > 1) {
+        zipBlob = (await exportSelectedEntries(fileSystem, (value) => { $progress = value; }))!;
+        const dateStr = new Date().toISOString().replace(/[-:]/g, '').substring(0, 15);
+        downloadFilename = `selected_${dateStr}.zip`;
+      } else {
+        zipBlob = await exportFolderAsEnvelopeZip(
+          fileSystem,
+          node,
+          filename,
+          (value) => { $progress = value; }
+        );
+        const safeFilename = sanitizeFileName(filename || 'folder');
+        const dateStr = new Date().toISOString().replace(/[-:]/g, '').substring(0, 15);
+        downloadFilename = `${safeFilename}_${dateStr}.zip`;
+      }
       
       // ダウンロードリンクの作成
       const url = URL.createObjectURL(zipBlob);

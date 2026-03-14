@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, type Dragging, type BulkRenameResult } from "./fileManagerStore";
+  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, exportSelectedEntries, type Dragging, type BulkRenameResult } from "./fileManagerStore";
   import { waitDialog } from '../utils/waitDialog';
   import type { NodeId, BindId, FileSystem, Folder } from "../lib/filesystem/fileSystem";
   import { mainBook, bookOperators } from '../bookeditor/workspaceStore';
@@ -135,18 +135,27 @@
 
   async function makePackage() {
     $progress = 0;
-    const file = (await fileSystem.getNode(nodeId))!.asFile()!;
-    const book = await loadBookFrom(fileSystem, file);
-    const blob = await writeEnvelope(book, n => $progress = n);
-    saveAs(blob, `${filename}.envelope`);
-    toastStore.trigger({ message: 'パッケージをダウンロードしました。ファイルマネージャにドロップすると読み込むことができます。', timeout: 3000});
+    if ($selectedEntries.size > 1) {
+      const zipBlob = await exportSelectedEntries(fileSystem, n => $progress = n);
+      if (zipBlob) {
+        const dateStr = new Date().toISOString().replace(/[-:]/g, '').substring(0, 15);
+        saveAs(zipBlob, `selected_${dateStr}.zip`);
+        toastStore.trigger({ message: 'パッケージをダウンロードしました。', timeout: 3000});
+      }
+    } else {
+      const file = (await fileSystem.getNode(nodeId))!.asFile()!;
+      const book = await loadBookFrom(fileSystem, file);
+      const blob = await writeEnvelope(book, n => $progress = n);
+      saveAs(blob, `${filename}.envelope`);
+      toastStore.trigger({ message: 'パッケージをダウンロードしました。ファイルマネージャにドロップすると読み込むことができます。', timeout: 3000});
+    }
     $progress = null;
   }
 
   onMount(async () => {
     isDiscardable = removability === "removable" && trash != null;
   });
-  
+
 </script>
 
 <div class="file" class:selected={$selectedEntries.has(nodeId)} data-node-id={nodeId} data-bind-id={bindId} data-parent-id={parent.id}>
