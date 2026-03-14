@@ -179,10 +179,10 @@
     node = node;
   }
 
-  function onInsertToParent(ev: CustomEvent<DataTransfer>) {
+  function onInsertToParent(ev: CustomEvent<DragEvent>) {
     console.log("insert to parent", ev.detail);
     isDraggingOver = false;
-    const detail = { dataTransfer: ev.detail, index };
+    const detail = { dataTransfer: ev.detail.dataTransfer, index };
     dispatch('insert', detail);
     ev.preventDefault();
     ev.stopPropagation();

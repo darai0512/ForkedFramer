@@ -5,13 +5,19 @@
 
   export let acceptable: boolean;
   export let depth: number;
+  export let split: boolean = false;
 
   let isDraggingOver = false;
+  let lineAtBottom = false;
 
   async function onDragOver(ev: DragEvent) {
     ev.preventDefault();
     ev.stopPropagation();
     isDraggingOver = true;
+    if (split) {
+      const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect();
+      lineAtBottom = ev.clientY >= rect.top + rect.height / 2;
+    }
   }
 
   function onDragLeave() {
@@ -20,15 +26,15 @@
 
   function onDrop(ev: DragEvent) {
     isDraggingOver = false;
-    dispatch('drop', ev.dataTransfer);
+    dispatch('drop', ev);
     ev.preventDefault();
     ev.stopPropagation();
   }
-  
+
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div 
+<div
   class="drop-zone"
   class:acceptable={acceptable}
   on:dragover={onDragOver}
@@ -39,6 +45,7 @@
   <div
     class="insert-line"
     class:dragging={isDraggingOver}
+    style="top: {split && lineAtBottom ? '100%' : '0%'}"
   >
   </div>
 </div>
@@ -46,16 +53,12 @@
 
 <style>
   .drop-zone {
-/*
-    background-color: #00e8;
-    border: 1px dashed #ccc;
-*/
     position: absolute;
-    top: -50%; /* 親の高さの半分だけ上に移動 */
+    top: -2px;
     left: 0;
     right: 0;
     width: 100%;
-    height: 105%; /* 隙間ができてちらつかないように */
+    height: calc(100% + 4px);
     z-index: 1;
     display: none;
   }
@@ -66,12 +69,11 @@
 
   .insert-line {
     position: absolute;
-    top: 50%;
     left: 0;
     right: 0;
     height: 1px;
     background-color: black;
-    transform: translateY(-50%);  /* 縦中央に配置 */
+    transform: translateY(-50%);
     opacity: 0;
     pointer-events: none;
   }
@@ -80,5 +82,3 @@
     opacity: 1;
   }
 </style>
-
-    

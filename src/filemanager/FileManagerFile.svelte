@@ -36,6 +36,7 @@
   let loaded = false;
   let renameEdit: RenameEdit | null = null;
   let renaming = false;
+  let fileElement: HTMLDivElement;
 
   $: if ($mainBook) {
     loaded = $mainBook.revision.id === nodeId;
@@ -86,9 +87,13 @@
     renaming = false;
   }
 
-  function onDrop(ev: CustomEvent<DataTransfer>) {
-    const detail = { dataTransfer: ev.detail, index };
-    dispatch('insert', detail);
+  function onDrop(ev: CustomEvent<DragEvent>) {
+    const dragEvent = ev.detail;
+    const rect = fileElement.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const insertIndex = dragEvent.clientY < midY ? index : index + 1;
+
+    dispatch('insert', { dataTransfer: dragEvent.dataTransfer, index: insertIndex });
     ev.preventDefault();
     ev.stopPropagation();
     $fileManagerDragging = null;
@@ -134,7 +139,7 @@
   
 </script>
 
-<div class="file" class:selected={nodeId === $selectedFile}>
+<div class="file" class:selected={nodeId === $selectedFile} bind:this={fileElement}>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div class="file-title" class:loaded={loaded} use:toolTip={$_('fileManager.moveByDragEditByDoubleClick')}
@@ -177,7 +182,7 @@
       <img class="button" src={trashIcon} alt="trash" on:click={removeFile} use:toolTip={$_('fileManager.discard')}/>
     {/if}
   </div>
-  <FileManagerInsertZone on:drop={onDrop} bind:acceptable={acceptable} depth={path.length}/>
+  <FileManagerInsertZone on:drop={onDrop} bind:acceptable={acceptable} depth={path.length} split={true}/>
 </div>
 
 <style>

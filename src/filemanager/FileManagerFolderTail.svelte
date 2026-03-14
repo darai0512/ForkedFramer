@@ -15,8 +15,8 @@
     acceptable = dragging != null && !path.includes(dragging.bindId);
   }
 
-  function onDrop(ev: CustomEvent<DataTransfer>) {
-    const detail = { dataTransfer: ev.detail, index };
+  function onDrop(ev: CustomEvent<DragEvent>) {
+    const detail = { dataTransfer: ev.detail.dataTransfer, index };
     dispatch('insert', detail);
     ev.preventDefault();
     ev.stopPropagation();
