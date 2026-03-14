@@ -38,32 +38,44 @@ function countNodes(node: HierarchyNode): number {
 }
 
 /**
- * 階層構造のノードを再帰的に処理する関数
+ * 同階層での名前重複を回避するためのユニーク名を生成する
  */
-async function processNode(
-  node: HierarchyNode,
+function uniqueName(name: string, usedNames: Set<string>): string {
+  if (!usedNames.has(name)) {
+    usedNames.add(name);
+    return name;
+  }
+  let i = 1;
+  while (usedNames.has(`${name}_${i}`)) { i++; }
+  const unique = `${name}_${i}`;
+  usedNames.add(unique);
+  return unique;
+}
+
+/**
+ * 兄弟ノードリストを再帰的に処理する関数
+ */
+async function processNodes(
+  nodes: HierarchyNode[],
   zip: JSZip,
   currentPath: string,
   onProgress: () => void
 ): Promise<void> {
-  // ファイル名のサニタイズ
-  const safeName = sanitizeFileName(node.name);
-  
-  if (node.isFolder) {
-    // フォルダの場合は新しいZIPフォルダを作成
-    const newPath = currentPath ? `${currentPath}/${safeName}` : safeName;
+  const usedNames = new Set<string>();
+  for (const node of nodes) {
+    const safeName = uniqueName(sanitizeFileName(node.name), usedNames);
 
-    if (node.children) {
-      for (const child of node.children) {
-        await processNode(child, zip, newPath, onProgress);
+    if (node.isFolder) {
+      const newPath = currentPath ? `${currentPath}/${safeName}` : safeName;
+      if (node.children) {
+        await processNodes(node.children, zip, newPath, onProgress);
       }
+    } else if (node.book) {
+      const filePath = currentPath ? `${currentPath}/${safeName}.envelope` : `${safeName}.envelope`;
+      const blob = await writeEnvelope(node.book, () => {});
+      zip.file(filePath, blob);
+      onProgress();
     }
-  } else if (node.book) {
-    // ファイルの場合はenvelopeを生成してZIPに追加
-    const filePath = currentPath ? `${currentPath}/${safeName}.envelope` : `${safeName}.envelope`;
-    const blob = await writeEnvelope(node.book, () => {});
-    zip.file(filePath, blob);
-    onProgress();
   }
 }
 
@@ -79,12 +91,10 @@ export async function writeHierarchicalEnvelopeZip(
   let totalNodes = 0;
   for (const node of nodes) { totalNodes += countNodes(node); }
 
-  for (const node of nodes) {
-    await processNode(node, zip, '', () => {
-      processedCount++;
-      progress(processedCount / totalNodes);
-    });
-  }
+  await processNodes(nodes, zip, '', () => {
+    processedCount++;
+    progress(processedCount / totalNodes);
+  });
 
   return await zip.generateAsync({
     type: 'blob',
