@@ -111,6 +111,33 @@ export async function removeSelectedEntries(fileSystem: FileSystem, trash: Folde
   lastSelectedEntry.set(null);
 }
 
+export type BulkRenameResult = {
+  baseName: string;
+  separator: string;
+  digits: number;
+  startNumber: number;
+} | null;
+
+export async function renameSelectedEntries(fileSystem: FileSystem, dialogResult: BulkRenameResult): Promise<void> {
+  if (!dialogResult) { return; }
+  const { baseName, separator, digits, startNumber } = dialogResult;
+  const selected = get(selectedEntries);
+  if (selected.size < 2) { return; }
+  const elements = document.querySelectorAll<HTMLElement>('[data-node-id]');
+  let seq = startNumber;
+  for (const el of elements) {
+    const nid = el.dataset.nodeId as NodeId;
+    if (!selected.has(nid)) { continue; }
+    const bid = el.dataset.bindId as BindId;
+    const pid = el.dataset.parentId as NodeId;
+    if (!bid || !pid) { continue; }
+    const parentFolder = (await fileSystem.getNode(pid)) as Folder;
+    const padded = String(seq).padStart(digits, '0');
+    await parentFolder.rename(bid, `${baseName}${separator}${padded}`);
+    seq++;
+  }
+}
+
 export function clearSelection(): void {
   selectedEntries.update(s => { s.clear(); return s; });
   lastSelectedEntry.set(null);

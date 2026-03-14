@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, type Dragging } from "./fileManagerStore";
+  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, type Dragging, type BulkRenameResult } from "./fileManagerStore";
+  import { waitDialog } from '../utils/waitDialog';
   import type { NodeId, BindId, FileSystem, Folder } from "../lib/filesystem/fileSystem";
   import { mainBook, bookOperators } from '../bookeditor/workspaceStore';
   import { createEventDispatcher, onMount } from 'svelte';
@@ -79,7 +80,13 @@
     dispatch('duplicate', { bindId, nodeId, filename });
   }
 
-  function startRename() {
+  async function startRename() {
+    if ($selectedEntries.size > 1) {
+      const result = await waitDialog<BulkRenameResult>('bulkRename', { count: $selectedEntries.size });
+      await renameSelectedEntries(fileSystem, result);
+      dispatch('rename', { bindId, name: filename });
+      return;
+    }
     console.log("renameFile");
     renameEdit!.setFocus();
   }

@@ -3,7 +3,8 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, type BulkRenameResult } from "./fileManagerStore";
+  import { waitDialog } from '../utils/waitDialog';
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
   import { mainBook, mainBookTitle } from '../bookeditor/workspaceStore';
@@ -364,7 +365,13 @@
     }
   }
 
-  function startRename() {
+  async function startRename() {
+    if ($selectedEntries.size > 1) {
+      const result = await waitDialog<BulkRenameResult>('bulkRename', { count: $selectedEntries.size });
+      await renameSelectedEntries(fileSystem, result);
+      node = node;
+      return;
+    }
     console.log("renameFolder");
     renameEdit.setFocus();
   }
