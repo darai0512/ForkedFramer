@@ -498,30 +498,17 @@
         {/if}
       </div> 
     </div>
-    {#if $selectedFile === node.id}
-      <div class="buttons hbox gap-2">
-        <div class="button-container">
-          {#if isDiscardable}
-            <!-- アーカイブボタン - フォルダのエクスポート用 -->
-            <!-- svelte-ignore a11y-click-events-have-key-events -->
-            <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-            <img class="button" src={packageExportIcon} alt="archive" on:click={exportAsZip} use:toolTip={$_('storage.archiveToZip')}/>
-          {/if}
-        </div>
-        <div class="button-container">
-          {#if isDiscardable}
-            <!-- svelte-ignore a11y-click-events-have-key-events -->
-            <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-            <img class="button" src={renameIcon} alt="rename" on:click={startRename} use:toolTip={$_('fileManager.changeFolderName')}/>
-          {/if}
-        </div>
-        <div class="button-container">
-          {#if isDiscardable}
-            <!-- svelte-ignore a11y-click-events-have-key-events -->
-            <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-            <img class="button" src={trashIcon} alt="trash" on:click={removeFolder} use:toolTip={$_('fileManager.discard')}/>
-          {/if}
-        </div>
+    {#if $selectedFile === node.id && isDiscardable}
+      <div class="floating-actions">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="action-icon" src={packageExportIcon} alt="archive" on:click={exportAsZip} use:toolTip={$_('storage.archiveToZip')}/>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="action-icon" src={renameIcon} alt="rename" on:click={startRename} use:toolTip={$_('fileManager.changeFolderName')}/>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="action-icon" src={trashIcon} alt="trash" on:click={removeFolder} use:toolTip={$_('fileManager.discard')}/>
       </div>
     {/if}
     {#if removability === 'removable'}
@@ -606,15 +593,25 @@
     box-sizing: border-box;
     /* border: 2px dashed transparent; /* 初期状態では透明にしておく */
   }
-  .buttons {
-    gap: 0px;
-  }
-  .button-container {
-    width: 20px;
-    min-width: 20px;
-    height: 16px;
+  .floating-actions {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
     display: flex;
+    flex-direction: row;
+    align-items: center;
     gap: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 2px 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+  .action-icon {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
   }
   .button {
     width: 16px;

@@ -563,7 +563,7 @@
   <Drawer
     open={$fileManagerOpen}
     placement="left"
-    size="640px"
+    size="540px"
     on:clickAway={() => ($fileManagerOpen = false)}
   >
     <div class="drawer-content">

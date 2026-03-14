@@ -149,33 +149,25 @@
     {/if}
   </div>
   {#if $selectedFile === nodeId}
-    {#if $fileManagerMarkedFlag}
-      <div class="button-container">
+    <div class="floating-actions">
+      {#if $fileManagerMarkedFlag}
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-        <img class="button" src={pasteIcon} alt="rename" on:click={copyMarkedPages} use:toolTip={$_('fileManager.selectPagesCopy')}/>
-      </div>
-    {/if}
-    <div class="button-container">
+        <img class="action-icon" src={pasteIcon} alt="paste" on:click={copyMarkedPages} use:toolTip={$_('fileManager.selectPagesCopy')}/>
+      {/if}
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img class="button" src={packageIcon} alt="rename" on:click={makePackage} use:toolTip={$_('fileManager.createPackage')}/>
-    </div>
-    <div class="button-container">
+      <img class="action-icon" src={packageIcon} alt="package" on:click={makePackage} use:toolTip={$_('fileManager.createPackage')}/>
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img class="button" src={duplicateIcon} alt="duplicate" on:click={duplicateFile} use:toolTip={$_('fileManager.duplicate')}/>
-    </div>
-    <div class="button-container">
+      <img class="action-icon" src={duplicateIcon} alt="duplicate" on:click={duplicateFile} use:toolTip={$_('fileManager.duplicate')}/>
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <img class="button" src={renameIcon} alt="rename" on:click={startRename} use:toolTip={$_('fileManager.changeFileName')}/>
-    </div>
-    <div class="button-container">
+      <img class="action-icon" src={renameIcon} alt="rename" on:click={startRename} use:toolTip={$_('fileManager.changeFileName')}/>
       {#if isDiscardable}
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-        <img class="button" src={trashIcon} alt="trash" on:click={removeFile} use:toolTip={$_('fileManager.discard')}/>
+        <img class="action-icon" src={trashIcon} alt="trash" on:click={removeFile} use:toolTip={$_('fileManager.discard')}/>
       {/if}
     </div>
   {/if}
@@ -204,17 +196,30 @@
     width: 100%;
     height: 24px;
   }
-  .button-container {
-    width: 20px;
-    min-width: 20px;
-    height: 16px;
-    display: flex;
-    gap: 4px;
-  }
   .button {
     width: 16px;
     height: 16px;
     display: inline;
+  }
+  .floating-actions {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 2px 4px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+  }
+  .action-icon {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
   }
   .loaded {
     background-color: #f8f4;
