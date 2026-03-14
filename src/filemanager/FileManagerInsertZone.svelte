@@ -55,7 +55,7 @@
     left: 0;
     right: 0;
     width: 100%;
-    height: 105%; /* 隙間ができてちらつかないように */
+    height: 120%; /* 親のborderを考慮し隙間ができないように */
     z-index: 1;
     display: none;
   }
