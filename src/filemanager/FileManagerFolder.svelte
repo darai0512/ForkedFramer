@@ -3,7 +3,7 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedFile } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, handleEntryClick } from "./fileManagerStore";
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
   import { mainBook, mainBookTitle } from '../bookeditor/workspaceStore';
@@ -473,12 +473,13 @@
     class="folder-title-line"
     class:no-select={removability === "unremovable"}
     draggable={removability === "removable"}
-    on:click={() => { $selectedFile = node.id; }}
+    on:click={(e) => { handleEntryClick(node.id, e); }}
+    data-node-id={node.id}
   >
     <div class="folder-title">
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <div class="foldername" use:toolTip={$_('fileManager.moveByDrag')} on:click|stopPropagation={() => { if (!renaming) { collapsed = !collapsed; $selectedFile = node.id; } }}>
+      <div class="foldername" use:toolTip={$_('fileManager.moveByDrag')} on:click|stopPropagation={(e) => { if (!renaming) { collapsed = !collapsed; handleEntryClick(node.id, e); } }}>
         <img class="button toggle" class:collapsed={collapsed} src={folderIcon} alt="symbol"/>
         <RenameEdit bind:this={renameEdit} bind:editing={renaming} value={filename} on:submit={submitRename}/>
       </div>
@@ -498,7 +499,7 @@
         {/if}
       </div> 
     </div>
-    {#if $selectedFile === node.id && isDiscardable}
+    {#if $selectedEntries.has(node.id) && isDiscardable}
       <div class="floating-actions">
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedFile, type Dragging } from "./fileManagerStore";
+  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, handleEntryClick, type Dragging } from "./fileManagerStore";
   import type { NodeId, BindId, FileSystem, Folder } from "../lib/filesystem/fileSystem";
   import { mainBook, bookOperators } from '../bookeditor/workspaceStore';
   import { createEventDispatcher, onMount } from 'svelte';
@@ -95,14 +95,18 @@
   }
 
   async function onClick(e: MouseEvent) {
-    if ($selectedFile === nodeId) {
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      handleEntryClick(nodeId, e);
+      return;
+    }
+    if ($selectedEntries.has(nodeId) && $selectedEntries.size === 1) {
       if (fileSystem.isVault) {
         toastStore.trigger({ message: $_('fileManager.cloudFileCannotOpenDirectly'), timeout: 3000});
         return;
       }
       $loadToken = { fileSystem, nodeId, parent, bindId };
     } else {
-      $selectedFile = nodeId;
+      handleEntryClick(nodeId, e);
     }
   }
 
@@ -134,7 +138,7 @@
   
 </script>
 
-<div class="file" class:selected={nodeId === $selectedFile}>
+<div class="file" class:selected={$selectedEntries.has(nodeId)} data-node-id={nodeId}>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div class="file-title" class:loaded={loaded} use:toolTip={$_('fileManager.moveByDragEditByDoubleClick')}
@@ -148,7 +152,7 @@
       {filename}
     {/if}
   </div>
-  {#if $selectedFile === nodeId}
+  {#if $selectedEntries.has(nodeId)}
     <div class="floating-actions">
       {#if $fileManagerMarkedFlag}
         <!-- svelte-ignore a11y-click-events-have-key-events -->

@@ -1,4 +1,4 @@
-import { writable, type Writable } from "svelte/store";
+import { writable, get, type Writable } from "svelte/store";
 import type { FileSystem, Folder, File, NodeId, BindId } from "../lib/filesystem/fileSystem.js";
 import type { Page, Book, SerializedBook, SerializedPage, SerializedCharacter, SerializedNotebook } from "../lib/book/book";
 import { commitBook, emptyNotebook } from "../lib/book/book";
@@ -35,7 +35,45 @@ export const loadToken: Writable<LoadToken | null> = writable(null);
 export const fileManagerMarkedFlag = writable(false);
 export const mainBookFileSystem: Writable<FileSystem | null> = writable(null);
 export const gadgetFileSystem: Writable<FileSystem | null> = writable(null);
-export const selectedFile: Writable<NodeId | null> = writable(null);
+export const selectedEntries: Writable<Set<NodeId>> = writable(new Set());
+export const lastSelectedEntry: Writable<NodeId | null> = writable(null);
+
+export function selectEntry(nodeId: NodeId): void {
+  selectedEntries.update(s => { s.clear(); s.add(nodeId); return s; });
+  lastSelectedEntry.set(nodeId);
+}
+
+export function ctrlSelectEntry(nodeId: NodeId): void {
+  selectedEntries.update(s => {
+    if (s.has(nodeId)) { s.delete(nodeId); } else { s.add(nodeId); }
+    return s;
+  });
+  lastSelectedEntry.set(nodeId);
+}
+
+export function shiftSelectEntries(nodeId: NodeId): void {
+  const last = get(lastSelectedEntry);
+  if (last == null) { selectEntry(nodeId); return; }
+  const elements = document.querySelectorAll<HTMLElement>('[data-node-id]');
+  const ids = Array.from(elements).map(el => el.dataset.nodeId as NodeId);
+  const fromIdx = ids.indexOf(last);
+  const toIdx = ids.indexOf(nodeId);
+  if (fromIdx === -1 || toIdx === -1) { selectEntry(nodeId); return; }
+  const [start, end] = fromIdx < toIdx ? [fromIdx, toIdx] : [toIdx, fromIdx];
+  const range = ids.slice(start, end + 1);
+  selectedEntries.update(s => { s.clear(); for (const id of range) { s.add(id); } return s; });
+  // lastSelectedEntry is not updated on shift+click
+}
+
+export function handleEntryClick(nodeId: NodeId, e: MouseEvent): void {
+  if (e.ctrlKey || e.metaKey) {
+    ctrlSelectEntry(nodeId);
+  } else if (e.shiftKey) {
+    shiftSelectEntries(nodeId);
+  } else {
+    selectEntry(nodeId);
+  }
+}
 
 export async function saveBookTo(book: Book, fileSystem: FileSystem, file: File): Promise<void> {
   const startTime = performance.now();
