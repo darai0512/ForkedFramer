@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, type Dragging } from "./fileManagerStore";
+  import { fileManagerDragging, fileManagerMarkedFlag, loadBookFrom, loadToken, saveBookTo, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, type Dragging } from "./fileManagerStore";
   import type { NodeId, BindId, FileSystem, Folder } from "../lib/filesystem/fileSystem";
   import { mainBook, bookOperators } from '../bookeditor/workspaceStore';
   import { createEventDispatcher, onMount } from 'svelte';
@@ -67,8 +67,12 @@
     $fileManagerDragging = null;
   }
 
-  function removeFile() {
-    dispatch('remove', bindId);
+  async function removeFile() {
+    if ($selectedEntries.size > 1 && trash) {
+      await removeSelectedEntries(fileSystem, trash);
+    } else {
+      dispatch('remove', bindId);
+    }
   }
 
   function duplicateFile() {

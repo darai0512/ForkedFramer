@@ -91,6 +91,26 @@ export function buildDragging(fileSystem: FileSystem, nodeId: NodeId, bindId: Bi
   return { fileSystem, entries: [{ bindId, parent: parentId }] };
 }
 
+export async function removeSelectedEntries(fileSystem: FileSystem, trash: Folder): Promise<void> {
+  const selected = get(selectedEntries);
+  if (selected.size === 0) { return; }
+  const elements = document.querySelectorAll<HTMLElement>('[data-node-id]');
+  for (const el of elements) {
+    const nid = el.dataset.nodeId as NodeId;
+    if (!selected.has(nid)) { continue; }
+    const bid = el.dataset.bindId as BindId;
+    const pid = el.dataset.parentId as NodeId;
+    if (!bid || !pid) { continue; }
+    const parentFolder = (await fileSystem.getNode(pid)) as Folder;
+    const entry = await parentFolder.getEntry(bid);
+    if (!entry) { continue; }
+    await trash.link(entry[1], entry[2]);
+    await parentFolder.unlink(bid);
+  }
+  selectedEntries.update(s => { s.clear(); return s; });
+  lastSelectedEntry.set(null);
+}
+
 export function handleEntryClick(nodeId: NodeId, e: MouseEvent): void {
   if (e.ctrlKey || e.metaKey) {
     ctrlSelectEntry(nodeId);

@@ -3,7 +3,7 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries } from "./fileManagerStore";
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
   import { mainBook, mainBookTitle } from '../bookeditor/workspaceStore';
@@ -172,7 +172,12 @@
   }
 
   async function removeFolder() {
-    dispatch('remove', bindId);
+    if ($selectedEntries.size > 1 && trash) {
+      await removeSelectedEntries(fileSystem, trash);
+      node = node;
+    } else {
+      dispatch('remove', bindId);
+    }
   }
 
   async function removeChild(e: CustomEvent<BindId>) {
