@@ -40,6 +40,7 @@
   let renaming = false;
   let isRootTrash = false;
   let embodiedEntries: EmbodiedEntry[] = [];
+  let collapsed = removability === "removable";
 
   const dispatch = createEventDispatcher();
 
@@ -438,7 +439,9 @@
   >
     <div class="folder-title">
       <div class="foldername" use:toolTip={$_('fileManager.moveByDrag')}>
-        <img class="button" src={folderIcon} alt="symbol"/>
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="button toggle" class:collapsed={collapsed} src={folderIcon} alt="symbol" on:click={() => collapsed = !collapsed}/>
         <RenameEdit bind:this={renameEdit} bind:editing={renaming} value={filename} on:submit={submitRename}/>
       </div>
       {#if isRootTrash}
@@ -485,6 +488,7 @@
       <FileManagerInsertZone on:drop={onInsertToParent} bind:acceptable={acceptable} depth={path.length}/>
     {/if}
   </div>
+  {#if !collapsed}
   <div class="folder-contents"
     class:acceptable={isDraggingOver && acceptable}
   >
@@ -497,6 +501,7 @@
     {/each}
     <FileManagerFolderTail index={embodiedEntries.length} on:insert={onInsert} path={[...path, 'tail']}/>
   </div>
+  {/if}
 </div>
 {/if}
 
@@ -563,6 +568,13 @@
     width: 16px;
     height: 16px;
     display: inline;
+  }
+  .toggle {
+    cursor: pointer;
+    transition: transform 0.15s ease;
+  }
+  .toggle.collapsed {
+    transform: rotate(-90deg);
   }
   .no-select {
     user-select: none; /* 標準のCSS */
