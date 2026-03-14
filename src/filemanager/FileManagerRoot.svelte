@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import streamSaver from 'streamsaver';
   import { _ } from 'svelte-i18n';
-  import { fileManagerUsedSizeToken, fileManagerOpen, saveBookTo, loadBookFrom, getCurrentDateTime, newBookToken, saveBubbleToken, newFile, fileManagerMarkedFlag, saveBubbleTo, loadToken, type LoadToken, mainBookFileSystem, gadgetFileSystem } from "./fileManagerStore";
+  import { fileManagerUsedSizeToken, fileManagerOpen, saveBookTo, loadBookFrom, getCurrentDateTime, newBookToken, saveBubbleToken, newFile, fileManagerMarkedFlag, saveBubbleTo, loadToken, type LoadToken, mainBookFileSystem, gadgetFileSystem, clearSelection } from "./fileManagerStore";
   import type { FileSystem, NodeId, Folder, EmbodiedEntry } from '../lib/filesystem/fileSystem';
   import { type Book } from '../lib/book/book';
   import { newBook, revisionEqual, getHistoryWeight, collectAllFilms } from '../lib/book/book';
@@ -559,6 +559,8 @@
 
 </script>
 
+<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && $fileManagerOpen) clearSelection(); }} />
+
 <div class="drawer-outer">
   <Drawer
     open={$fileManagerOpen}
@@ -566,7 +568,8 @@
     size="540px"
     on:clickAway={() => ($fileManagerOpen = false)}
   >
-    <div class="drawer-content">
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <div class="drawer-content" on:click|self={clearSelection}>
       <h2>{$_('storage.browserStorage')}</h2>
       <Accordion class="my-2 px-4">
         <AccordionItem>

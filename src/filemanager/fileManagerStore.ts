@@ -111,6 +111,11 @@ export async function removeSelectedEntries(fileSystem: FileSystem, trash: Folde
   lastSelectedEntry.set(null);
 }
 
+export function clearSelection(): void {
+  selectedEntries.update(s => { s.clear(); return s; });
+  lastSelectedEntry.set(null);
+}
+
 export function handleEntryClick(nodeId: NodeId, e: MouseEvent): void {
   if (e.ctrlKey || e.metaKey) {
     ctrlSelectEntry(nodeId);
