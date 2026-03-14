@@ -459,7 +459,8 @@
 {#if node}
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="folder"
-  on:dragover={onDragOver} 
+  class:folder-highlight={folderDropZoneDraggingOver || (isDraggingOver && acceptable)}
+  on:dragover={onDragOver}
   on:dragstart={onDragStart}
   on:dragleave={onDragLeave}
   on:drop={onDropHere}
@@ -467,7 +468,6 @@
   <div
     class="folder-title-line"
     class:no-select={removability === "unremovable"}
-    class:folder-drop-highlight={folderDropZoneDraggingOver}
     draggable={removability === "removable"}
   >
     <div class="folder-title">
@@ -536,9 +536,7 @@
     <FileManagerFolderTail index={embodiedEntries.length} on:insert={onCollapsedInsert} path={[...path, 'tail']}/>
   </div>
   {:else}
-  <div class="folder-contents"
-    class:acceptable={isDraggingOver && acceptable}
-  >
+  <div class="folder-contents">
     {#each embodiedEntries as [bindId, filename, childNode], index (childNode.id)}
       {#if childNode.getType() === 'folder'}
         <svelte:self fileSystem={fileSystem} removability={"removable"} spawnability={spawnability} filename={filename} bindId={bindId} parent={node} index={index} on:insert={onInsert} on:remove={removeChild} path={[...path, bindId]} on:rename={renameChild} trash={trash}/>
@@ -556,6 +554,10 @@
   .folder {
     text-align: left;
   }
+  .folder.folder-highlight {
+    background-color: #ee84;
+    box-shadow: 0 0 0 2px #444 inset;
+  }
   .folder-title-line {
     display: flex;
     flex-direction: row;
@@ -566,10 +568,6 @@
   }
   .folder-title-line:hover {
     background-color: #fff4;
-  }
-  .folder-title-line.folder-drop-highlight {
-    background-color: #ee84;
-    box-shadow: 0 0 0 2px #444 inset;
   }
   .folder-title {
     font-size: 16px;
@@ -599,11 +597,6 @@
     padding-left: 16px;
     box-sizing: border-box;
     /* border: 2px dashed transparent; /* 初期状態では透明にしておく */
-  }
-  .folder-contents.acceptable {
-    background-color: #ee84;
-    /* border: 2px dashed #444; */
-    box-shadow: 0 0 0 2px #444 inset; /* inset を使用して要素の内側に影を追加 */
   }
   .buttons {
     gap: 0px;
