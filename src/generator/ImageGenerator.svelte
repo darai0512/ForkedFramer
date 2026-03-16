@@ -81,7 +81,7 @@
       <!-- Tab Panels --->
       <svelte:fragment slot="panel">
         {#if tabSet === 0}
-          <ImageGeneratorFlux bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
+          <ImageGeneratorFlux bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen} frameSize={$imageGeneratorTarget?.frameSize ?? [1024, 1024]}/>
           {:else if tabSet === 2}
           <ImageGeneratorStableDiffusion bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
           {:else if tabSet === 3}

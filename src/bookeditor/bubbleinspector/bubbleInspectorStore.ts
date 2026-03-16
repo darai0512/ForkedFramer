@@ -37,7 +37,7 @@ export const bubbleInspectorRebuildToken: Writable<number> = writable(0);
 
 // コマンド実行に必要なツールへの参照
 let painterRunWithBubble: ((page: Page, bubble: Bubble, film: Film) => Promise<void>) | null = null;
-let runImageGenerator: ((prompt: string, filmStack: any, gallery: any) => Promise<GeneratedFilmResult | null>) | null = null;
+let runImageGenerator: ((prompt: string, filmStack: any, gallery: any, frameSize: [number, number]) => Promise<GeneratedFilmResult | null>) | null = null;
 
 // サブスクリプション解除用の関数参照用オブジェクト
 const unsubscribeRef = { value: null as Function | null };
@@ -45,7 +45,7 @@ const unsubscribeRef = { value: null as Function | null };
 // ツール参照を設定
 export function setBubbleCommandTools(
   _painterRunWithBubble: (page: Page, bubble: Bubble, film: Film) => Promise<void>,
-  _runImageGenerator: (prompt: string, filmStack: any, gallery: any) => Promise<GeneratedFilmResult | null>
+  _runImageGenerator: (prompt: string, filmStack: any, gallery: any, frameSize: [number, number]) => Promise<GeneratedFilmResult | null>
 ) {
   painterRunWithBubble = _painterRunWithBubble;
   runImageGenerator = _runImageGenerator;
@@ -89,18 +89,22 @@ async function onBubbleCommand(bit: BubbleInspectorTarget | null) {
     "textedit": handleTextEditCommand,
     "angleedit": handleAngleEditCommand,
     "scribble": async (target) => handleScribbleCommand(target, painterRunWithBubble!, target.bubble),
-    "generate": async (target) => handleGenerateCommand(
-      target,
-      target.bubble.prompt,
-      runImageGenerator!,
-      (film, target) => {
-        const paperSize = target.page.paperSize;
-        const bubbleSize = target.bubble.getPhysicalSize(paperSize);
-        return minimumBoundingScale(film.getContentSize(paperSize), bubbleSize);
-      },
-      bubbleInspectorTarget,
-      target.bubble
-    ),
+    "generate": async (target) => {
+      const paperSize = target.page.paperSize;
+      const bubbleSize = target.bubble.getPhysicalSize(paperSize);
+      const frameSize: [number, number] = [bubbleSize[0], bubbleSize[1]];
+      return handleGenerateCommand(
+        target,
+        target.bubble.prompt,
+        runImageGenerator!,
+        (film, target) => {
+          return minimumBoundingScale(film.getContentSize(paperSize), bubbleSize);
+        },
+        bubbleInspectorTarget,
+        target.bubble,
+        frameSize
+      );
+    },
     "punch": handlePunchCommand,
     "upscale": handleUpscaleCommand,
     "split": splitBubble,

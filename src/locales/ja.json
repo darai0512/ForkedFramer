@@ -335,6 +335,7 @@
     "videoGeneration": "動画生成",
     "model": "モデル",
     "time": "時間",
+    "autoSizeFromFrame": "コマに合わせる",
     "aspectRatio": "アスペクト比(横:縦)",
     "oneSecond": "1秒",
     "twoSeconds": "2秒",

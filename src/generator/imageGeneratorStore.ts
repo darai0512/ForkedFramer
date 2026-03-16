@@ -11,6 +11,7 @@ export type ImageGeneratorTarget = {
   filmStack: FilmStack;
   initialPrompt: string | null;
   gallery: Media[];
+  frameSize: [number, number];
   onDone: (r: GeneratedFilmResult | null) => void,
 }
 

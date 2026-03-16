@@ -25,10 +25,14 @@
   import clipboardIcon from '../assets/clipboard.webp';
   import FeathralCost from '../utils/FeathralCost.svelte';
 
+  import { getSupportedSizesForMode } from '../utils/feathralImaging';
+  import { findClosestSize, calculateAspectPreservingSize, type SizePair } from '../lib/layeredCanvas/tools/imageUtil';
+
   export let busy: boolean;
   export let prompt: string;
   export let gallery: Media[];
   export let chosen: Media | null;
+  export let frameSize: [number, number];
 
   let progress = 0;
   let refered: Media | null= null;
@@ -41,6 +45,7 @@
   let uiType: ImagingProvider | undefined;
   let sizeText = "1024x1024";
   let background: ImagingBackground = "opaque";
+  let nanoBananaAspectRatio = "1:1";
 
   // 参考画像UI用（UIのみ。生成処理への結線は未対応）
   let referenceImages: GalleryItem[] = [];
@@ -73,6 +78,44 @@
 
   function onChooseImage({detail}: CustomEvent<Media>) {
     chosen = detail;
+  }
+
+  const NANO_BANANA_ASPECT_RATIOS = ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"];
+
+  function findClosestNanoBananaAspect(targetRatio: number): string {
+    let best = NANO_BANANA_ASPECT_RATIOS[0];
+    let bestDiff = Infinity;
+    for (const ar of NANO_BANANA_ASPECT_RATIOS) {
+      const [aw, ah] = ar.split(':').map(Number);
+      const diff = Math.abs(Math.log(aw / ah) - Math.log(targetRatio));
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        best = ar;
+      }
+    }
+    return best;
+  }
+
+  function autoSizeFromFrame() {
+    const isNanoBanana = model === 'nano-banana' || model === 'nano-banana-pro' || model === 'nano-banana-2';
+    if (isNanoBanana) {
+      const targetRatio = frameSize[0] / frameSize[1];
+      nanoBananaAspectRatio = findClosestNanoBananaAspect(targetRatio);
+      return;
+    }
+
+    const target: SizePair = { width: frameSize[0], height: frameSize[1] };
+    const supportedSizes = getSupportedSizesForMode(model);
+    if (supportedSizes && supportedSizes.length > 0) {
+      const best = findClosestSize(target, [...supportedSizes], 0.7);
+      width = best.width;
+      height = best.height;
+      sizeText = `${best.width}x${best.height}`;
+    } else {
+      const result = calculateAspectPreservingSize(target, 1024, 128, 1536, 512);
+      width = result.width;
+      height = result.height;
+    }
   }
 
   $: onChangeMode(model, sizeText);
@@ -214,8 +257,11 @@
         <option value="transparent">{$_('generator.transparentBackground')}</option>
       </select>
     {:else}
-      <ImageSizeControls {model} bind:width bind:height bind:batchCount />
+      <ImageSizeControls {model} bind:width bind:height bind:batchCount bind:aspectRatio={nanoBananaAspectRatio} />
     {/if}
+    <button class="bg-primary-500 text-white hover:bg-primary-700 focus:bg-primary-700 active:bg-primary-900 auto-size-button" on:click={autoSizeFromFrame}>
+      {$_('generator.autoSizeFromFrame')}
+    </button>
   </div>
 
   {#if $onlineAccount != null}   <!-- onMountの時点で明らかだがsvelteでは!が使えない -->
@@ -311,5 +357,14 @@
     min-width: 0;
     overflow-y: auto;
     max-height: 180px;
+  }
+
+  .auto-size-button {
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 14px;
+    border-radius: 4px;
   }
 </style>

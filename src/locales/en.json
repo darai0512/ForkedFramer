@@ -335,6 +335,7 @@
     "videoGeneration": "Video Generation",
     "model": "Model",
     "time": "Time",
+    "autoSizeFromFrame": "Fit to frame",
     "aspectRatio": "Aspect Ratio (W:H)",
     "oneSecond": "1 second",
     "twoSeconds": "2 seconds",

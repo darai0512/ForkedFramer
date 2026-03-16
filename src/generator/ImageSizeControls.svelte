@@ -10,7 +10,7 @@
   // nano-banana系: アスペクト比＋解像度指定
   const NANO_BANANA_ASPECT_RATIOS = ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"] as const;
   const RESOLUTION_TARGET_MP: Record<string, number> = { "0.5K": 0.25, "1K": 1.0, "2K": 4.0, "4K": 9.0 };
-  let aspectRatio = "1:1";
+  export let aspectRatio = "1:1";
   let nanoBananaResolution: "0.5K" | "1K" | "2K" | "4K" = "1K";
 
   $: isNanoBanana = model === 'nano-banana' || model === 'nano-banana-pro' || model === 'nano-banana-2';

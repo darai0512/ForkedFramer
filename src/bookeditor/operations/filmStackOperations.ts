@@ -70,16 +70,17 @@ export async function handleScribbleCommand<T extends FilmOperationTarget>(
 export async function handleGenerateCommand<T extends FilmOperationTarget>(
   target: T,
   inputPrompt: string,
-  runImageGenerator: (prompt: string, filmStack: any, gallery: any) => Promise<GeneratedFilmResult | null>,
+  runImageGenerator: (prompt: string, filmStack: any, gallery: any, frameSize: [number, number]) => Promise<GeneratedFilmResult | null>,
   calculateScale: (film: Film, target: T) => number,
   targetStore: any,
-  element: any
+  element: any,
+  frameSize: [number, number]
 ): Promise<void> {
   if (!runImageGenerator) return;
 
   toolTipRequest.set(null);
-  
-  const r = await runImageGenerator(inputPrompt, target.filmStack, element.gallery);
+
+  const r = await runImageGenerator(inputPrompt, target.filmStack, element.gallery, frameSize);
   if (!r) { return; }
 
   let film: Film;
