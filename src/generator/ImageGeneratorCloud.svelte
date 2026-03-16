@@ -16,6 +16,7 @@
   import { ImageMedia, type Media } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
   import ReferenceImageDropzone from '../utils/ReferenceImageDropzone.svelte';
+  import RosterPortraitPicker from '../utils/RosterPortraitPicker.svelte';
   import type { GalleryItem } from '../gallery/gallery';
   import { mainBook } from '../bookeditor/workspaceStore';
   import { get } from 'svelte/store';
@@ -59,6 +60,15 @@
     if (referenceMedias.length > refMax) {
       referenceMedias = referenceMedias.slice(0, refMax);
     }
+  }
+
+  function onRosterPick(e: CustomEvent<Media>) {
+    const media = e.detail;
+    const loader = async (): Promise<Media[]> => {
+      referenceMedias = [...referenceMedias, media];
+      return [media];
+    };
+    referenceImages = [...referenceImages, loader];
   }
 
   function onChooseImage({detail}: CustomEvent<Media>) {
@@ -176,13 +186,20 @@
     {$_('dialogs.textEdit.referenceImages')}
     <span class="ref-counter">({referenceMedias.length} / {refMax})</span>
   </h2>
-  <ReferenceImageDropzone
-    bind:referenceImages
-    bind:referenceMedias
-    maxHeight={180}
-    showDeleteButton={false}
-    itemDeletable={true}
-  />
+  <div class="ref-row">
+    <div class="ref-dropzone">
+      <ReferenceImageDropzone
+        bind:referenceImages
+        bind:referenceMedias
+        maxHeight={180}
+        showDeleteButton={false}
+        itemDeletable={true}
+      />
+    </div>
+    <div class="ref-roster">
+      <RosterPortraitPicker on:pick={onRosterPick} />
+    </div>
+  </div>
   {/if}
 
   <div class="hbox gap-5 mt-4">
@@ -276,5 +293,23 @@
     font-size: 12px;
     margin-left: 8px;
     color: rgb(var(--color-surface-600));
+  }
+
+  .ref-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .ref-dropzone {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ref-roster {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    max-height: 180px;
   }
 </style>

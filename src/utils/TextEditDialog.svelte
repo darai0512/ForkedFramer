@@ -8,6 +8,7 @@
   import type { GalleryItem } from '../gallery/gallery';
   import { _ } from 'svelte-i18n';
   import ReferenceImageDropzone from './ReferenceImageDropzone.svelte';
+  import RosterPortraitPicker from './RosterPortraitPicker.svelte';
   import { modeOptions } from '../utils/feathralImaging';
 
   let title: string;
@@ -37,6 +38,15 @@
   $: if (!referenceImagesSupported && (referenceImages.length > 0 || referenceMedias.length > 0)) {
     referenceImages = [];
     referenceMedias = [];
+  }
+
+  function onRosterPick(e: CustomEvent<Media>) {
+    const media = e.detail;
+    const loader = async (): Promise<Media[]> => {
+      referenceMedias = [...referenceMedias, media];
+      return [media];
+    };
+    referenceImages = [...referenceImages, loader];
   }
 
   onMount(async () => {
@@ -147,6 +157,9 @@
                 itemDeletable={true}
               />
             </div>
+            <div class="setting-section">
+              <RosterPortraitPicker on:pick={onRosterPick} />
+            </div>
           {/if}
         </div>
       </div>
@@ -249,4 +262,5 @@
     color: rgb(var(--color-surface-600));
     font-family: '源暎アンチック';
   }
+
 </style>

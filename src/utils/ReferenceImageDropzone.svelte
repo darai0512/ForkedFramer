@@ -93,7 +93,7 @@
   onDestroy(() => {
     window.removeEventListener('paste', onWindowPaste);
   });
-  
+
   function onReferenceImageDelete(e: CustomEvent<GalleryItem>) {
     // Galleryアイテムと対応するメディアを削除（マップベースで確実に対応づけ）
     const item = e.detail as GalleryItem;
@@ -105,19 +105,19 @@
     referenceImages = referenceImages.filter(i => i !== item);
     // マップのクリーンアップ
     mediaMap.delete(item);
-    
+
     // 親コンポーネントに変更を通知
     dispatch('update', {
       referenceImages,
       referenceMedias
     });
   }
-  
+
   function onClearAll() {
     referenceImages = [];
     referenceMedias = [];
     // マップのクリアは不要（WeakMapなので参照がなくなればGCされる）
-    
+
     // 親コンポーネントに変更を通知
     dispatch('update', {
       referenceImages,
@@ -133,8 +133,8 @@
     on:mouseleave={() => isMouseOver = false}
   >
     {#if referenceImages.length > 0}
-      <Gallery 
-        columnWidth={100} 
+      <Gallery
+        columnWidth={100}
         referable={false}
         accessable={itemDeletable}
         viewable={false}
@@ -147,14 +147,14 @@
       </div>
     {/if}
   </div>
-  
+
   {#if referenceMedias.length > 0}
     <div class="footer">
       <div class="image-count">
         {$_('dialogs.textEdit.referenceImageCount')}: {referenceMedias.length}
       </div>
       {#if showDeleteButton}
-        <button 
+        <button
           class="clear-all-button"
           on:click={onClearAll}
           use:toolTip={'すべての参照画像を削除'}
@@ -173,7 +173,7 @@
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .reference-images-container {
     min-height: 150px;
     overflow-y: auto;
@@ -183,39 +183,39 @@
     background: rgb(var(--color-surface-50));
     transition: all 0.2s ease;
   }
-  
+
   :global(.reference-images-container.drag-over) {
     background-color: rgba(0, 123, 255, 0.1) !important;
     border-color: rgb(var(--color-primary-400)) !important;
     border-style: solid !important;
   }
-  
+
   .empty-state {
     display: flex;
     align-items: center;
     justify-content: center;
     min-height: 120px;
   }
-  
+
   .empty-message {
     color: rgb(var(--color-surface-500));
     font-size: 14px;
     text-align: center;
   }
-  
+
   .footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 0 4px;
   }
-  
+
   .image-count {
     font-size: 12px;
     color: rgb(var(--color-surface-600));
     font-weight: 500;
   }
-  
+
   .clear-all-button {
     display: flex;
     align-items: center;
@@ -229,22 +229,22 @@
     font-size: 12px;
     transition: all 0.2s ease;
   }
-  
+
   .clear-all-button:hover {
     background-color: rgb(var(--color-error-600));
     transform: scale(1.05);
   }
-  
+
   .clear-all-button:active {
     transform: scale(0.95);
   }
-  
+
   .clear-all-button img {
     width: 16px;
     height: 16px;
     filter: brightness(0) invert(1);
   }
-  
+
   .clear-all-button span {
     font-weight: 500;
   }
