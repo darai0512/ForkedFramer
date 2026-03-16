@@ -27,6 +27,8 @@ export type ImagingContext = {
   refImages: Record<string, HTMLCanvasElement>;
   // 最大参照画像枚数（これを超える場合は切り詰める）
   maxRefImages: number;
+  // autoSizeの短辺基準サイズ（デフォルト1024）
+  autoSizeBase: number;
 }
 
 export function isContentsPolicyViolationError(error: any): boolean {
@@ -272,9 +274,10 @@ async function generateFrameImage(imagingContext: ImagingContext, postfix: strin
     const [frameWidth, frameHeight] = leafLayout.size;
     const targetSize: SizePair = { width: frameWidth, height: frameHeight };
     const supportedSizes = getSupportedSizesForMode(model);
+    const base = imagingContext.autoSizeBase ?? 1024;
     const imageSize = supportedSizes && supportedSizes.length > 0
       ? findClosestSize(targetSize, [...supportedSizes], 0.7)
-      : calculateAspectPreservingSize(targetSize, 1024, 64, 2048, 512);
+      : calculateAspectPreservingSize(targetSize, base, 64, Math.round(base * 2), Math.round(base * 0.5));
 
     // fitParams: メディアロード後にフィッティングするためのパラメータ
     const fitParams = {
@@ -335,7 +338,7 @@ function calculateGPTCost(mode: Mode): number {
  *   - max>0: 編集モードで使用可能（参照画像を受け取れる）
  * timeFactor: 生成時間の推定係数（プログレスバー用、大きいほど遅い）
  */
-export type ModeOption = { readonly value: ImagingModel; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean; readonly supportedSizes?: readonly SizePair[] };
+export type ModeOption = { readonly value: ImagingModel; readonly name: string; readonly uiType: ImagingProvider; readonly textedit: boolean; readonly refRange: { readonly min: number; readonly max: number }; readonly timeFactor: number; readonly pageImaging: boolean; readonly supportedSizes?: readonly SizePair[]; readonly sizeRange?: { readonly min: number; readonly max: number } };
 
 // 階層構造用の型定義（再帰的）
 export type ModeTreeItem = ModeOption | ModeGroup;
@@ -359,8 +362,8 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
   { value: 'nano-banana-pro', name: 'Nano Banana Pro', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
   // Seedream
   { value: 'chrono-edit', name: 'Chrono Edit', uiType: 'seedream', textedit: true, refRange: { min: 1, max: 1 }, timeFactor: 12, pageImaging: false },
-  { value: 'seedream/v5-lite', name: 'Seedream v5 Lite', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 10 }, timeFactor: 12, pageImaging: true },
-  { value: 'seedream/v4.5', name: 'Seedream v4.5', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true },
+  { value: 'seedream/v5-lite', name: 'Seedream v5 Lite', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 10 }, timeFactor: 12, pageImaging: true, sizeRange: { min: 1536, max: 3072 } },
+  { value: 'seedream/v4.5', name: 'Seedream v4.5', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: true, sizeRange: { min: 1920, max: 4096 } },
   // Kling
   { value: 'kling-image/o1', name: 'Kling Image O1', uiType: 'flux', textedit: true, refRange: { min: 1, max: 4 }, timeFactor: 12, pageImaging: false },
   // Qwen
@@ -413,7 +416,7 @@ export const modeOptionsTree: readonly ModeTreeItem[] = [
         ] as const,
       },
       { value: 'nano-banana', name: 'Nano Banana', uiType: 'flux', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: false },
-      { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: false },
+      { value: 'seedream/v4', name: 'Seedream v4', uiType: 'seedream', textedit: true, refRange: { min: 0, max: 4 }, timeFactor: 12, pageImaging: false, sizeRange: { min: 1024, max: 4096 } },
     ],
   },
 ] as const;
@@ -464,6 +467,10 @@ export function getTimeFactorForMode(model: ImagingModel): number {
 
 export function getSupportedSizesForMode(model: ImagingModel): readonly SizePair[] | null {
   return modeOptions.find(o => o.value === model)?.supportedSizes ?? null;
+}
+
+export function getSizeRangeForMode(model: ImagingModel): { min: number; max: number } {
+  return modeOptions.find(o => o.value === model)?.sizeRange ?? { min: 512, max: 1536 };
 }
 
 /**

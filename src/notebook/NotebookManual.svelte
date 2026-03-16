@@ -61,6 +61,7 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
     failed: 0,
     refImages: {},
     maxRefImages: 4,
+    autoSizeBase: 1024,
   };
   let imagingMode: ImagingModel = 'schnell';
   let pageImagingMode: ImagingModel = 'nano-banana-pro';
@@ -438,6 +439,7 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
         failed: 0,
         refImages: {},
         maxRefImages: getRefMaxForMode(pageImagingMode),
+        autoSizeBase: 1024,
       };
       imagingContext.refImages = portraitsRecordFromNotebook(notebook ?? null);
 
@@ -535,6 +537,7 @@ import { isHandledHttpError } from '../utils/edgeFunctions/edgeFunctions';
       failed: 0,
       refImages: {},
       maxRefImages: 4,
+      autoSizeBase: 1024,
     };
     // 参考画像として登場人物のポートレートを格納（feathralImaging に集約）
     imagingContext.refImages = portraitsRecordFromNotebook(notebook ?? null);

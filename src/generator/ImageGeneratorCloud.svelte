@@ -46,6 +46,7 @@
   let sizeText = "1024x1024";
   let background: ImagingBackground = "opaque";
   let nanoBananaAspectRatio = "1:1";
+  let autoSizeBase = 1024;
 
   // 参考画像UI用（UIのみ。生成処理への結線は未対応）
   let referenceImages: GalleryItem[] = [];
@@ -112,7 +113,9 @@
       height = best.height;
       sizeText = `${best.width}x${best.height}`;
     } else {
-      const result = calculateAspectPreservingSize(target, 1024, 128, 1536, 512);
+      const maxLong = Math.round(autoSizeBase * 1.5);
+      const minShort = Math.round(autoSizeBase * 0.5);
+      const result = calculateAspectPreservingSize(target, autoSizeBase, 128, maxLong, minShort);
       width = result.width;
       height = result.height;
     }
@@ -259,9 +262,15 @@
     {:else}
       <ImageSizeControls {model} bind:width bind:height bind:batchCount bind:aspectRatio={nanoBananaAspectRatio} />
     {/if}
-    <button class="bg-primary-500 text-white hover:bg-primary-700 focus:bg-primary-700 active:bg-primary-900 auto-size-button" on:click={autoSizeFromFrame}>
-      {$_('generator.autoSizeFromFrame')}
-    </button>
+    <div class="auto-size-group">
+      <button class="bg-primary-500 text-white hover:bg-primary-700 focus:bg-primary-700 active:bg-primary-900 auto-size-button" on:click={autoSizeFromFrame}>
+        {$_('generator.autoSizeFromFrame')}
+      </button>
+      <label class="auto-size-base-label">
+        base
+        <input type="number" class="auto-size-base-input" bind:value={autoSizeBase} min={256} max={4096} step={128} />
+      </label>
+    </div>
   </div>
 
   {#if $onlineAccount != null}   <!-- onMountの時点で明らかだがsvelteでは!が使えない -->
@@ -359,6 +368,13 @@
     max-height: 180px;
   }
 
+  .auto-size-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
   .auto-size-button {
     white-space: nowrap;
     flex-shrink: 0;
@@ -366,5 +382,24 @@
     padding: 0 12px;
     font-size: 14px;
     border-radius: 4px;
+  }
+
+  .auto-size-base-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: rgb(var(--color-surface-600));
+  }
+
+  .auto-size-base-input {
+    width: 64px;
+    height: 24px;
+    font-size: 12px;
+    padding: 0 4px;
+    border: 1px solid rgb(var(--color-surface-400));
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
   }
 </style>

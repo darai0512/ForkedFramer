@@ -21,6 +21,7 @@
     failed: 0,
     refImages: {},
     maxRefImages: 4,
+    autoSizeBase: 1024,
   };
 
   $: updateImageInfo($batchImagingPage);

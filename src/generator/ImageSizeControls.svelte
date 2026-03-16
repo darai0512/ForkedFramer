@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ImagingModel } from '$protocolTypes/imagingTypes';
   import SliderEdit from '../utils/SliderEdit.svelte';
+  import { getSizeRangeForMode } from '../utils/feathralImaging';
 
   export let model: ImagingModel;
   export let width: number;
@@ -14,6 +15,7 @@
   let nanoBananaResolution: "0.5K" | "1K" | "2K" | "4K" = "1K";
 
   $: isNanoBanana = model === 'nano-banana' || model === 'nano-banana-pro' || model === 'nano-banana-2';
+  $: ({ min: sizeMin, max: sizeMax } = getSizeRangeForMode(model));
 
   // nano-banana-proは0.5K非対応→1Kにフォールバック
   $: if (model === 'nano-banana-pro' && nanoBananaResolution === '0.5K') {
@@ -53,8 +55,8 @@
     </div>
   {:else}
     <div class="size-col" style="width: 400px;">
-      <SliderEdit label="width" bind:value={width} min={512} max={1536} step={128}/>
-      <SliderEdit label="height" bind:value={height} min={512} max={1536} step={128}/>
+      <SliderEdit label="width" bind:value={width} min={sizeMin} max={sizeMax} step={128}/>
+      <SliderEdit label="height" bind:value={height} min={sizeMin} max={sizeMax} step={128}/>
     </div>
     <div class="count-col">
       <SliderEdit label="image count" bind:value={batchCount} min={1} max={4} step={1}/>
