@@ -19,6 +19,7 @@
   import { buildShareFileSystem } from '../filemanager/shareFileSystem';
   import { renderPage, renderThumbnailToWebpBlob } from './saver/renderPage';
   import { onlineStatus, onlineProfile } from './accountStore';
+  import { requireSignIn } from './signInPrompt';
   import { waitDialog } from "./waitDialog";
   import { canvasToBlob } from "../lib/layeredCanvas/tools/imageUtil";
   import { ulid } from "ulid";
@@ -123,8 +124,7 @@
 
   async function publishEnvelope() {
     console.log("publishEnvelope", $mainBook!.revision);
-    if ($onlineStatus !== 'signed-in') {
-      toastStore.trigger({ message: $_('bookArchiver.signInRequiredForPublish'), timeout: 1500});
+    if (!await requireSignIn($_('bookArchiver.signInRequiredForPublish'))) {
       return;
     }
 

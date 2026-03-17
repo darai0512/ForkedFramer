@@ -11,7 +11,7 @@
   import { image2Video } from '../supabase';
   import { saveRequest } from '../filemanager/warehouse';
   import { loading } from '../utils/loadingStore';
-  import { onlineStatus } from '../utils/accountStore';
+  import { requireSignIn } from '../utils/signInPrompt';
   import type { ImageToVideoRequest } from '$protocolTypes/imagingTypes';
 
   let mediaContainer: HTMLDivElement;
@@ -38,8 +38,7 @@
   async function generateMovieFromImage() {
     if (!$mediaViewerTarget || $mediaViewerTarget.type !== 'image') return;
     
-    if (get(onlineStatus) !== "signed-in") {
-      toastStore.trigger({ message: `動画生成はサインインしてないと使えません`, timeout: 3000});
+    if (!await requireSignIn('動画生成はサインインしてないと使えません')) {
       return;
     }
 

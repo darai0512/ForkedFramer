@@ -10,7 +10,7 @@ import { pollMediaStatus, getMaterialsUrl, recordMaterial, getActorsUrl, recordA
 import { toastStore } from '@skeletonlabs/skeleton';
 import { blobToSha1 } from '../lib/layeredCanvas/tools/misc';
 import { loading } from '../utils/loadingStore';
-import { onlineStatus } from '../utils/accountStore';
+import { requireSignIn } from '../utils/signInPrompt';
 import { BrowserMediaConverter } from '../lib/filesystem/mediaConverter';
 import type { ImagingAction } from '$protocolTypes/imagingTypes';
 import type { CharacterLocal } from '../lib/book/book';
@@ -238,8 +238,7 @@ export async function sendMediaToMaterialCollection(
 
 export async function postToPublicMaterials(media: Media): Promise<void> {
   // サインインチェック
-  if (get(onlineStatus) !== 'signed-in') {
-    toastStore.trigger({ message: 'みんなの素材集への投稿にはサインインが必要です', timeout: 3000 });
+  if (!await requireSignIn('みんなの素材集への投稿にはサインインが必要です')) {
     return;
   }
 
@@ -341,8 +340,7 @@ export async function postToPublicMaterials(media: Media): Promise<void> {
 
 export async function postToPublicActors(character: CharacterLocal): Promise<void> {
   // サインインチェック
-  if (get(onlineStatus) !== 'signed-in') {
-    toastStore.trigger({ message: 'みんなの役者への投稿にはサインインが必要です', timeout: 3000 });
+  if (!await requireSignIn('みんなの役者への投稿にはサインインが必要です')) {
     return;
   }
 

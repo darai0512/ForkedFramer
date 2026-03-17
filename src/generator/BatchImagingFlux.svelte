@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onlineStatus } from "../utils/accountStore";
+  import SignInPromptInline from '../utils/SignInPromptInline.svelte';
   import Feathral from '../utils/Feathral.svelte';
   import { persistentText } from '../utils/persistentText';
   import type { ImagingModel } from '$protocolTypes/imagingTypes';
@@ -41,7 +42,7 @@
 
 <div class="flux-panel flex flex-col gap-2 mt-2 w-full h-full">
   {#if $onlineStatus !== 'signed-in'}
-    <p>{$_('generator.pleaseLogIn')}</p>
+    <SignInPromptInline message={$_('generator.pleaseLogIn')} />
   {:else}
     <p><Feathral/></p>
     <div class="flex flex-col gap-3">

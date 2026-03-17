@@ -3,8 +3,8 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
 import { analyticsEvent } from "./analyticsEvent";
-import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
+import { requireSignIn } from './signInPrompt';
 import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 
 type InpaintDialogResult = {
@@ -14,8 +14,7 @@ type InpaintDialogResult = {
 }
 
 export async function inpaintFilmInline(film: Film): Promise<Film | null> {
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `インペイントはサインインしてないと使えません`, timeout: 3000});
+  if (!await requireSignIn('インペイントはサインインしてないと使えません')) {
     return null;
   }
 

@@ -2,6 +2,7 @@
   import { ProgressBar } from '@skeletonlabs/skeleton';
 	import Gallery from '../gallery/Gallery.svelte';
   import { onlineAccount, onlineStatus } from "../utils/accountStore";
+  import SignInPromptInline from '../utils/SignInPromptInline.svelte';
   import { onMount } from 'svelte';
   import Feathral from '../utils/Feathral.svelte';
   import { persistentText } from '../utils/persistentText';
@@ -294,7 +295,7 @@
   {/if}
   <Gallery columnWidth={220} bind:items={gallery} on:commit={onChooseImage} bind:refered={refered}/>
   {:else}
-    <p>{$_('generator.pleaseSignIn')}</p>
+    <SignInPromptInline message={$_('generator.pleaseSignIn')} />
   {/if}
 </div>
 

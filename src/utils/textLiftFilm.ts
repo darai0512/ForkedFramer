@@ -3,8 +3,8 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
 import { analyticsEvent } from "./analyticsEvent";
-import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
+import { requireSignIn } from './signInPrompt';
 import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
 import type { Page } from '../lib/book/book';
 import type { TextMaskResponse } from './edgeFunctions/types/imagingTypes.d';
@@ -37,8 +37,7 @@ export type TextLiftResult = (TextLiftDialogResult & { erasedFilm?: Film }) | nu
 type MaskRect = { x: number; y: number; w: number; h: number };
 
 export async function textLiftFilm(page: Page, film: Film, frame?: FrameElement): Promise<TextLiftResult> {
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `テキスト抽出はサインインしてないと使えません`, timeout: 3000});
+  if (!await requireSignIn('テキスト抽出はサインインしてないと使えません')) {
     return null;
   }
 

@@ -5,7 +5,7 @@ import { ImageMedia, VideoMedia } from '../lib/layeredCanvas/dataModels/media';
 import { waitDialog } from '../utils/waitDialog';
 import { filmProcessorQueue } from './filmprocessor/filmProcessorStore';
 import { toastStore } from '@skeletonlabs/skeleton';
-import { onlineStatus } from './accountStore';
+import { requireSignIn } from './signInPrompt';
 
 export async function generateMovie(filmStack: FilmStack, film: Film) {
   if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) {
@@ -13,8 +13,7 @@ export async function generateMovie(filmStack: FilmStack, film: Film) {
     return;
   }
 
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `動画生成はサインインしてないと使えません`, timeout: 3000});
+  if (!await requireSignIn('動画生成はサインインしてないと使えません')) {
     return;
   }
 

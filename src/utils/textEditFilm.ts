@@ -3,8 +3,8 @@ import { toastStore } from '@skeletonlabs/skeleton';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
 import { analyticsEvent } from "./analyticsEvent";
-import { onlineStatus } from './accountStore';
 import { waitDialog } from './waitDialog';
+import { requireSignIn } from './signInPrompt';
 import type { ImagingModel, TextToImageRequest } from '$protocolTypes/imagingTypes';
 import type { Media } from '../lib/layeredCanvas/dataModels/media';
 import { modeOptions, inferProvider } from './feathralImaging';
@@ -18,8 +18,7 @@ type TextEditDialogResult = {
 }
 
 export async function textEditFilmInline(film: Film): Promise<Film | null> {
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `対話編集はサインインしてないと使えません`, timeout: 3000});
+  if (!await requireSignIn('対話編集はサインインしてないと使えません')) {
     return null;
   }
 

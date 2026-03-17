@@ -4,7 +4,6 @@ import { Film } from '../lib/layeredCanvas/dataModels/film.js';
 import { ImageMedia } from '../lib/layeredCanvas/dataModels/media.js';
 import { waitDialog } from './waitDialog.js';
 import { toastStore } from '@skeletonlabs/skeleton';
-import { onlineStatus } from './accountStore.js';
 import { analyticsEvent } from "./analyticsEvent.js";
 import { filmProcessorQueue } from './filmprocessor/filmProcessorStore.js';
 import { upscale, pollMediaStatus } from "../supabase.js";
@@ -12,6 +11,7 @@ import { saveRequest } from '../filemanager/warehouse.js';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore.js';
 import { loading } from './loadingStore.js';
 import { _ } from 'svelte-i18n';
+import { requireSignIn } from './signInPrompt';
 
 // インライン版（フリーズしない）
 export async function upscaleFilmInline(film: Film): Promise<Film | null> {
@@ -21,8 +21,7 @@ export async function upscaleFilmInline(film: Film): Promise<Film | null> {
   }
   const imageMedia = film.content.media as ImageMedia;
 
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: get(_)('upscale.signInRequired'), timeout: 3000});
+  if (!await requireSignIn(get(_)('upscale.signInRequired'))) {
     return null;
   }
 
@@ -53,8 +52,7 @@ export async function upscaleFilmInline(film: Film): Promise<Film | null> {
 
 // ブロッキング版（結果を待つ、エクスポート用）
 export async function upscaleCanvas(canvas: HTMLCanvasElement, warning: string | null = null): Promise<HTMLCanvasElement | null> {
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: get(_)('upscale.signInRequired'), timeout: 3000});
+  if (!await requireSignIn(get(_)('upscale.signInRequired'))) {
     return null;
   }
 
@@ -79,8 +77,7 @@ export async function upscaleCanvas(canvas: HTMLCanvasElement, warning: string |
 
 // ブロッキング版（ダイアログなし、エクスポート用）
 export async function upscaleCanvasWithoutDialog(canvas: HTMLCanvasElement): Promise<HTMLCanvasElement | null> {
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: get(_)('upscale.signInRequired'), timeout: 3000});
+  if (!await requireSignIn(get(_)('upscale.signInRequired'))) {
     return null;
   }
 

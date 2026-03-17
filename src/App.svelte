@@ -81,6 +81,7 @@
   import PostToPublicActors from './gallery/PostToPublicActors.svelte';
   import BubbleStyleTemplateEditor from './notebook/BubbleStyleTemplateEditor.svelte';
   import BulkRenameDialog from './filemanager/BulkRenameDialog.svelte';
+  import SignInPromptDialog from './utils/SignInPromptDialog.svelte';
 
   //const advertiser = "thumbnail_stories";
   const advertiser = "jonigata";
@@ -164,6 +165,9 @@
     },
     bulkRename: {
       ref: BulkRenameDialog,
+    },
+    signInPrompt: {
+      ref: SignInPromptDialog,
     }
   };
 

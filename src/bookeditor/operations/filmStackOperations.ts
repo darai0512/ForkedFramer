@@ -5,7 +5,7 @@ import type { Page } from '../../lib/book/book';
 import { toastStore } from '@skeletonlabs/skeleton';
 import { punchFilmInline } from '../../utils/punchImage';
 import { upscaleFilmInline } from '../../utils/upscaleImage';
-import { onlineStatus } from "../../utils/accountStore";
+import { requireSignIn } from '../../utils/signInPrompt';
 import { loading } from '../../utils/loadingStore';
 import { toolTipRequest } from '../../utils/passiveToolTipStore';
 import { commit, delayedCommiter } from './commitOperations';
@@ -114,8 +114,7 @@ export async function handleGenerateCommand<T extends FilmOperationTarget>(
 export async function handlePunchCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  if (get(onlineStatus) !== 'signed-in') {
-    toastStore.trigger({ message: `ログインしていないと使えません`, timeout: 3000});
+  if (!await requireSignIn('ログインしていないと使えません')) {
     return;
   }
 
@@ -135,8 +134,7 @@ export async function handlePunchCommand<T extends FilmOperationTarget>(
 export async function handleUpscaleCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  if (get(onlineStatus) !== 'signed-in') {
-    toastStore.trigger({ message: `ログインしていないと使えません`, timeout: 3000});
+  if (!await requireSignIn('ログインしていないと使えません')) {
     return;
   }
 

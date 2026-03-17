@@ -6,8 +6,8 @@ import { layerize, pollMediaStatus } from "../supabase.js";
 import { analyticsEvent } from "./analyticsEvent.js";
 import { saveRequest } from '../filemanager/warehouse.js';
 import { mainBookFileSystem } from '../filemanager/fileManagerStore.js';
-import { onlineStatus } from './accountStore.js';
 import { waitDialog } from './waitDialog.js';
+import { requireSignIn } from './signInPrompt';
 import { loading } from './loadingStore.js';
 
 type LayerizeDialogResult = {
@@ -16,8 +16,7 @@ type LayerizeDialogResult = {
 }
 
 export async function layerizeFilm(film: Film): Promise<Film[]> {
-  if (get(onlineStatus) !== "signed-in") {
-    toastStore.trigger({ message: `レイヤー化はサインインしてないと使えません`, timeout: 3000});
+  if (!await requireSignIn('レイヤー化はサインインしてないと使えません')) {
     return [];
   }
 

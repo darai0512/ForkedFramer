@@ -6,6 +6,7 @@
   import { loading } from '../utils/loadingStore';
   import { toastStore } from '@skeletonlabs/skeleton';
   import { onlineStatus } from '../utils/accountStore';
+  import SignInPromptInline from '../utils/SignInPromptInline.svelte';
   import { _ } from 'svelte-i18n';
   import { saveCharacterToRoster } from '../notebook/rosterStore';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
@@ -163,7 +164,7 @@
 {#if $onlineStatus !== 'signed-in'}
   <div class="gallery-container">
     <div class="empty-state">
-      <p class="empty-message">{@html $_('publicActors.signInRequired')}</p>
+      <SignInPromptInline message={$_('publicActors.signInRequired')} />
     </div>
   </div>
 {:else}

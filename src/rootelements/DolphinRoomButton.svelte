@@ -3,13 +3,11 @@
   import BaseRootButton from './BaseRootButton.svelte';
   import bellIcon from '../assets/studio.webp';
   import { dolphinRoomOpen } from '../dolphinroom/dolphinRoomStore';
-  import { onlineStatus } from '../utils/accountStore';
-  import { toastStore } from '@skeletonlabs/skeleton';
+  import { requireSignIn } from '../utils/signInPrompt';
   import { analyticsEvent } from "../utils/analyticsEvent";
 
-  function toggle() {
-    if ($onlineStatus !== "signed-in") {
-      toastStore.trigger({ message: $_('messages.aiSignInRequired'), timeout: 3000});
+  async function toggle() {
+    if (!await requireSignIn($_('messages.aiSignInRequired'))) {
       return;
     }
 

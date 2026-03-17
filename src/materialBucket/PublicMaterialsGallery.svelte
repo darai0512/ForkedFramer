@@ -13,6 +13,7 @@
   import { loading } from '../utils/loadingStore';
   import { toastStore } from '@skeletonlabs/skeleton';
   import { onlineStatus } from '../utils/accountStore';
+  import SignInPromptInline from '../utils/SignInPromptInline.svelte';
   import { _ } from 'svelte-i18n';
 
   // カテゴリは一旦無視
@@ -179,7 +180,7 @@
 {#if $onlineStatus !== 'signed-in'}
   <div class="gallery-container">
     <div class="empty-state">
-      <p class="empty-message">{@html $_('publicMaterials.signInRequired')}</p>
+      <SignInPromptInline message={$_('publicMaterials.signInRequired')} />
     </div>
   </div>
 {:else}

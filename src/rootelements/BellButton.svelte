@@ -1,19 +1,17 @@
 <script lang="ts">
   import { notebookOpen } from '../notebook/notebookStore';  
-  import { onlineStatus } from '../utils/accountStore';
-  import { toastStore } from '@skeletonlabs/skeleton';
+  import { requireSignIn } from '../utils/signInPrompt';
   import BaseRootButton from './BaseRootButton.svelte';
   import bellIcon from '../assets/bell.webp';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import { _ } from 'svelte-i18n';
-  
-  function callFairy() {
+
+  async function callFairy() {
     if (!$gadgetFileSystem) {
       return;
     }
 
-    if ($onlineStatus !== "signed-in") {
-      toastStore.trigger({ message: $_('messages.aiSignInRequired'), timeout: 3000});
+    if (!await requireSignIn($_('messages.aiSignInRequired'))) {
       return;
     }
 
