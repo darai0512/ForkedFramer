@@ -125,7 +125,15 @@
     "reuse": "Reuse",
     "create": "Create",
     "ok": "OK",
-    "progressBar": "Progress Bar"
+    "progressBar": "Progress Bar",
+    "mergeFiles": "Merge into one book",
+    "mergeFilesConfirm": "All pages from {count} files will be merged into one book.\nOriginal files will remain unchanged.",
+    "mergeFilesExecute": "Merge",
+    "mergeFilesCancel": "Cancel",
+    "mergeFilesCompleted": "Merged {count} pages into one book",
+    "mergeFilesFailed": "Error occurred while merging files",
+    "merged": "merged",
+    "noFilesToMerge": "No files in folder"
   },
   "messages": {
     "copiedToClipboard": "Copied to clipboard",

@@ -22,6 +22,7 @@
   import folderIcon from '../assets/fileManager/folder.webp';
   import renameIcon from '../assets/fileManager/rename.webp';
   import packageExportIcon from '../assets/fileManager/package-export.webp';
+  import mergeIcon from '../assets/fileManager/package-import.webp';
 
   export let fileSystem: FileSystem;
   export let filename: string;
@@ -423,6 +424,65 @@
   });
 
   /**
+   * フォルダ内の全ファイルのページを1冊のbookにまとめる
+   */
+  async function mergeFilesIntoOne() {
+    const entries = await node.listEmbodied();
+    const fileEntries = entries.filter(([, , n]) => n.getType() === 'file');
+
+    if (fileEntries.length === 0) {
+      toastStore.trigger({ message: $_('fileManager.noFilesToMerge'), timeout: 2000 });
+      return;
+    }
+
+    const confirmed = await waitDialog<boolean>('confirm', {
+      title: $_('fileManager.mergeFiles'),
+      message: $_('fileManager.mergeFilesConfirm', { values: { count: fileEntries.length } }),
+      positiveButtonText: $_('fileManager.mergeFilesExecute'),
+      negativeButtonText: $_('fileManager.mergeFilesCancel'),
+    });
+    if (!confirmed) { return; }
+
+    try {
+      $loading = true;
+      $progress = 0;
+
+      const allPages: import('../lib/book/book').Page[] = [];
+      let direction: import('../lib/book/book').ReadingDirection = 'right-to-left';
+      let wrapMode: import('../lib/book/book').WrapMode = 'two-pages';
+
+      for (let i = 0; i < fileEntries.length; i++) {
+        const [, , childNode] = fileEntries[i];
+        const file = childNode.asFile()!;
+        const book = await loadBookFrom(fileSystem, file);
+        allPages.push(...book.pages);
+        if (i === 0) {
+          direction = book.direction;
+          wrapMode = book.wrapMode;
+        }
+        $progress = (i + 1) / fileEntries.length;
+      }
+
+      const mergedBook = newBook("not visited", "add-in-folder-", "standard", null);
+      mergedBook.pages = allPages;
+      mergedBook.direction = direction;
+      mergedBook.wrapMode = wrapMode;
+
+      await newFile(fileSystem, node, `${filename} - ${$_('fileManager.merged')}`, mergedBook);
+      node = node;
+      collapsed = false;
+
+      toastStore.trigger({ message: $_('fileManager.mergeFilesCompleted', { values: { count: allPages.length } }), timeout: 2000 });
+    } catch (error) {
+      console.error('ファイル結合中にエラーが発生しました:', error);
+      toastStore.trigger({ message: $_('fileManager.mergeFilesFailed'), timeout: 3000 });
+    } finally {
+      $progress = null;
+      $loading = false;
+    }
+  }
+
+  /**
    * ファイル名をサニタイズする
    * ZIPファイル名に使えない文字を置き換える
    */
@@ -534,6 +594,9 @@
     </div>
     {#if $lastSelectedEntry === node.id && isDiscardable}
       <div class="floating-actions">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img class="action-icon" src={mergeIcon} alt="merge" on:click={mergeFilesIntoOne} use:toolTip={$_('fileManager.mergeFiles')}/>
         <!-- svelte-ignore a11y-click-events-have-key-events -->
         <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
         <img class="action-icon" src={packageExportIcon} alt="archive" on:click={exportAsZip} use:toolTip={$_('storage.archiveToZip')}/>
