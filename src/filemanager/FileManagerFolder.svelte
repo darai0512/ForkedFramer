@@ -261,7 +261,11 @@
 
     for (const entry of dragging.entries) {
       const sourceParent = (await dragging.fileSystem.getNode(entry.parent)) as Folder;
-      const mover = (await sourceParent.getEntry(entry.bindId))!;
+      const mover = await sourceParent.getEntry(entry.bindId);
+      if (!mover) {
+        console.warn("entry not found, skipping", entry.bindId);
+        continue;
+      }
 
       if (fileSystem.id === dragging.fileSystem.id) {
         console.log("same filesystem move", node.id, "target index =", index);
