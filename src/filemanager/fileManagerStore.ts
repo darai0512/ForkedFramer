@@ -42,6 +42,9 @@ export const gadgetFileSystem: Writable<FileSystem | null> = writable(null);
 export const selectedEntries: Writable<Set<NodeId>> = writable(new Set());
 export const lastSelectedEntry: Writable<NodeId | null> = writable(null);
 
+// フォルダの開閉状態を永続化するMap（Drawer再描画でも維持される）
+export const folderCollapsedState = new Map<NodeId, boolean>();
+
 export function selectEntry(nodeId: NodeId): void {
   selectedEntries.update(s => { s.clear(); s.add(nodeId); return s; });
   lastSelectedEntry.set(nodeId);

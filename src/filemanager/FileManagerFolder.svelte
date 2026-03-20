@@ -3,7 +3,7 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, exportSelectedEntries, type BulkRenameResult } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, exportSelectedEntries, type BulkRenameResult, folderCollapsedState } from "./fileManagerStore";
   import { waitDialog } from '../utils/waitDialog';
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
@@ -46,6 +46,8 @@
   let folderDropZoneDraggingOver = false;
 
   const dispatch = createEventDispatcher();
+
+  $: if (node) { folderCollapsedState.set(node.id, collapsed); }
 
   $: updateEntries(node);
   async function updateEntries(node: Folder) {
@@ -416,6 +418,9 @@
 
     const entry: [BindId, string, Node] = (await parent.getEmbodiedEntry(bindId))!
     node = entry[2] as Folder;
+    if (folderCollapsedState.has(node.id)) {
+      collapsed = folderCollapsedState.get(node.id)!;
+    }
     isDiscardable = removability === "removable" && trash != null;
     node.watch(watcher);
     watching = true;
