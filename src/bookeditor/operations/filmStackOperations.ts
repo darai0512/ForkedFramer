@@ -7,6 +7,7 @@ import { punchFilmInline } from '../../utils/punchImage';
 import { upscaleFilmInline } from '../../utils/upscaleImage';
 import { requireSignIn } from '../../utils/signInPrompt';
 import { loading } from '../../utils/loadingStore';
+import { sendMediaToMaterialCollection } from '../../materialBucket/materialOperations';
 import { toolTipRequest } from '../../utils/passiveToolTipStore';
 import { commit, delayedCommiter } from './commitOperations';
 import { generateMovie } from '../../utils/generateMovie';
@@ -231,8 +232,6 @@ export async function handleAngleEditCommand<T extends FilmOperationTarget>(
 export async function handleSendToMaterialCollectionCommand<T extends FilmOperationTarget>(
   target: T
 ): Promise<void> {
-  const { sendMediaToMaterialCollection } = await import('../../materialBucket/materialOperations');
-  
   if (target.commandTargetFilm?.content.kind !== 'media') { return; }
   const result = await sendMediaToMaterialCollection(target.commandTargetFilm.content.media);
   
