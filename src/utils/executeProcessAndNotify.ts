@@ -1,16 +1,17 @@
 import { toastStore } from '@skeletonlabs/skeleton';
 
 export async function executeProcessAndNotify<T>(
-  thresholdMillisecs: number, 
+  thresholdMillisecs: number,
   notificationMessage: string,
-  asyncProcess: () => Promise<T>
+  asyncProcess: () => Promise<T>,
+  shouldNotify?: (result: T) => boolean
 ): Promise<T> {
   const granted = await requestNotificationPermission();
 
   const start = new Date();
   const result = await asyncProcess();
   const timeouts = thresholdMillisecs < (new Date().getTime() - start.getTime());
-  if (granted) {
+  if (granted && (!shouldNotify || shouldNotify(result))) {
     sendNotification(notificationMessage, timeouts);
   }
   return result;

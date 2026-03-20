@@ -119,6 +119,7 @@ export function createGenerationActions(deps: GenerationDeps) {
         5000,
         get(_)("generator.imageGenerated"),
         async () => await generateImage(fullPrompt, imageSize, deps.getImagingModel(), batchCount, DEFAULT_BACKGROUND, []),
+        (r) => r.length > 0,
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({
@@ -217,6 +218,7 @@ export function createGenerationActions(deps: GenerationDeps) {
         get(_)("generator.imageGenerated"),
         async () =>
           await generateImage(fullPrompt, imageSize, imagingMode, batchCount, 'auto', referenceUrls, option),
+        (r) => r.length > 0,
       );
 
       deps.setTimelineItems(await hydratePlaceholdersWithCanvases({

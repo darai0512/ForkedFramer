@@ -13,6 +13,7 @@ import { updateToken } from "../utils/accountStore";
 import type { TextToImageRequest, ImagingBackground, ImagingModel, ImagingProvider, TextToImageOption } from './edgeFunctions/types/imagingTypes';
 import { saveRequest } from '../filemanager/warehouse';
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import { _ } from 'svelte-i18n';
 import { isHandledHttpError } from './edgeFunctions/edgeFunctions';
 // import { captureConsoleIntegration } from '@sentry/svelte';
 import { calculateImagingCost } from './edgeFunctions/calculateCost';
@@ -119,11 +120,11 @@ async function submitImagingRequest(req: TextToImageRequest): Promise<HTMLCanvas
       return [];
     }
     if (isContentsPolicyViolationError(error)) {
-      toastStore.trigger({ message: `画像生成エラー: ジェネレータに拒否されました。<br/>おそらくコンテントポリシー違反です。`, timeout: 5000});
+      toastStore.trigger({ message: get(_)('generator.contentPolicyViolation'), timeout: 5000});
       return [];
     }
     // その他のエラーはトースト表示して再スロー
-    toastStore.trigger({ message: `画像生成エラー: ${error.context?.statusText ?? error?.message}`, timeout: 3000});
+    toastStore.trigger({ message: `${get(_)('generator.imageGenerationError')}${error.context?.statusText ?? error?.message}`, timeout: 3000});
     throw error;
   }
 }

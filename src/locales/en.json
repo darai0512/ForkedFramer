@@ -308,6 +308,7 @@
     "style": "Style",
     "start": "Start",
     "imageGenerationError": "Image generation error: ",
+    "contentPolicyViolation": "Image generation error: Rejected by the generator.<br/>Possible content policy violation or prompt may be too complex.",
     "pleaseLogIn": "Please log in",
     "mode": "Mode",
     "perPanel": "Per panel",

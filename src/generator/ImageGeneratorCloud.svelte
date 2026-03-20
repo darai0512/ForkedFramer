@@ -177,7 +177,8 @@
             imageDataUrls
           );
           // return { feathral: 99, result: { image: makePlainImage(imageRequest.width, imageRequest.height, "#00ff00ff") } };
-        });
+        },
+        (r) => r.length > 0);
       gallery.push(...canvases.map(c => new ImageMedia(c)));
       gallery = gallery;
 

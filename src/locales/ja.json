@@ -308,6 +308,7 @@
     "style": "スタイル",
     "start": "開始",
     "imageGenerationError": "画像生成エラー: ",
+    "contentPolicyViolation": "画像生成エラー: ジェネレータに拒否されました。<br/>コンテントポリシー違反、またはプロンプトが複雑すぎる可能性があります。",
     "pleaseLogIn": "ログインしてください",
     "mode": "モード",
     "perPanel": "1コマあたり",
