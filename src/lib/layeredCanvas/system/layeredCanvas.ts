@@ -164,6 +164,7 @@ export class LayerBase implements Layer {
 
 export class Paper {
   matrix!: DOMMatrix;
+  dpr: number = 1;
   size: Vector;
   layers: Layer[];
   hint: { rect: Rect | null, message: string | null } | null = null;
@@ -390,7 +391,12 @@ export class Paper {
     this.layers.push(layer);
   }
 
-  rebuildPageLayouts(matrix: DOMMatrix): void {
+  get rscale(): number {
+    return this.dpr / this.matrix.a;
+  }
+
+  rebuildPageLayouts(matrix: DOMMatrix, dpr: number): void {
+    this.dpr = dpr;
     const m = matrix.translate(this.size[0] * -0.5, this.size[1] * -0.5);
     this.matrix = m;
     for (let layer of this.layers) {
@@ -804,7 +810,7 @@ export class LayeredCanvas {
     matrix = matrix.translate(...this.viewport.viewTranslate);         // Temporary Pan
     matrix = matrix.scale(this.viewport.scale, this.viewport.scale);
 
-    this.rootPaper.rebuildPageLayouts(matrix);
+    this.rootPaper.rebuildPageLayouts(matrix, this.viewport.getDpr());
   }
 
   doPointerHover(p: Vector) {

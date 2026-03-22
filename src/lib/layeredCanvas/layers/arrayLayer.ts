@@ -59,7 +59,7 @@ export class ArrayLayer extends LayerBase {
     this.onEditBubbles = onEditBubbles;
     this.onTweak = onTweak;
 
-    const mp = () => this.paper.matrix;
+    const mp = () => this.paper.rscale;
     for (let i = 0; i < this.array.papers.length; i++) {
       const trashIcon = new ClickableIcon(["page-trash.webp"],[32,32],[0.5,0],"hint.array.deletePage", () => 1 < this.array.papers.length, mp);
       this.trashIcons.push(trashIcon);
@@ -88,7 +88,7 @@ export class ArrayLayer extends LayerBase {
     this.array.recalculatePaperCenter();
     for (let paper of this.array.papers) {
       let m = matrix.translate(...paper.center);
-      paper.paper.rebuildPageLayouts(m);
+      paper.paper.rebuildPageLayouts(m, this.paper.dpr);
     }
 
     this.calculateIconPositions();

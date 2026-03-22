@@ -10,19 +10,19 @@ export abstract class ClickableSlate implements ClickableSlate {
   pivot: Vector;
   hints: string[];
   visibleConditionProvider: (() => boolean) | null;
-  matrixProvider: () => DOMMatrix;
+  rscaleProvider: () => number;
   marginLeft = 0;
   marginTop = 0;
   marginRight = 0;
   marginBottom = 0;
-  
-  constructor(size: Vector, pivot: Vector, hints: string | string[], visibleConditionProvider: (() => boolean) | null, matrixProvider: () => DOMMatrix) {
+
+  constructor(size: Vector, pivot: Vector, hints: string | string[], visibleConditionProvider: (() => boolean) | null, rscaleProvider: () => number) {
     this.position = [0,0];
     this.size = size;
     this.pivot = pivot;
     this.hints = Array.isArray(hints) ? hints : [hints];
     this.visibleConditionProvider = visibleConditionProvider;
-    this.matrixProvider = matrixProvider;
+    this.rscaleProvider = rscaleProvider;
   }
 
   isVisible(): boolean {
@@ -71,8 +71,7 @@ export abstract class ClickableSlate implements ClickableSlate {
   }
 
   get rscale(): number {
-    // return Math.min(1 / this.matrixProvider().a, 3);
-    return 1 / this.matrixProvider().a;
+    return this.rscaleProvider();
   }
 
   get state(): number {
@@ -94,8 +93,8 @@ export class ClickableIcon extends ClickableSlate {
   index: number;
   shadowColor: string;
   
-  constructor(srcs: string[], size: Vector, pivot: Vector, hints: string | string[], visibleConditionProvider: (() => boolean) | null, matrixProvider: () => DOMMatrix) {
-    super(size, pivot, hints, visibleConditionProvider, matrixProvider);
+  constructor(srcs: string[], size: Vector, pivot: Vector, hints: string | string[], visibleConditionProvider: (() => boolean) | null, rscaleProvider: () => number) {
+    super(size, pivot, hints, visibleConditionProvider, rscaleProvider);
     this.images = srcs.map(src => {
       const image = new Image();
       image.src = new URL(`../../../../assets/${src}`, import.meta.url).href;
@@ -144,8 +143,8 @@ export class ClickableIcon extends ClickableSlate {
 export class ClickableSelfRenderer extends ClickableSlate {
   renderFunction: (ctx: CanvasRenderingContext2D, csr: ClickableSelfRenderer) => void;
 
-  constructor(renderFunction: (ctx: CanvasRenderingContext2D, csr: ClickableSelfRenderer) => void, size: Vector, pivot: Vector, hint: string, visibleConditionProvider: () => boolean, matrixProvider: () => DOMMatrix) {
-    super(size, pivot, hint, visibleConditionProvider, matrixProvider);
+  constructor(renderFunction: (ctx: CanvasRenderingContext2D, csr: ClickableSelfRenderer) => void, size: Vector, pivot: Vector, hint: string, visibleConditionProvider: () => boolean, rscaleProvider: () => number) {
+    super(size, pivot, hint, visibleConditionProvider, rscaleProvider);
     this.renderFunction = renderFunction;
   }
 

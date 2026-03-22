@@ -29,7 +29,7 @@ export class ViewerLayer extends LayerBase {
   ) {
     super();
 
-    this.playIcon = new ClickableIcon(["viewerLayer/play.webp"],[32,32],[1,1],"再生", () => true, () => this.paper.matrix);
+    this.playIcon = new ClickableIcon(["viewerLayer/play.webp"],[32,32],[1,1],"再生", () => true, () => this.paper.rscale);
 
     focusKeeper.subscribe(this.changeFocus.bind(this));
 

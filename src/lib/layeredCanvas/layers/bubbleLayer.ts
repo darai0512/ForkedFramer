@@ -82,7 +82,7 @@ export class BubbleLayer extends LayerBase {
     this.handle = null;
 
     const unit = iconUnit;
-    const mp = () => this.paper.matrix;
+    const mp = () => this.paper.rscale;
     this.createBubbleIcon = new ClickableIcon(["bubbleLayer/bubble.webp"],[64,64],[0,1],"hint.bubble.dragToCreate", () => this.interactable, mp);
     this.createBubbleIcon.position = [0, -16];
 
@@ -193,7 +193,7 @@ export class BubbleLayer extends LayerBase {
   }
 
   calculateSheetRect(rect: Rect): Rect {
-    return calculateSheetRect(rect, [160, 160], SHEET_Y_MARGIN, 1 / this.paper.matrix.a);
+    return calculateSheetRect(rect, [160, 160], SHEET_Y_MARGIN, this.paper.rscale);
   }
 
   drawSheet(ctx: CanvasRenderingContext2D, rect: Rect) {
@@ -953,8 +953,7 @@ export class BubbleLayer extends LayerBase {
 
   relayoutIcons(): void {
     const paperSize = this.getPaperSize();
-    const rscale = 1 / this.paper.matrix.a;
-    const unit: Vector = scale2D([...iconUnit], rscale);
+    const unit: Vector = scale2D([...iconUnit], this.paper.rscale);
     const bubbleRect = this.selected!.getPhysicalRegularizedRect(paperSize);
     const grid = new Grid(this.calculateSheetRect(bubbleRect), -10, unit);
     const cp = grid.calcPosition.bind(grid);

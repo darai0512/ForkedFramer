@@ -116,7 +116,7 @@ export class FrameLayer extends LayerBase {
 
     const unit = iconUnit;
     const spinUnit: Vector = [unit[0], unit[1] * 1 / 6];
-    const mp = () => this.paper.matrix;
+    const mp = () => this.paper.rscale;
     const isFrameActiveAndVisible = () => this.interactable && 0 < (this.selectedLayout?.element.visibility ?? 0);
     this.splitHorizontalIcon = new ClickableIcon(["frameLayer/split-horizontal.webp"],unit,[0,1],"hint.frame.splitHorizontal", isFrameActiveAndVisible, mp);
     this.splitVerticalIcon = new ClickableIcon(["frameLayer/split-vertical.webp"],unit,[0,1],"hint.frame.splitVertical", isFrameActiveAndVisible, mp);
@@ -131,7 +131,7 @@ export class FrameLayer extends LayerBase {
     this.visibilityIcon.index = 2;
     this.zvalue = new ClickableSelfRenderer(
       (ctx: CanvasRenderingContext2D, csr: ClickableSelfRenderer) => {
-        const rscale = 1 / this.paper.matrix.a;
+        const rscale = this.paper.rscale;
         const b = csr.boundingRect;
         const l = this.selectedLayout;
         // const c = getRectCenter(b);
@@ -338,7 +338,7 @@ export class FrameLayer extends LayerBase {
   }
 
   calculateSheetRect(corners: Trapezoid): Rect {
-    return calculateSheetRect(trapezoidBoundingRect(corners), [320, 320], SHEET_Y_MARGIN, 1 / this.paper.matrix.a);
+    return calculateSheetRect(trapezoidBoundingRect(corners), [320, 320], SHEET_Y_MARGIN, this.paper.rscale);
   }
 
   drawSheet(ctx: CanvasRenderingContext2D, corners: Trapezoid) {
@@ -1579,8 +1579,7 @@ export class FrameLayer extends LayerBase {
   }
 
   makeGrid(layout: Layout) {
-    const rscale = 1 / this.paper.matrix.a;
-    const unit: Vector = scale2D([...iconUnit], rscale);
+    const unit: Vector = scale2D([...iconUnit], this.paper.rscale);
     const grid = new Grid(this.calculateSheetRect(layout.corners), -10, unit)
     return grid;
   }
