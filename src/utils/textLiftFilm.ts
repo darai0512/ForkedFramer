@@ -241,7 +241,9 @@ function placeBubbleBySelection(
   const physicalFontSize = physicalCharHeight * 0.8; // 0.8はヒューリスティック
   bubble.setPhysicalFontSize(paperSize, physicalFontSize);
   bubble.setPhysicalCenter(paperSize, center);
-  const size = bubble.calculateFitSize(paperSize);
-  bubble.setPhysicalSize(paperSize, size);
+  // OCR矩形のサイズをページ座標系で使用（calculateFitSizeはフォント依存で大きくなりすぎるため）
+  const boxWidth = Math.abs(p1[0] - p0[0]);
+  const boxHeight = Math.abs(p1[1] - p0[1]);
+  bubble.setPhysicalSize(paperSize, Bubble.enoughSize([boxWidth, boxHeight]));
   return true;
 }
