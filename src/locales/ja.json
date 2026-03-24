@@ -206,6 +206,7 @@
     "aiTextEditTooltip": "AIテキスト編集の実行[1]",
     "overall": "全体",
     "embedToFrame": "コマへの埋め込み",
+    "clipContent": "クリッピング",
     "reset": "リセット",
     "style": "スタイル",
     "verticalHorizontal": "縦書き/横書き",

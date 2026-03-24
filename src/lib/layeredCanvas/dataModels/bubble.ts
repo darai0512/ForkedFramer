@@ -53,6 +53,7 @@ export class Bubble {
   creationContext: string;
   filmStack: FilmStack;
   scaleLock!: boolean;
+  clipContent!: boolean;
   rubySize!: number;
   rubyDistance!: number;
   displayName: string;
@@ -108,7 +109,8 @@ export class Bubble {
     this.autoNewline = false;
     this.appearanceDelay = 0;
     this.hidesText = false;
-    this.rubySize = 0.4;    
+    this.clipContent = true;
+    this.rubySize = 0.4;
     this.rubyDistance = 0.45;
     this.displayName = '';
   }
@@ -141,6 +143,7 @@ export class Bubble {
     b.n_outlineWidth = this.n_outlineWidth;
     b.autoNewline = this.autoNewline;
     b.appearanceDelay = this.appearanceDelay;
+    b.clipContent = this.clipContent;
     b.rubySize = this.rubySize;
     b.rubyDistance = this.rubyDistance;
     b.displayName = this.displayName;
@@ -174,6 +177,7 @@ export class Bubble {
     this.outlineColor = c.outlineColor;
     this.n_outlineWidth = c.n_outlineWidth;
     this.autoNewline = c.autoNewline;
+    this.clipContent = c.clipContent;
     this.optionContext = {...c.optionContext};
     this.rubySize = c.rubySize;
     this.rubyDistance = c.rubyDistance;
@@ -227,6 +231,7 @@ export class Bubble {
     b.autoNewline = json.autoNewline ?? true;
     b.uuid = json.uuid ?? ulid();
     b.parent = json.parent;
+    b.clipContent = json.clipContent ?? true;
     b.rubySize = json.rubySize ?? 0.4;
     b.rubyDistance = json.rubyDistance ?? 0.45;
     b.displayName = json.displayName ?? 'ふきだし';
@@ -267,6 +272,7 @@ export class Bubble {
       autoNewline: b.autoNewline ? undefined : b.autoNewline,
       uuid: b.uuid,
       parent: b.parent,
+      clipContent: b.clipContent === true ? undefined : b.clipContent,
       rubySize: b.rubySize == 0.4 ? undefined : b.rubySize,
       rubyDistance: b.rubyDistance == 0.45 ? undefined : b.rubyDistance,
       displayName: b.displayName,

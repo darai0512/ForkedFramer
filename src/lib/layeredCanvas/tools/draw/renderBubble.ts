@@ -34,7 +34,9 @@ export function renderBubbleBackground(ctx: CanvasRenderingContext2D, paperSize:
   fillBubbleElement(ctx, paperSize, bubble, size, minimumSizeWarning);
 
   // 画像描画
-  clipBubbleElement(ctx, bubble, size);
+  if (bubble.clipContent) {
+    clipBubbleElement(ctx, bubble, size);
+  }
   drawFilmStack(ctx, bubble.filmStack, paperSize, [0,0], null); // centerはすでに上で移動しているため
 
   ctx.restore();
@@ -64,7 +66,9 @@ export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize:
   ctx.rotate((-bubble.rotation * Math.PI) / 180);
 
   ctx.save();
-  clipBubbleElement(ctx, bubble, size);
+  if (bubble.clipContent) {
+    clipBubbleElement(ctx, bubble, size);
+  }
 
   // テキスト描画
   if (bubble.text && !bubble.hidesText && !skipText) {

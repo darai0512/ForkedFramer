@@ -206,6 +206,7 @@
     "aiTextEditTooltip": "Execute AI Text Edit[1]",
     "overall": "Overall",
     "embedToFrame": "Embed to Frame",
+    "clipContent": "Clipping",
     "reset": "Reset",
     "style": "Style",
     "verticalHorizontal": "Vertical/Horizontal",
