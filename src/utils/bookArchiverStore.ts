@@ -15,6 +15,7 @@ export type BookArchiveOperation =
   'publish' |
   'download-publication-files' |
   'download-materials' |
+  'export-dialogues' |
   'share-book';
 
 export const bookArchiver: Writable<BookArchiveOperation[]> = writable([]);

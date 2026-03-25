@@ -705,6 +705,8 @@
     "packageHint": "Download document\nas a single file",
     "downloadMaterials": "Download All Materials",
     "downloadMaterialsHint": "Download all frame materials\n(layers) as a zip file",
+    "exportDialogues": "Download All Dialogues",
+    "exportDialoguesHint": "Download all dialogues\nas a markdown file",
     "exportPrompts": "Copy Prompts to Clipboard",
     "exportPromptsHint": "Collect prompts from each panel and copy to clipboard",
     "publishToMangaFarm": "Post to Manga Farm!",

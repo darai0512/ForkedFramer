@@ -22,6 +22,7 @@
     // {label: $_('downloader.share'), onClick: shareBook, hint: $_('downloader.shareHint')},
     {label: $_('downloader.package'), onClick: downloadEnvelop, hint: $_('downloader.packageHint')},
     {label: $_('downloader.downloadMaterials'), onClick: downloadMaterials, hint: $_('downloader.downloadMaterialsHint')},
+    {label: $_('downloader.exportDialogues'), onClick: downloadDialogues, hint: $_('downloader.exportDialoguesHint')},
     {label: $_('downloader.exportPrompts'), onClick: exportPrompts, hint: $_('downloader.exportPromptsHint')},
     {label: $_('downloader.publishToMangaFarm'), onClick: publishEnvelope, hint: $_('downloader.publishToMangaFarmHint')},
     // {label: "test", onClick: testIt }
@@ -86,6 +87,11 @@
   async function shareBook() {
     analyticsEvent('share_book');
     archive('share-book');
+  }
+
+  function downloadDialogues() {
+    analyticsEvent('export_dialogues');
+    archive('export-dialogues');
   }
 
   function downloadMaterials() {

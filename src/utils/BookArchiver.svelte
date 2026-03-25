@@ -12,6 +12,7 @@
   import type { NodeId } from '../lib/filesystem/fileSystem';
   import { saveAs } from 'file-saver';
   import { exportPrompts } from "./saver/exportPrompts";
+  import { exportDialogues } from "./saver/exportDialogues";
   import { getPublishUrl, getTransportUrl, recordPublication } from "../supabase";
   import { blobToSha1 } from '../lib/layeredCanvas/tools/misc';
   import { loading, progress } from './loadingStore';
@@ -99,6 +100,9 @@
             break;
           case 'download-materials':
             await saveAsMaterialsZip(targetPages, $mainBookTitle);
+            break;
+          case 'export-dialogues':
+            exportDialogues(targetPages, $mainBookTitle);
             break;
           case 'download-publication-files':
             await downloadPublicationFiles();
