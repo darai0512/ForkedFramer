@@ -127,7 +127,7 @@
   function makeBookSnapshot(book: Book) {
     const s = {
       bookId: book.revision.id,
-      pages: book.pages.map(p => ({id:p.id, size:p.paperSize})),
+      pages: book.pages.map(p => ({id:p.id, size:p.paperSize, frameTreeId: p.frameTreeId})),
       direction: book.direction,
       wrapMode: book.wrapMode,
       showVideoPlayButton: book.attributes?.showVideoPlayButton ?? true,

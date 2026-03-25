@@ -28,6 +28,7 @@ export type Revision = {
 export type Page = {
   id: string;
   frameTree: FrameElement,
+  frameTreeId?: number,
   bubbles: Bubble[],
   paperSize: [number, number],
   paperColor: string,

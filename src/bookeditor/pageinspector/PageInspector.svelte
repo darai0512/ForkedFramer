@@ -10,8 +10,43 @@
   import { fontChooserOpen, chosenFont } from '../bubbleinspector/fontStore';
   import { shapeChooserOpen, chosenShape } from '../bubbleinspector/shapeStore';
   import BubbleSample from '../bubbleinspector/BubbleSample.svelte';
+  import { triggerTemplateChoice } from '../templateChooserStore';
+  import { frameExamples } from '../../lib/layeredCanvas/tools/frameExamples';
+  import { FrameElement, collectLeaves, calculatePhysicalLayout, constraintRecursive } from '../../lib/layeredCanvas/dataModels/frameTree';
+  import { FilmStack } from '../../lib/layeredCanvas/dataModels/film';
+  import { LayeredCanvas, Viewport } from '../../lib/layeredCanvas/system/layeredCanvas';
+  import { PaperRendererLayer, BubbleRenderMode } from '../../lib/layeredCanvas/layers/paperRendererLayer';
 
   let prevFontSizeCoefficient: number | null = null;
+
+  // コマ割り置き換え用の状態
+  let originalFilmStacks: FilmStack[] | null = null;
+  let originalFrameTree: FrameElement | null = null;
+  let frameLayoutReplaced = false;
+
+  // プレビュー用
+  let previewCanvas: HTMLCanvasElement;
+  let previewLayeredCanvas: LayeredCanvas | null = null;
+  let previewPaperRenderer: PaperRendererLayer | null = null;
+  const previewSize: [number, number] = [210, 297];
+
+  async function updatePreview(frameTree: FrameElement) {
+    if (!previewCanvas) return;
+    if (!previewLayeredCanvas) {
+      const viewport = new Viewport(previewCanvas, () => {});
+      previewLayeredCanvas = new LayeredCanvas(viewport, false);
+      previewPaperRenderer = new PaperRendererLayer(false, { bubbleRenderMode: BubbleRenderMode.All });
+      previewLayeredCanvas.rootPaper.size = previewSize;
+      previewLayeredCanvas.rootPaper.addLayer(previewPaperRenderer);
+    }
+    previewPaperRenderer!.setFrameTree(frameTree);
+    previewPaperRenderer!.setBubbles([]);
+    previewLayeredCanvas.redraw();
+  }
+
+  $: if ($pageInspectorTarget && previewCanvas) {
+    updatePreview($pageInspectorTarget.frameTree);
+  }
 
   // フキダシ一括変更用の状態変数
   let batchFontFamily = "源暎アンチック";
@@ -126,9 +161,86 @@
     prevFontSizeCoefficient = p.fontSizeCoefficient;
   }
 
+  // Drawerが開いたときにoriginalFilmStacksをスナップショット
+  $: if ($pageInspectorTarget) {
+    if (originalFilmStacks === null) {
+      const leaves = collectLeaves($pageInspectorTarget.frameTree);
+      originalFilmStacks = leaves.map(leaf => leaf.filmStack);
+      originalFrameTree = $pageInspectorTarget.frameTree;
+    }
+  } else {
+    originalFilmStacks = null;
+    originalFrameTree = null;
+    frameLayoutReplaced = false;
+  }
+
   $: target = $pageInspectorTarget!;
 
+  function getPageIndex(): number {
+    if (!$mainBook || !$pageInspectorTarget) return -1;
+    return $mainBook.pages.indexOf($pageInspectorTarget);
+  }
+
+  async function replaceFrameLayout() {
+    if (!$pageInspectorTarget || originalFilmStacks === null) return;
+    const page = $pageInspectorTarget;
+
+    const templateKey = await triggerTemplateChoice.trigger();
+    if (!templateKey) return;
+
+    const sample = frameExamples[templateKey];
+    if (!sample) return;
+
+    const newFrameTree = FrameElement.compile(sample.frameTree);
+
+    // 現在のページの属性を引き継ぐ
+    newFrameTree.bgColor = page.paperColor;
+    newFrameTree.borderColor = page.frameColor;
+    newFrameTree.borderWidth = page.frameWidth;
+
+    // 新しいツリーのリーフにoriginalFilmStacksを配置
+    const newLeaves = collectLeaves(newFrameTree);
+    for (let i = 0; i < newLeaves.length; i++) {
+      if (i < originalFilmStacks.length) {
+        newLeaves[i].filmStack = originalFilmStacks[i];
+      } else {
+        newLeaves[i].filmStack = new FilmStack();
+      }
+    }
+
+    page.frameTree = newFrameTree;
+    frameLayoutReplaced = true;
+
+    // 各コマのフィルムを新しいフレームにフィット
+    const layout = calculatePhysicalLayout(newFrameTree, page.paperSize, [0, 0]);
+    constraintRecursive(page.paperSize, layout);
+
+    updatePreview(newFrameTree);
+
+    // 本文側を再ビルド
+    page.frameTreeId = (page.frameTreeId ?? 0) + 1;
+    $mainBook = $mainBook;
+  }
+
+  function confirmFrameLayout() {
+    if (!frameLayoutReplaced) return;
+    commit(null);
+    // originalFilmStacksを現在の状態で更新（確定後の再変更に備える）
+    if ($pageInspectorTarget) {
+      const leaves = collectLeaves($pageInspectorTarget.frameTree);
+      originalFilmStacks = leaves.map(leaf => leaf.filmStack);
+    }
+    frameLayoutReplaced = false;
+  }
+
   function onClickAway() {
+    // 未確定のコマ割り変更を元に戻す
+    if (frameLayoutReplaced && $pageInspectorTarget && originalFrameTree) {
+      $pageInspectorTarget.frameTree = originalFrameTree;
+      $pageInspectorTarget.frameTreeId = (($pageInspectorTarget.frameTreeId ?? 0) + 1);
+    }
+    previewLayeredCanvas = null;
+    previewPaperRenderer = null;
     $mainBook = $mainBook;
     $pageInspectorTarget = null;
   }
@@ -156,6 +268,22 @@
         <div class="flex flex-col items-center">
           <div class="slider-container">
             <SliderEdit bind:value={target.fontSizeCoefficient} min={0.5} max={2} step={0.01} allowDecimal={true}/>
+          </div>
+        </div>
+
+        <!-- コマ割り置き換え -->
+        <div class="batch-panel">
+          <h2>コマ割り置き換え</h2>
+          <div class="flex flex-col items-center gap-2">
+            <div class="preview-container" style="width: {previewSize[0]}px; height: {previewSize[1]}px;">
+              <canvas width="{previewSize[0]}" height="{previewSize[1]}" bind:this={previewCanvas}/>
+            </div>
+            <div class="flex gap-2">
+              <button class="btn btn-sm variant-filled-primary" on:click={replaceFrameLayout}>テンプレートを選択</button>
+              {#if frameLayoutReplaced}
+                <button class="btn btn-sm variant-filled-warning" on:click={confirmFrameLayout}>確定</button>
+              {/if}
+            </div>
           </div>
         </div>
 
@@ -299,5 +427,19 @@
     height: 28px;
     min-width: 50px;
     margin-left: auto;
+  }
+  .preview-container {
+    position: relative;
+    background-image: linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc),
+                      linear-gradient(45deg, #ccc 25%, transparent 25%, transparent 75%, #ccc 75%, #ccc);
+    background-size: 20px 20px;
+    background-position: 0 0, 10px 10px;
+    background-color: white;
+    border: 1px solid rgb(var(--color-surface-400));
+  }
+  .preview-container canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 </style>
