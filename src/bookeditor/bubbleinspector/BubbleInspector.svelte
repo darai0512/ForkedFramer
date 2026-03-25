@@ -426,10 +426,13 @@
               <button class="btn btn-sm bg-warning-500 h-6" on:click={reset}>{$_('bubble.reset')}</button>
             </div>
           </div>
+          <!-- clipContent toggle hidden until text clipping issue is resolved -->
+          <!--
           <div class="flex flex-row items-center gap-1">
             <div class="label">{$_('bubble.clipContent')}</div>
             <input class="checkbox" type="checkbox" bind:checked={$bubble.clipContent}/>
           </div>
+          -->
         </div>
       </details>
 
