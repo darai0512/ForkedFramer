@@ -705,6 +705,8 @@
     "shareHint": "ドキュメントのコピーを\n編集できる形でアップロードします",
     "package": "パッケージ",
     "packageHint": "ドキュメントを1つのファイルとして\nダウンロードします",
+    "downloadMaterials": "使用素材の一括ダウンロード",
+    "downloadMaterialsHint": "全コマの素材（レイヤー）を\nまとめてzipでダウンロードします",
     "exportPrompts": "プロンプトをクリップボードにコピー",
     "exportPromptsHint": "各コマのプロンプトを集めてクリップボードにコピーします",
     "publishToMangaFarm": "まんがファームに投稿！",

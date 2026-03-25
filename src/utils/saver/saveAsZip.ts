@@ -4,6 +4,7 @@ import type { Page } from '../../lib/book/book';
 import { renderPage, renderPageToPsd, renderPageToFrameCanvases } from './renderPage';
 import { upscaleCanvasWithoutDialog } from '../upscaleImage';
 import { canvasToBlob } from '../../lib/layeredCanvas/tools/imageUtil';
+import { collectLeaves } from '../../lib/layeredCanvas/dataModels/frameTree';
 
 function sanitizeFileName(name: string): string {
   // Windows: \ / : * ? " < > |
@@ -91,4 +92,43 @@ export async function saveAsLoraDataZip(page: Page, zipName: string, pageNumber:
   const zipFile = await zip.generateAsync({type: 'blob'});
   const effectiveName = sanitizeFileName(zipName) || 'lora';
   saveAs(zipFile, `${effectiveName}-${pageNumber}.zip`);
+}
+
+export async function saveAsMaterialsZip(pages: Page[], zipName: string) {
+  const zip = new JSZip();
+  const effectiveFolderName = sanitizeFileName(zipName) || 'materials';
+  const folder = zip.folder(effectiveFolderName)!;
+
+  for (let pi = 0; pi < pages.length; pi++) {
+    const page = pages[pi];
+    const leaves = collectLeaves(page.frameTree);
+    const p = String(pi + 1).padStart(3, '0');
+
+    for (let fi = 0; fi < leaves.length; fi++) {
+      const frame = leaves[fi];
+      const f = String(fi + 1).padStart(3, '0');
+      const films = frame.filmStack.films;
+
+      for (let li = 0; li < films.length; li++) {
+        const film = films[li];
+        if (film.content.kind !== 'media') continue;
+        const media = film.content.media;
+        const l = String(li + 1).padStart(3, '0');
+        const baseName = `p${p}_f${f}_l${l}`;
+
+        const source = media.persistentSource;
+        if (source instanceof HTMLCanvasElement) {
+          const blob = await canvasToBlob(source, 'image/png');
+          folder.file(`${baseName}.png`, blob);
+        } else if (source instanceof HTMLVideoElement) {
+          const blob = await fetch(source.src).then(res => res.blob());
+          folder.file(`${baseName}.mp4`, blob);
+        }
+      }
+    }
+  }
+
+  const zipFile = await zip.generateAsync({type: 'blob'});
+  const effectiveName = sanitizeFileName(zipName) || 'materials';
+  saveAs(zipFile, `${effectiveName}_materials.zip`);
 }

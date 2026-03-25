@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { saveAsPngZip, saveAsPsdZip, saveAsFramePngZip, saveAsLoraDataZip, makeZip } from "./saver/saveAsZip";
+  import { saveAsPngZip, saveAsPsdZip, saveAsFramePngZip, saveAsLoraDataZip, saveAsMaterialsZip, makeZip } from "./saver/saveAsZip";
   import { copyToClipboard } from "./saver/copyToClipboard";
   import { type BookArchiveOperation, bookArchiver } from "./bookArchiverStore";
   import { mainBook, bookOperators, mainBookTitle } from "../bookeditor/workspaceStore";
@@ -96,6 +96,9 @@
             break;
           case 'publish':
             await publishEnvelope();
+            break;
+          case 'download-materials':
+            await saveAsMaterialsZip(targetPages, $mainBookTitle);
             break;
           case 'download-publication-files':
             await downloadPublicationFiles();
