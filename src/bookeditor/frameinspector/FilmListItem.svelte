@@ -42,6 +42,7 @@
   export let film: Film | null;
   export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
   export let calculateInPaintingCost: ((film: Film) => number) | null = null;
+  export let downloadName: string = '';
 
   let effectVisible = false;
   let outPaintingCost = 0;
@@ -278,15 +279,16 @@
     const mediaResource = filmMedia.persistentSource;
 
     // 画像データ取得
+    const baseName = downloadName || 'layer';
     if (mediaResource instanceof HTMLCanvasElement) {
       const blob = await canvasToBlob(mediaResource, "image/png");
-      saveAs(blob, 'layer.png');
+      saveAs(blob, `${baseName}.png`);
     } else if (mediaResource instanceof HTMLVideoElement) {
       const blob = await fetch(mediaResource.src).then(res => res.blob());
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'layer.mp4';
+      a.download = `${baseName}.mp4`;
       a.click();
       URL.revokeObjectURL(url);
     }

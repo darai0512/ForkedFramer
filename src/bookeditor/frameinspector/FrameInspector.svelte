@@ -1,12 +1,12 @@
 <script lang="ts">
   import writableDerived from "svelte-writable-derived";
   import { frameInspectorTarget, frameInspectorRebuildToken } from './frameInspectorStore';
-  import { insertFrameLayers } from "../../lib/layeredCanvas/dataModels/frameTree";
+  import { insertFrameLayers, collectLeaves } from "../../lib/layeredCanvas/dataModels/frameTree";
   import { type Film } from "../../lib/layeredCanvas/dataModels/film";
   import FilmList from "./FilmList.svelte";
   import { dominantMode } from "../../uiStore";
   import Drawer from "../../utils/Drawer.svelte";
-  import { bookOperators } from "../workspaceStore";
+  import { bookOperators, mainBook } from "../workspaceStore";
   import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
   import { calculateFramePadding } from '../../utils/outPaintFilm'
   import type { FilmTool } from '../../utils/filmTools';
@@ -28,6 +28,17 @@
 
   $: opened = $dominantMode != "painting" && $frameInspectorTarget?.frame != null
   $: filmStack = $frameInspectorTarget?.frame.filmStack!;
+
+  $: downloadPrefix = (() => {
+    const fit = $frameInspectorTarget;
+    if (!fit || !$mainBook) return '';
+    const pageIndex = $mainBook.pages.indexOf(fit.page);
+    const leaves = collectLeaves(fit.page.frameTree);
+    const frameIndex = leaves.indexOf(fit.frame);
+    const p = String(pageIndex + 1).padStart(3, '0');
+    const f = String(frameIndex + 1).padStart(3, '0');
+    return `p${p}_f${f}`;
+  })();
 
   function onCommit(e: CustomEvent<boolean>) {
     console.log("FrameInspector", e.detail);
@@ -205,12 +216,13 @@
         </RadioGroup>
       </div>
       {#key $frameInspectorRebuildToken}
-        <FilmList 
-          showsBarrier={true}  
+        <FilmList
+          showsBarrier={true}
           filmStack={filmStack}
           paperSize={$frameInspectorTarget?.page?.paperSize || null}
+          {downloadPrefix}
           on:commit={onCommit}
-          on:generate={onGenerate} 
+          on:generate={onGenerate}
           on:accept={onAccept}
           on:tool={onTool}
           calculateOutPaintingCost={calculateOutPaintingCost}

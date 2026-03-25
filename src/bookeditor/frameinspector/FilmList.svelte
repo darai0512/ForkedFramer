@@ -15,6 +15,7 @@
   export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
   export let calculateInPaintingCost: ((film: Film) => number) | null = null;
   export let paperSize: [number, number] | null = null;
+  export let downloadPrefix: string = '';
 
   const dispatch = createEventDispatcher();
 
@@ -110,9 +111,10 @@
       {/if}
       <FilmListItem
         {showsBarrier}
-        bind:film={film} 
-        on:select={onSelectFilm} 
-        on:delete={onDeleteFilm} 
+        bind:film={film}
+        downloadName={downloadPrefix ? `${downloadPrefix}_l${String(filmStack.films.length - index).padStart(3, '0')}` : ''}
+        on:select={onSelectFilm}
+        on:delete={onDeleteFilm}
         on:tool
         on:commit
         calculateOutPaintingCost={calculateOutPaintingCost}
