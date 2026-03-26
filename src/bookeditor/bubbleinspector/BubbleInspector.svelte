@@ -12,6 +12,7 @@
   import { toolTip } from '../../utils/passiveToolTipStore';
   import { fontChooserOpen, chosenFont } from './fontStore';
   import { shapeChooserOpen, chosenShape } from './shapeStore';
+  import { getAvailableWeights, fontWeightLabels } from './fontWeightMap';
   import BubbleInspectorAppendix from './BubbleInspectorAppendix.svelte';
   import { Bubble, insertBubbleLayers } from "../../lib/layeredCanvas/dataModels/bubble";
   import type { Film } from "../../lib/layeredCanvas/dataModels/film";
@@ -140,9 +141,38 @@
   function onChangeFont(f: { fontFamily: string, fontWeight: string } | null) {
     if ($bubble && f && ($bubble.fontFamily !== f.fontFamily || $bubble.fontWeight !== f.fontWeight)) {
       $bubble.fontFamily = f.fontFamily;
-      $bubble.fontWeight = f.fontWeight;
-      $fontLoadToken = [{ family: f.fontFamily, weight: f.fontWeight }];
+      // フォント変更時、新しいフォントが現在のウェイトをサポートしていなければ最も近いウェイトに変更
+      const weights = getAvailableWeights(f.fontFamily);
+      if (weights.includes(f.fontWeight)) {
+        $bubble.fontWeight = f.fontWeight;
+      } else {
+        $bubble.fontWeight = findClosestWeight(weights, $bubble.fontWeight);
+      }
+      $fontLoadToken = [{ family: $bubble.fontFamily, weight: $bubble.fontWeight }];
     }
+  }
+
+  function onChangeFontWeight(e: Event) {
+    const select = e.target as HTMLSelectElement;
+    const weight = select.value;
+    if ($bubble && $bubble.fontWeight !== weight) {
+      $bubble.fontWeight = weight;
+      $fontLoadToken = [{ family: $bubble.fontFamily, weight }];
+    }
+  }
+
+  function findClosestWeight(availableWeights: string[], targetWeight: string): string {
+    const target = parseInt(targetWeight);
+    let closest = availableWeights[0];
+    let minDiff = Math.abs(parseInt(closest) - target);
+    for (const w of availableWeights) {
+      const diff = Math.abs(parseInt(w) - target);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closest = w;
+      }
+    }
+    return closest;
   }
 
   $:onChangeBubble($bubble);
@@ -445,6 +475,16 @@
           <div class="self-stretch selected-font variant-ghost-primary rounded-container-token text-center" on:click={() => $fontChooserOpen = true}>
             <span style="font-family: {$bubble.fontFamily};">{$bubble.fontFamily}</span>
           </div>
+          {#if getAvailableWeights($bubble.fontFamily).length > 1}
+            <div class="flex gap-2 items-center">
+              <div class="label whitespace-nowrap">ウェイト</div>
+              <select class="select text-xs px-1 py-0.5" value={$bubble.fontWeight} on:change={onChangeFontWeight}>
+                {#each getAvailableWeights($bubble.fontFamily) as w}
+                  <option value={w}>{fontWeightLabels[w] ?? w}</option>
+                {/each}
+              </select>
+            </div>
+          {/if}
           <div class="flex gap-2 items-center">
             <div class="label">{$_('bubble.verticalHorizontal')}</div>
             <div class="direction hbox" use:toolTip={$_('bubble.verticalHorizontal')}>

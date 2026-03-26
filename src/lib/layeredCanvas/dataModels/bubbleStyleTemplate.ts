@@ -118,6 +118,6 @@ export const DEFAULT_BUBBLE_STYLE_TEMPLATES: BubbleStyleTemplate[] = [
   {
     name: "ゴシック",
     defaultStyle: { ...GOTHIC_BUBBLE_STYLE_ENTRY },
-    semanticsOverrides: { title: { ...TITLE_SEMANTICS_STYLE, fontFamily: "源暎きわみゴ" } },
+    semanticsOverrides: { title: { ...TITLE_SEMANTICS_STYLE, fontFamily: "源暎きわみゴ", fontWeight: "700" } },
   },
 ];
