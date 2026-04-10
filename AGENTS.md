@@ -1,11 +1,19 @@
 # Repository Guidelines
 
-## Project Structure & Module Organization
-- `src/`: Svelte 4 + TypeScript app code. Key areas: `lib/` (shared logic), `stores/`, `utils/`, feature folders (e.g., `bookeditor/`, `filemanager/`, `notebook/`). Entry points: `main.ts`, `App.svelte`.
-- `public/`: Static assets bundled by Vite.
-- `test/` and `testdata/`: Vitest helpers and fixtures (`test/setup.ts`, `test/helpers.ts`).
-- `dist/`: Build output. Do not edit.
-- Config: `vite.config.ts`, `tsconfig*.json`, `tailwind.config.cjs`, `postcss.config.cjs`, `.env*`, `wrangler.toml`, `firebase.json`.
+- 応答は日本語で
+- gitコミットはユーザーが指示するまでせず、代わりにコミットメッセージを英語で提案だけして
+- A11y警告はsvelte-ignoreでOK
+- src/lib以下は他プロジェクトからライブラリとして利用される可能性があるので、svelte関連のコード(storeなど)を使わないでください。
+
+FramePlanner is a manga creation tool that allows users to define manga frame structures as tree data (JSON) and arrange images within frames like windows. This is a Svelte-based web application with a complex layered canvas system for interactive manga editing.
+
+## Project Structure
+- `/public/` - Static assets (fonts, favicons, banners)
+- `/src/assets/` - UI icons and graphics organized by feature
+- `/src/lib/` - Core libraries and data models
+- `/src/bookeditor/` - Main editing interface components
+- `/src/utils/` - Shared utilities and dialogs
+- `/documents/` - Technical documentation and SQL schemas
 
 ## Build, Test, and Development Commands
 - `npm run dev`: Start Vite dev server.
@@ -17,6 +25,14 @@
 - テスト実行時は `npx tsc --noEmit && npm run vitest -- --run` のように型チェックも併せて行うこと。
 - Deploy: `npm run deploy` (publishes via Cloudflare Pages only on `sns_main`).
 
+### Testing
+
+Use PBT (Property Based Testing) for testing.
+
+- `npm run vitest` - Run Vitest test runner
+- Test files use `.vitest.ts` extension (see `src/lib/layeredCanvas/tools/geometry/geometry.vitest.ts`)
+- Test setup configured in `test/setup.ts` with fake IndexedDB and mocked Canvas APIs
+
 ## Coding Style & Naming Conventions
 - TypeScript, 2-space indentation, semicolons optional but be consistent.
 - Svelte components: PascalCase (`FramePanel.svelte`). Utilities/stores: camelCase files (`fileSystem.ts`, `uiStore.ts`).
@@ -24,27 +40,98 @@
 - Keep UI in `.svelte`, business logic in `src/lib/**`, and side effects in `src/utils/**`.
 - Styling via Tailwind/PostCSS; prefer utility classes over inline styles.
 
-## Testing Guidelines
-- Framework: Vitest with jsdom and polyfills in `test/setup.ts` (import in specs as needed).
-- Location: place specs under `test/` or alongside code as `*.test.ts`.
-- Write deterministic tests; mock browser APIs and storage via helpers in `test/helpers.ts`.
-- Example: `npx vitest --run --reporter=verbose`.
+## Core Systems
 
-## Commit & Pull Request Guidelines
-- Commit style: imperative mood; optional Conventional Commits (`feat:`, `fix:`, `chore:`). Example: `feat(book): add multi-image reference support`.
-- Before PR: run `npm run check`, `npm run build`, and tests.
-- PRs: include clear description, linked issues (`Closes #123`), and screenshots/GIFs for UI changes.
-- Branching: target `sns_main` when preparing a release. Deploys run from `sns_main` via `npm run deploy`.
+**LayeredCanvas System** (`src/lib/layeredCanvas/`)
+- **Paper/Layer Architecture**: Multi-layered rendering system where each "Paper" contains multiple "Layers"
+- **Viewport Management**: Handles canvas transformations, scaling, and coordinate conversions
+- **Event Handling**: Sophisticated pointer event system with depth-based layering
+- Key files: `system/layeredCanvas.ts`, `system/paperArray.ts`
 
-## Security & Configuration Tips
-- Copy `.env.example` → `.env`, fill keys (Firebase, Supabase, Sentry). Never commit secrets.
-- HTTPS dev: use `npm run dev-https` with the provided local certs.
-- Cloudflare config in `wrangler.toml`; avoid editing prod bindings in PRs without review.
+**Book Data Model** (`src/lib/book/`)
+- **Book Structure**: Books contain Pages, Pages contain FrameTrees and Bubbles
+- **History Management**: Undo/redo system with tagged operations
+- **Media Handling**: Support for images, videos, and remote media references
+- Key files: `book.ts`, `envelope.ts` (for serialization)
 
-# Notice
+**File System Abstraction** (`src/lib/filesystem/`)
+- **Multi-Backend Support**: IndexedDB, File System Access API, Supabase, Firebase
+- **Content Storage**: Separate image storage backends (Backblaze, Firebase)
+- **Versioning**: Revision-based file tracking with ULIDs and prefixes
+- Key files: `fileSystem.ts`, `contentStorage/`
+- **AIクイックリファレンス**: [ファイルシステム概要](./documents/filesystem-summary.md)
 
-- 応答は日本語で
-- gitコミットはユーザーが指示するまでするな。指示されてコミットするときはコミットメッセージは英語で
-- ビルド・実行は不要
-- npm run checkは必要ならしてください
-- A11y警告はsvelte-ignoreでOK
+**Component Architecture**
+- **BookEditor**: Main editing workspace (`src/bookeditor/BookWorkspace.svelte`)
+- **Inspectors**: Specialized panels for bubbles, frames, and pages
+- **Generators**: AI image generation integrations
+- **File Manager**: Tree-based file browser with drag-and-drop
+
+### Data Flow
+
+1. **Store-based State**: Svelte stores manage global state (`workspaceStore.ts`, `uiStore.ts`)
+2. **Canvas Rendering**: LayeredCanvas handles real-time rendering and interaction
+3. **File Operations**: FileSystem abstraction handles persistence across backends
+4. **History Tracking**: Operations create reversible history entries
+
+### Key Patterns
+
+**Bubble System**: Speech bubbles with customizable shapes, fonts, and text layout
+- Shape definitions in `src/lib/layeredCanvas/tools/draw/bubbleGraphic.ts`
+- Font loading and management in `src/bookeditor/fontLoading.ts`
+
+**Frame Tree**: Hierarchical layout system for manga panels
+- Tree structure in `src/lib/layeredCanvas/dataModels/frameTree.ts`
+- Physical layout calculation with constraints
+
+**Film Stack**: Layered media elements within frames
+- Film compositing in `src/lib/layeredCanvas/dataModels/film.ts`
+- Effect processing and transformations
+
+## Adding New Bubble Shapes
+
+Based on the README instructions:
+1. Add shape function to `src/lib/layeredCanvas/tools/draw/bubbleGraphic.ts`
+2. Add entry to `drawBubble` function in same file
+3. Add shape to the list in `src/bookeditor/bubbleinspector/ShapeChooser.svelte`
+
+## Configuration Notes
+
+- **TypeScript**: Configured with path aliases (`$bookTypes/*`, `$protocolTypes/*`)
+- **Vite**: Custom config includes Paper.js optimization and WASM asset handling
+- **Tailwind CSS**: Used for styling with Skeleton UI components
+- **Testing**: Vitest with jsdom environment and mocked Canvas/IndexedDB APIs
+
+## Development Environment
+
+- **Target**: WSL2, Ubuntu 22 (as noted in README)
+- **Font Loading**: Automatic Google Fonts integration for bubble text
+- **Asset Management**: WebP conversion pipeline for optimized images
+- **Deployment**: Cloudflare Pages with branch-based deployment protection
+
+## Dialog Components
+
+### ConfirmDialog Usage
+確認ダイアログを表示するには `waitDialog` 関数を使用します：
+
+```typescript
+import { waitDialog } from '../utils/waitDialog';
+
+// 基本的な使用方法
+const confirmed = await waitDialog<boolean>('confirm', {
+  title: 'タイトル',
+  message: 'メッセージ内容',
+  positiveButtonText: 'OK',
+  negativeButtonText: 'キャンセル'
+});
+
+if (confirmed) {
+  // ユーザーがOKを選択した場合の処理
+}
+```
+
+- `title`: ダイアログのタイトル
+- `message`: 確認メッセージ（`\n` で改行可能）
+- `positiveButtonText`: 確認ボタンのテキスト
+- `negativeButtonText`: キャンセルボタンのテキスト
+- 戻り値: `true` (確認) または `false` (キャンセル)

@@ -30,13 +30,9 @@
   import NewBookButton from './rootelements/NewBookButton.svelte';
   import CabinetButton from './rootelements/CabinetButton.svelte';
   import MaterialBucketButton from './rootelements/MaterialBucketButton.svelte';
-  import BellButton from './rootelements/BellButton.svelte';
   import RulerButton from './rootelements/RulerButton.svelte';
   import AboutButton from './rootelements/AboutButton.svelte';
   import DownloadButton from './rootelements/DownloadButton.svelte';
-  import VideoButton from './rootelements/VideoButton.svelte';
-  import PostButton from './rootelements/PostButton.svelte';
-  import DolphinRoomButton from './rootelements/DolphinRoomButton.svelte';
   import BatchImaging from './generator/BatchImaging.svelte';
   import BookArchiver from './utils/BookArchiver.svelte';
   import FileBrowser from './utils/FileBrowser.svelte';
@@ -52,7 +48,6 @@
   //  import JsonReader from './utils/JsonReader.svelte';
   import VideoMaker from './videomaker/VideoMaker.svelte';
   import ToolBar from './toolbar/ToolBar.svelte'
-  import AdContainer from './utils/ads/AdContainer.svelte';
   import Downloader from './downloader/Downloader.svelte';
   import TemplateChooser from './bookeditor/TemplateChooser.svelte';
   import ColorPickerDialog from './utils/colorpicker/ColorPickerDialog.svelte';
@@ -83,8 +78,7 @@
   import BulkRenameDialog from './filemanager/BulkRenameDialog.svelte';
   import SignInPromptDialog from './utils/SignInPromptDialog.svelte';
 
-  //const advertiser = "thumbnail_stories";
-  const advertiser = "jonigata";
+  // (Removed advertiser definition)
 
   const modalComponentRegistry: Record<string, ModalComponent> = {
     comic: {
@@ -259,13 +253,9 @@
       <NewBookButton  />
       <CabinetButton />
       <JumpButton />
-      <BellButton />
       <RulerButton/>
       <AboutButton/>
       <DownloadButton />
-      <VideoButton />
-      <PostButton />
-      <DolphinRoomButton />
       <DebugOnly>
         <SaveOffButton/>
       </DebugOnly>
@@ -320,10 +310,6 @@
 <FullScreenLoading/>
 <FullScreenProgress/>
 
-  <!-- ads -->
-{#if advertiser != null}
-  <AdContainer advertiser={advertiser}/>
-{/if}
 
 <style>
 

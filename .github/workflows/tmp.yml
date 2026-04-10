@@ -1,0 +1,42 @@
+name: Upstream Sync 
+
+on:
+  schedule:
+    # JST 毎日午前9時 (UTC 00:00)
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout origin repo
+        uses: actions/checkout@v4
+
+      - name: Fetch upstream and push to sync branch
+        run: |
+          git fetch https://github.com/darai0512/ForkedFramer.git sns-main
+          git checkout -B sync-upstream FETCH_HEAD
+          git push origin sync-upstream --force
+
+      - name: Create or Update Pull Request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 既にPRが存在するか確認
+          PR_EXISTS=$(gh pr list --head "sync-upstream" --base "main" --json number --jq 'length')
+          if [ "$PR_EXISTS" -eq "0" ]; then
+            # PRが存在しなければ新規作成
+            gh pr create \
+              --base main \
+              --head sync-upstream \
+              --title "$(TZ=Asia/Tokyo date +'%Y%m%d') upstream sns-main diff" \
+              --body ""
+            echo "PR created."
+          else
+            echo "PR already exists. The push above has automatically updated the PR."
+          fi

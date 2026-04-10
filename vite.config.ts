@@ -47,7 +47,7 @@ export default vitestDefineConfig(({ mode }) => {
     include: ['paper'],
   },
   server: {
-    host: 'frameplanner.example.local',
+    host: 'localhost',
     port: 5173,
     proxy: {
       '^/farm/?$': {
