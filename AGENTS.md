@@ -1,9 +1,12 @@
-# Repository Guidelines
+# Rule
 
 - 応答は日本語で
-- gitコミットはユーザーが指示するまでせず、代わりにコミットメッセージを英語で提案だけして
+- git commit はuserが行う。commit message の提案を英語で書いて
+- 変更内容を `change.log` に機能レベルで簡潔に追記して
 - A11y警告はsvelte-ignoreでOK
-- src/lib以下は他プロジェクトからライブラリとして利用される可能性があるので、svelte関連のコード(storeなど)を使わないでください。
+- src/lib以下は他プロジェクトからライブラリとして利用される可能性があるので、svelte関連のコード(storeなど)を使わないで。
+
+# What is this
 
 FramePlanner is a manga creation tool that allows users to define manga frame structures as tree data (JSON) and arrange images within frames like windows. This is a Svelte-based web application with a complex layered canvas system for interactive manga editing.
 

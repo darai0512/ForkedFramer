@@ -39,7 +39,7 @@
   import FullScreenLoading from './utils/FullScreenLoading.svelte';
   import FullScreenProgress from './utils/FullScreenProgress.svelte';
   import SaveOffButton from './rootelements/SaveOffButton.svelte';
-  import JumpButton from './rootelements/JumpButton.svelte';
+  import PageNavigations from './rootelements/PageNavigations.svelte';
   import DebugOnly from './utils/DebugOnly.svelte';
   import StructureTree from './about/StructureTree.svelte';
   import MaterialBucket from './materialBucket/MaterialBucket.svelte';
@@ -72,8 +72,7 @@
   import CanvasBrowser from './utils/CanvasBrowser.svelte';
   import NewStorageWizard from './filemanager/NewStorageWizard.svelte';
   import ConfirmDialog from './utils/ConfirmDialog.svelte';
-  import PostToPublicMaterials from './gallery/PostToPublicMaterials.svelte';
-  import PostToPublicActors from './gallery/PostToPublicActors.svelte';
+
   import BubbleStyleTemplateEditor from './notebook/BubbleStyleTemplateEditor.svelte';
   import BulkRenameDialog from './filemanager/BulkRenameDialog.svelte';
   import SignInPromptDialog from './utils/SignInPromptDialog.svelte';
@@ -148,12 +147,7 @@
     confirm: {
       ref: ConfirmDialog,
     },
-    postToPublicMaterials: {
-      ref: PostToPublicMaterials,
-    },
-    postToPublicActors: {
-      ref: PostToPublicActors,
-    },
+
     bubbleStyleTemplateEditor: {
       ref: BubbleStyleTemplateEditor,
     },
@@ -252,7 +246,7 @@
       <MaterialBucketButton />
       <NewBookButton  />
       <CabinetButton />
-      <JumpButton />
+      <PageNavigations />
       <RulerButton/>
       <AboutButton/>
       <DownloadButton />

@@ -2,7 +2,7 @@
   import { modalStore, toastStore } from "@skeletonlabs/skeleton";
   import { mediaViewerTarget } from "./mediaViewerStore";
   import MediaFrame from "./MediaFrame.svelte";
-  import { sendMediaToMaterialCollection, postToPublicMaterials } from "../materialBucket/materialOperations";
+  import { sendMediaToMaterialCollection } from "../materialBucket/materialOperations";
   import { ImageMedia, VideoMedia } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
   import { get } from 'svelte/store';
@@ -67,14 +67,7 @@
     }
   }
 
-  async function handlePostToPublicMaterials() {
-    modalStore.close();
-    await postToPublicMaterials($mediaViewerTarget!);
-  }
 
-  // materialInfoがついてる素材は投稿できない
-  $: canPostToPublic = $mediaViewerTarget && !(($mediaViewerTarget as any).materialInfo);
-  
   // materialInfoが存在するかチェック
   $: materialInfo = ($mediaViewerTarget as any)?.materialInfo;
   
@@ -183,13 +176,6 @@
           >
             {$_('frame.actions.sendVideoFrameToMaterialCollection')}
           </button>
-          <button
-            class="btn variant-filled-secondary text-white"
-            disabled={!canPostToPublic}
-            on:click|stopPropagation={handlePostToPublicMaterials}
-          >
-            {$_('publicMaterials.postButton')}
-          </button>
         </div>
       {/if}
       {#if $mediaViewerTarget.type === 'image'}
@@ -199,13 +185,6 @@
             on:click|stopPropagation={generateMovieFromImage}
           >
             {$_('publicMaterials.generateVideoButton')}
-          </button>
-          <button
-            class="btn variant-filled-secondary text-white"
-            disabled={!canPostToPublic}
-            on:click|stopPropagation={handlePostToPublicMaterials}
-          >
-            {$_('publicMaterials.postButton')}
           </button>
         </div>
       {/if}

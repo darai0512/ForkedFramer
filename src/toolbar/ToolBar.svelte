@@ -1,8 +1,10 @@
 <script lang="ts">
   import { toolTip } from '../utils/passiveToolTipStore';
-  import { undoToken, renderPreference, redrawToken } from '../bookeditor/workspaceStore';
+  import { undoToken, renderPreference, redrawToken, viewport } from '../bookeditor/workspaceStore';
   import { BubbleRenderMode } from '../lib/layeredCanvas/layers/paperRendererLayer';
   import { _ } from 'svelte-i18n';
+  import writableDerived from "svelte-writable-derived";
+  import SliderEdit from '../utils/SliderEdit.svelte';
 
   import undoIcon from '../assets/undo.webp';
   import redoIcon from '../assets/redo.webp';
@@ -22,6 +24,19 @@
   function redo() {
     $undoToken = 'redo';
   }
+
+  const scale = writableDerived(
+  	viewport,
+  	(v) => v?.scale! * 100,
+  	(s, v) => {
+      if (v) {
+        v.scale = s! / 100;
+        v.dirty = true;
+        $redrawToken = true;
+      }
+      return v;
+    }
+  );
 </script>
 
 <div class="fixed top-2 left-2 z-[900] flex items-center gap-2 pointer-events-auto">
@@ -46,6 +61,15 @@
       <option class="bg-surface-700 text-white" value={BubbleRenderMode.BackgroundOnly}>{$_('toolbar.bubbleRenderMode.backgroundOnly')}</option>
       <option class="bg-surface-700 text-white" value={BubbleRenderMode.None}>{$_('toolbar.bubbleRenderMode.none')}</option>
     </select>
+  </div>
+
+  <div class="flex items-center gap-1 bg-surface-700/90 backdrop-blur-sm px-2 py-1 border border-surface-500 rounded shadow-md pointer-events-auto h-8">
+    <span class="text-white text-sm">{$_('editor.scale')}</span>
+    <div class="w-20 flex items-center">
+      <SliderEdit bind:value={$scale} min={10} max={400} step={1}/>
+    </div>
+    <span class="text-white text-sm ml-1">%</span>
+    <button class="btn btn-sm bg-surface-500 hover:bg-surface-400 text-white h-6 ml-1 px-2 rounded" on:click={() => $scale=100}>100%</button>
   </div>
 </div>
 

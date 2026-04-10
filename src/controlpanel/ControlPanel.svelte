@@ -14,18 +14,7 @@
   let exponentialMin = 4096;
   let max = 9410;
 
-  const scale = writableDerived(
-  	viewport,
-  	(v) => v?.scale! * 100,
-  	(s, v) => {
-      if (v) {
-        v.scale = s! / 100;
-        v.dirty = true;
-        $redrawToken = true;
-      }
-      return v;
-    }
-  );
+
 
   const paperWidth = writableDerived(
     mainBook,
@@ -49,9 +38,7 @@
     }
   );
 
-  let scalePercent = $scale * 100;
-  scale.subscribe((v) => scalePercent = v * 100);
-  $: $scale = scalePercent / 100;
+
 
   $: book = $mainBook!;
 
@@ -180,15 +167,7 @@
         </div>
       </details>
 
-      <details open>
-        <summary>{$_('editor.scale')}</summary>
-        <div class="section">
-          <div class="flex flex-row w-full gap-1 items-center">
-            <SliderEdit bind:value={$scale} min={10} max={400} step={1}/>％
-          </div>
-          <button class="btn btn-sm variant-filled paper-size" on:click={() => $scale=100}>100%</button>
-        </div>
-      </details>
+
 
       <details open>
         <summary>{$_('editor.videoDisplay')}</summary>

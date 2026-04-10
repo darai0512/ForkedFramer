@@ -1,9 +1,6 @@
 <script lang="ts">
   import MaterialGallery from './MaterialGallery.svelte';
-  import WarehouseGallery from './WarehouseGallery.svelte';
-  import PublicMaterialsGallery from './PublicMaterialsGallery.svelte';
-  import PublicActorsGallery from './PublicActorsGallery.svelte';
-  import RosterGallery from './RosterGallery.svelte';
+
   import { Accordion, AccordionItem, SlideToggle } from '@skeletonlabs/skeleton';
   import { _ } from 'svelte-i18n';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
@@ -36,10 +33,6 @@
     dispatch('dragstart');
   }
 
-  let warehouseOpen = false;
-  let publicMaterialsOpen = false;
-  let publicActorsOpen = false;
-  let rosterOpen = false;
 
   // MaterialCollectionState オブジェクトを作成
   $: state = {
@@ -158,49 +151,7 @@
       </AccordionItem>
     {/each}
 
-    <AccordionItem bind:open={publicMaterialsOpen}>
-      <svelte:fragment slot="summary">
-        <h2>{$_('materialBucket.publicMaterials')}</h2>
-      </svelte:fragment>
-      <svelte:fragment slot="content">
-        <div class="accordion-content">
-          <PublicMaterialsGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
-        </div>
-      </svelte:fragment>
-    </AccordionItem>
 
-    <AccordionItem bind:open={rosterOpen}>
-      <svelte:fragment slot="summary">
-        <h2>{$_('materialBucket.roster')}</h2>
-      </svelte:fragment>
-      <svelte:fragment slot="content">
-        <div class="accordion-content">
-          <RosterGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
-        </div>
-      </svelte:fragment>
-    </AccordionItem>
-
-    <AccordionItem bind:open={publicActorsOpen}>
-      <svelte:fragment slot="summary">
-        <h2>{$_('materialBucket.publicActors')}</h2>
-      </svelte:fragment>
-      <svelte:fragment slot="content">
-        <div class="accordion-content">
-          <PublicActorsGallery columnWidth={galleryColumnWidth} />
-        </div>
-      </svelte:fragment>
-    </AccordionItem>
-
-    <AccordionItem bind:open={warehouseOpen}>
-      <svelte:fragment slot="summary">
-        <h2>{$_('materialBucket.generationHistory')}</h2>
-      </svelte:fragment>
-      <svelte:fragment slot="content">
-        <div class="accordion-content">
-          <WarehouseGallery columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
-        </div>
-      </svelte:fragment>
-    </AccordionItem>
   </Accordion>
 </div>
 

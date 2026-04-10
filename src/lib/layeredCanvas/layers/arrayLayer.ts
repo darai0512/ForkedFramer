@@ -188,8 +188,16 @@ export class ArrayLayer extends LayerBase {
       return litLayer;
     }
 
-    for (let icons of [this.insertIcons, this.trashIcons, this.markIcons, this.copyIcons, this.imagingIcons, this.bubblesIcons, this.tweakIcons]) {
+    for (let icons of [this.trashIcons, this.markIcons, this.copyIcons, this.imagingIcons, this.bubblesIcons, this.tweakIcons]) {
       for (let icon of icons) {
+        if (icon.hintIfContains(p, this.hint.bind(this))) {
+          return this;
+        }
+      }
+    }
+
+    if (this.markFlags.some(e => e)) {
+      for (let icon of this.insertIcons) {
         if (icon.hintIfContains(p, this.hint.bind(this))) {
           return this;
         }
@@ -227,10 +235,8 @@ export class ArrayLayer extends LayerBase {
           const n = this.markFlags.slice(0, i).filter(e => e).length;
             this.onMove(this.markFlags.map((e, i) => e ? i : -1).filter(e => 0 <= e), i - n);
           }
-        } else {
-          this.onInsert(i);
+          return null;
         }
-        return null;
       }      
     }
     for (let [i, e] of this.trashIcons.entries()) {
@@ -310,9 +316,11 @@ export class ArrayLayer extends LayerBase {
       ctx.save();
       ctx.fillStyle = "white";
       ctx.textAlign = "center";
-      this.insertIcons.forEach(e => {
-        e.render(ctx);
-      });
+      if (this.markFlags.some(e => e)) {
+        this.insertIcons.forEach(e => {
+          e.render(ctx);
+        });
+      }
       this.trashIcons.forEach(e => {
         e.render(ctx);
       });

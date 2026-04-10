@@ -11,12 +11,11 @@
   import { _ } from 'svelte-i18n';
   import { saveCharacterToFile, loadCharacterFromFile } from "./characterExport";
   import { toastStore, Accordion, AccordionItem } from "@skeletonlabs/skeleton";
-  import { postToPublicActors } from "../materialBucket/materialOperations";
+
   import { onlineStatus } from "../utils/accountStore";
   import postIcon from '../assets/post.webp';
   import { sortableList } from "../utils/sortableList";
   import { moveInArray } from "../utils/moveInArray";
-  import PublicActorsGallery from "../materialBucket/PublicActorsGallery.svelte";
 
   let saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -108,9 +107,6 @@
     }
   }
 
-  async function shareCharacter(c: CharacterLocal) {
-    await postToPublicActors(c);
-  }
 
   onMount(() => {
     return rosterOpen.subscribe(async (newOpened) => {
@@ -169,11 +165,7 @@
                       <span class="character-name">{character.name}</span>
                     </div>
                     <div class="header-buttons">
-                      {#if $onlineStatus === 'signed-in' && character.portrait && character.portrait !== 'loading'}
-                        <button class="share-btn" on:click={() => shareCharacter(character)} title={$_('publicActors.postButton')}>
-                          <img src={postIcon} alt={$_('publicActors.postButton')} class="post-icon" />
-                        </button>
-                      {/if}
+
                       <button class="export-btn" on:click={() => exportCharacter(character)} title="エクスポート">
                         <img src={downloadIcon} alt="エクスポート" class="download-icon" />
                       </button>
@@ -200,20 +192,7 @@
           </svelte:fragment>
         </AccordionItem>
 
-        <AccordionItem bind:open={publicActorsOpen}>
-          <svelte:fragment slot="summary">
-            <h3 class="accordion-title">{$_('materialBucket.publicActors')}</h3>
-          </svelte:fragment>
-          <svelte:fragment slot="content">
-            <div class="public-actors-container">
-              <PublicActorsGallery
-                columnWidth={160}
-                downloadedActorIds={downloadedActorIds}
-                onDownloaded={onActorDownloaded}
-              />
-            </div>
-          </svelte:fragment>
-        </AccordionItem>
+
       </Accordion>
     </div>
   </Drawer>
