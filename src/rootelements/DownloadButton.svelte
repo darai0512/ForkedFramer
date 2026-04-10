@@ -9,4 +9,4 @@
   }
 </script>
 
-<BaseRootButton icon={downloadIcon} alt={"download"} hint={$_('ui.download')} origin={"topleft"} location={[0,3]} on:click={download}/>
+<BaseRootButton icon={downloadIcon} alt={"download"} hint={$_('ui.download')} origin={"bottomleft"} location={[1,1]} on:click={download}/>

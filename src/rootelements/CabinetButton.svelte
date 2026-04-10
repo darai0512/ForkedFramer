@@ -15,4 +15,4 @@
   }
 </script>
 
-<BaseRootButton icon={fileManagerIcon} alt={"file manager"} hint={$_('ui.cabinet')} origin={"bottomleft"} location={[0,0]} on:click={openFileManager}/>
+<BaseRootButton icon={fileManagerIcon} alt={"file manager"} hint={$_('ui.cabinet')} origin={"bottomleft"} location={[1,0]} on:click={openFileManager}/>

@@ -3,7 +3,7 @@
   import FileManagerFile from "./FileManagerFile.svelte";
   import { createEventDispatcher, onDestroy, onMount } from 'svelte';
   import { _ } from 'svelte-i18n';
-  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, exportSelectedEntries, type BulkRenameResult, folderCollapsedState } from "./fileManagerStore";
+  import { fileManagerDragging, newFile, type Dragging, getCurrentDateTime, fileManagerUsedSizeToken, copyBookOrFolderInterFileSystem, saveBookTo, exportFolderAsEnvelopeZip, importEnvelopeZipToFolder, loadBookFrom, selectedEntries, lastSelectedEntry, handleEntryClick, buildDragging, removeSelectedEntries, renameSelectedEntries, exportSelectedEntries, type BulkRenameResult, folderCollapsedState, loadToken } from "./fileManagerStore";
   import { waitDialog } from '../utils/waitDialog';
   import { readEnvelope, readOldEnvelope } from "../lib/book/envelope";
   import { newBook } from "../lib/book/book";
@@ -170,9 +170,18 @@
   async function addFile() {
     console.log("add file");
     const book = newBook("not visited", "add-in-folder-", "standard", null);
-    await newFile(fileSystem, node, getCurrentDateTime(), book);
+    const result = await newFile(fileSystem, node, getCurrentDateTime(), book);
     node = node;
     collapsed = false;
+
+    if (!fileSystem.isVault) {
+      $loadToken = { fileSystem, nodeId: result.file.id, parent: node, bindId: result.bindId };
+      // 選択状態を新しいファイルに合わせる
+      selectedEntries.update(s => { s.clear(); s.add(result.file.id); return s; });
+      lastSelectedEntry.set(result.file.id);
+    } else {
+      toastStore.trigger({ message: $_('fileManager.cloudFileCannotOpenDirectly'), timeout: 3000});
+    }
   }
 
   async function removeFolder() {

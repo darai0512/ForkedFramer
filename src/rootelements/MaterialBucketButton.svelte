@@ -11,4 +11,4 @@
   }
 </script>
 
-<BaseRootButton icon={stampIcon} alt={"stamps"} hint={$_('ui.materialBucket')} origin={"bottomleft"} location={[0,2]} on:click={openMaterialBucket}/>
+<BaseRootButton icon={stampIcon} alt={"stamps"} hint={$_('ui.materialBucket')} origin={"bottomleft"} location={[0,0]} on:click={openMaterialBucket}/>

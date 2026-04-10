@@ -9,4 +9,4 @@
   }
 </script>
 
-<BaseRootButton icon={rulerIcon} alt={"ruler"} hint={$_('ui.ruler')} origin={"topleft"} location={[0,1]} on:click={openRuler}/>
+<BaseRootButton icon={rulerIcon} alt={"ruler"} hint={$_('ui.ruler')} origin={"bottomleft"} location={[0,2]} on:click={openRuler}/>

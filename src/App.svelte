@@ -27,7 +27,7 @@
   import ShapeChooser from './bookeditor/bubbleinspector/ShapeChooser.svelte';
   import ImageGenerator from './generator/ImageGenerator.svelte';
   import FileManager from './filemanager/FileManager.svelte';
-  import NewBookButton from './rootelements/NewBookButton.svelte';
+
   import CabinetButton from './rootelements/CabinetButton.svelte';
   import MaterialBucketButton from './rootelements/MaterialBucketButton.svelte';
   import RulerButton from './rootelements/RulerButton.svelte';
@@ -244,7 +244,7 @@
     <!-- root items -->
     {#if $dominantMode === "standard"}
       <MaterialBucketButton />
-      <NewBookButton  />
+
       <CabinetButton />
       <PageNavigations />
       <RulerButton/>

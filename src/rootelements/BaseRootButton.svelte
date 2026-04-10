@@ -11,8 +11,8 @@
   export let origin: string;
   export let location: [number, number];
 
-  const baseUnit = 120;
-  const baseGap = 20;
+  const baseUnit = 60;
+  const baseGap = 10;
   let unit = baseUnit;
   let gap = baseGap;
 
@@ -44,13 +44,6 @@
   }
 
   function handleResize() {
-    if (window.innerWidth <= 640 || window.innerHeight <= 800) {
-      unit = 80;
-      gap = 10;
-    } else {
-      unit = baseUnit;
-      gap = baseGap;
-    }
     updatePosition();
   }
 
@@ -77,12 +70,8 @@
   .open-button {
     pointer-events: auto;
     position: absolute;
-    width: 120px;
-    height: 120px;
-    @media (max-width: 640px), (max-height: 800px) {
-      width: 80px;
-      height: 80px;
-    }
+    width: 60px;
+    height: 60px;
   }
   img {
     width: 80%;
