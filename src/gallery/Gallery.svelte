@@ -1,0 +1,58 @@
+<script lang="ts">
+  import { createEventDispatcher } from "svelte";
+  import type { Media } from "../lib/layeredCanvas/dataModels/media";
+  import GalleryMember from "./GalleryMember.svelte";
+  import type { GalleryItem } from "./gallery";
+
+  export let items: GalleryItem[];
+  export let columnWidth: number;
+  export let accessable: boolean = true;
+  export let referable: boolean = true;
+  export let viewable: boolean = true; // 詳細（ビューア）ボタンの表示可否
+
+  export let chosen: Media | null = null;
+  export let refered: Media | null = null;
+
+  const dispatch = createEventDispatcher();
+
+  function onCommit(e: CustomEvent<Media>) {
+    dispatch("commit", e.detail);
+  }
+
+  async function onDelete(e: CustomEvent<GalleryItem>) {
+    console.log("Gallery.onDelete(before)", e.detail, items.length);
+    items = items.filter(c => c !== e.detail);
+    console.log("Gallery.onDelete(after)", e.detail, items.length);
+    dispatch("delete", e.detail);
+  }
+
+  function onDragStart(e: CustomEvent<Media>) {
+    dispatch("dragstart", e.detail);
+  }
+</script>
+
+<div class="gallery">
+  {#each items as item, i (item)}
+    <GalleryMember
+      item={item}
+      {columnWidth}
+      bind:chosen
+      bind:refered
+      {accessable}
+      {referable}
+      {viewable}
+      on:commit={onCommit}
+      on:delete={onDelete}
+      on:dragstart={onDragStart}
+    />
+  {/each}
+</div>
+
+<style>
+  .gallery {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+</style>

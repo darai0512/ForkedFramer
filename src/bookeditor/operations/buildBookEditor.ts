@@ -68,7 +68,6 @@ export function buildBookEditor(
     editor.movePages.bind(editor),
     editor.duplicatePages.bind(editor),
     editor.copyPageToClipboard.bind(editor),
-    editor.batchImaging.bind(editor),
     editor.editBubbles.bind(editor),
     editor.tweak.bind(editor)
   );

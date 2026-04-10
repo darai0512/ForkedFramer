@@ -1,0 +1,443 @@
+import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
+import type { Border } from '../lib/layeredCanvas/dataModels/frameTree';
+import type { Book, Page, BookOperators, HistoryTag } from '../lib/book/book';
+import { DefaultBubbleSlot, BubbleLayer } from '../lib/layeredCanvas/layers/bubbleLayer';
+import { collectBookContents, dealBookContents, swapBookContents, newPage } from '../lib/book/book';
+import type { ArrayLayer } from '../lib/layeredCanvas/layers/arrayLayer';
+import type { LayeredCanvas } from '../lib/layeredCanvas/system/layeredCanvas';
+import type { Vector, Rect } from "../lib/layeredCanvas/tools/geometry/geometry";
+import type { FocusKeeper } from "../lib/layeredCanvas/tools/focusKeeper";
+import { FilmStackTransformer } from "../lib/layeredCanvas/dataModels/film";
+import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
+import { Film } from '../lib/layeredCanvas/dataModels/film';
+import { buildMedia } from '../lib/layeredCanvas/dataModels/media';
+import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
+import { get } from 'svelte/store';
+
+// ストアを直接インポート
+import { frameInspectorTarget } from './frameinspector/frameInspectorStore';
+import { bubbleInspectorTarget } from './bubbleinspector/bubbleInspectorStore';
+import { batchImagingPage } from '../generator/batchImagingStore';
+import { bubbleBucketPage } from '../bubbleBucket/bubbleBucketStore';
+import { pageInspectorTarget } from './pageinspector/pageInspectorStore';
+import { redrawToken, viewport } from './workspaceStore';
+import { analyticsEvent } from '../utils/analyticsEvent';
+import { copyToClipboard } from '../utils/saver/copyToClipboard';
+import { toolTipRequest } from '../utils/passiveToolTipStore';
+import { convertPointFromNodeToPage } from '../lib/layeredCanvas/tools/geometry/convertPoint';
+
+// 直接 operations/ から関数をインポート
+import {
+  insertPage, deletePage, movePages, duplicatePages,
+  makeCopyPageToClipboard, makeBatchImaging, makeEditBubbles, makeTweak
+} from './operations/pageOperations';
+import {
+  commit, revert, undoBookState, redoBookState,
+  delayedCommiter
+} from './operations/commitOperations';
+import { dominantMode } from '../uiStore';
+import { toastStore } from '@skeletonlabs/skeleton';
+
+
+export class BookWorkspaceOperators implements BookOperators {
+  private canvas: HTMLCanvasElement;
+  private book: Book;
+  // ビルドされたブックエディタのリソース
+  private layeredCanvas: LayeredCanvas | null = null;
+  private arrayLayer: ArrayLayer | null = null;
+  private focusKeeper: FocusKeeper | null = null;
+  private defaultBubbleSlot: DefaultBubbleSlot | null = null;
+  private marks: boolean[] = [];
+  private painterChase: () => void;
+
+  constructor(
+    canvas: HTMLCanvasElement,
+    book: Book,
+    painterChase: () => void
+  ) {
+    this.canvas = canvas;
+    this.book = book;
+    this.painterChase = painterChase;
+  }
+
+  /**
+   * ビルドされたブックエディタのリソースを一括設定
+   */
+  setBuiltBook(
+    builtBook: {
+      layeredCanvas: LayeredCanvas,
+      arrayLayer: ArrayLayer,
+      focusKeeper: FocusKeeper,
+      marks: boolean[],
+    },
+    defaultBubbleSlot: DefaultBubbleSlot
+  ) {
+    this.layeredCanvas = builtBook.layeredCanvas;
+    this.arrayLayer = builtBook.arrayLayer;
+    this.focusKeeper = builtBook.focusKeeper;
+    this.marks = builtBook.marks;
+    this.defaultBubbleSlot = defaultBubbleSlot;
+  }
+
+  setMarks(marks: boolean[]) {
+    this.marks = marks;
+  }
+
+  getMarks(): boolean[] {
+    return this.marks;
+  }
+
+  hint(r: Rect | null, s: string | null): void {
+    if (r == null || s == null) {
+      toolTipRequest.set(null);
+    } else {
+      const q0 = convertPointFromNodeToPage(this.canvas, r[0], r[1]);
+      toolTipRequest.set({
+        message: s,
+        rect: { left: q0.x, top: q0.y, width: r[2], height: r[3] }
+      });
+    }
+  }
+
+  commit(tag: HistoryTag): void {
+    commit(tag);
+  }
+
+  forceDelayedCommit(): void {
+    delayedCommiter.force();
+  }
+
+  cancelDelayedCommit(): void {
+    delayedCommiter.cancel();
+  }
+
+  revert(): void {
+    revert();
+  }
+
+  undo(): void {
+    if (this.focusKeeper) {
+      undoBookState(this.focusKeeper);
+    }
+  }
+
+  redo(): void {
+    if (this.focusKeeper) {
+      redoBookState(this.focusKeeper);
+    }
+  }
+
+  shift(page: Page, frameElement: FrameElement): void {
+    const frameSeq = collectBookContents(this.book);
+    dealBookContents(frameSeq, frameElement, null);
+    commit(null);
+  }
+
+  unshift(page: Page, frameElement: FrameElement): void {
+    const frameSeq = collectBookContents(this.book);
+    dealBookContents(frameSeq, null, frameElement);
+    commit(null);
+  }
+
+  swap(page: Page, frameElement0: FrameElement, frameElement1: FrameElement): void {
+    const frameSeq = collectBookContents(this.book);
+    swapBookContents(frameSeq, frameElement0, frameElement1);
+    commit(null);
+  }
+
+  insert(page: Page, border: Border): void {
+    const element = border.layout.element;
+    const index = border.index;
+    element.insertElement(index);
+    commit(null);
+  }
+
+  focusFrame(page: Page, f: FrameElement | null, p: Vector | null): void {
+    console.log("focusFrame", page?.id);
+    if (f) {
+      frameInspectorTarget.set({
+        frame: f,
+        filmStack: f.filmStack,
+        page,
+        command: null,
+        commandTargetFilm: null,
+      });
+    } else {
+      // フレームのインスペクタを非表示
+      frameInspectorTarget.set(null);
+    }
+  }
+
+  focusBubble(page: Page, b: Bubble | null): void {
+    delayedCommiter.force();
+    if (b) {
+      if (this.arrayLayer) {
+        console.log("show bubble");
+
+        bubbleInspectorTarget.set({
+          bubble: b,
+          filmStack: b.filmStack,
+          page,
+          command: null,
+          commandTargetFilm: null,
+        });
+        
+        // defaultBubbleSlotを設定
+        this.defaultBubbleSlot!.bubble = b.clone(false);
+      }
+    } else {
+      // バブルのインスペクタを非表示
+      bubbleInspectorTarget.set(null);
+    }
+  }
+
+  viewportChanged(): void {
+    // viewportストアの更新をトリガー
+    viewport.update(v => v);
+  }
+
+  insertPage(index: number): void {
+    console.log("this", this);
+    insertPage(
+      this.book, 
+      index,
+      (tag: HistoryTag) => commit(tag),
+      this.focusKeeper!,
+      v => redrawToken.set(v)
+    );
+  }
+
+  deletePage(index: number): void {
+    deletePage(
+      this.book, 
+      index, 
+      (tag: HistoryTag) => commit(tag)
+    );
+    setTimeout(() => {
+      this.focusToPage(0, 1, false);
+    }, 100);
+  }
+
+  movePages(from: number[], to: number): void {
+    movePages(
+      this.book, 
+      from, 
+      to, 
+      (tag: HistoryTag) => commit(tag)
+    );
+  }
+
+  duplicatePages(from: number[], to: number): void {
+    duplicatePages(
+      this.book, 
+      from, 
+      to, 
+      (tag: HistoryTag) => commit(tag)
+    );
+  }
+
+  rescueResidual(media: HTMLCanvasElement | HTMLVideoElement | string): void {
+    console.log("rescueResidual", media);
+
+    if (get(dominantMode) !== "standard") { 
+      toastStore.trigger({ message: 'この操作は落書きモードでは使えません。', timeout: 1500});
+      return; 
+    }
+    if (typeof media === "string") { return; }
+
+    const lastPage = this.book.pages[this.book.pages.length - 1];
+    const paperSize = lastPage.paperSize;
+
+    const rootFrameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
+    const frameTree = rootFrameTree.children[0];
+    const film = Film.fromMedia(buildMedia(media));
+    frameTree.filmStack.films = [film];
+
+    const page = newPage(rootFrameTree, []);
+    page.paperSize = [...paperSize];
+    page.paperColor = lastPage.paperColor;
+    page.frameColor = lastPage.frameColor;
+    page.frameWidth = lastPage.frameWidth;
+  
+    const layout = calculatePhysicalLayout(rootFrameTree, paperSize, [0, 0]);
+    const frameLayout = findLayoutOf(layout, frameTree)!;
+    const transformer = new FilmStackTransformer(paperSize, frameTree.filmStack.films);
+    transformer.scale(0.01);
+    constraintLeaf(paperSize, frameLayout);
+
+    this.book.pages.push(page);
+
+    commit(null);
+  }
+
+  copyPageToClipboard(index: number): void {
+    const copyPageFunc = makeCopyPageToClipboard(
+      this.book,
+      analyticsEvent,
+      (page: Page, flag: boolean) => {
+        copyToClipboard(page, flag);
+      }
+    );
+    copyPageFunc(index);
+  }
+
+  batchImaging(index: number): void {
+    makeBatchImaging(
+      this.book,
+      (v: any) => frameInspectorTarget.set(v),
+      (v: any) => bubbleInspectorTarget.set(v),
+      (page: any) => batchImagingPage.set(page)
+    )(index);
+  }
+
+  editBubbles(index: number): void {
+    makeEditBubbles(
+      this.book,
+      delayedCommiter.force.bind(delayedCommiter),
+      (page: any) => bubbleBucketPage.set(page)
+    )(index);
+  }
+
+  tweak(index: number): void {
+    makeTweak(
+      this.book,
+      (page: any) => pageInspectorTarget.set(page)
+    )(index);
+  }
+
+  chase(): void {
+    this.painterChase();
+  }
+
+  getFocusedPage(): Page {
+    if (!this.arrayLayer) {
+      return this.book.pages[0];
+    }
+    
+    // viewportの中央に最も近いページを返す
+    const p = this.layeredCanvas!.viewport.canvasPositionToViewportPosition(
+      this.layeredCanvas!.viewport.getCanvasCenter()
+    );
+    const index = this.arrayLayer.array.findNearestPaperIndex(p);
+    return this.book.pages[index];
+  }
+
+  focusToPage(index: number, pageScale: number = 1, keepScale: boolean = false): void {
+    if (!this.layeredCanvas || !this.arrayLayer) {
+      console.warn("BookWorkspaceOperators not properly initialized");
+      return;
+    }
+
+    // インデックスの範囲チェック
+    if (index < 0 || index >= this.arrayLayer.array.papers.length) {
+      console.warn(`Page index ${index} is out of range`);
+      return;
+    }
+
+    const viewport = this.layeredCanvas.viewport;
+    const paper = this.arrayLayer.array.papers[index];
+    const p = paper.center;
+    
+    if (keepScale) {
+      // Keep current scale, only change position
+      const currentScale = viewport.scale;
+      viewport.translate = [-p[0] * currentScale, -p[1] * currentScale];
+    } else {
+      // Original behavior: calculate new scale
+      const [cw, ch] = viewport.getCanvasSize();
+      const [pw, ph] = paper.paper.size;
+      const scale = Math.min(Math.max(1, cw) / pw, Math.max(1, ch) / ph) * pageScale;
+      viewport.scale = scale;
+      viewport.translate = [-p[0] * scale, -p[1] * scale];
+    }
+    
+    viewport.dirty = true;
+    this.layeredCanvas.redraw();
+    
+    // viewportの変更を通知
+    this.viewportChanged();
+  }
+
+  scribbleFrame(page: Page, frame: FrameElement): void {
+    const films = frame.filmStack.getOperationTargetFilms();
+    if (films.length === 0) {return;}
+
+    frameInspectorTarget.set({
+      frame,
+      filmStack: frame.filmStack,
+      page,
+      command: "scribble",
+      commandTargetFilm: films[films.length - 1],
+    });
+  }
+
+  scribbleBubble(page: Page, bubble: Bubble): void {
+    const films = bubble.filmStack.getOperationTargetFilms();
+    if (films.length === 0) {return;}
+
+    bubbleInspectorTarget.set({
+      bubble,
+      filmStack: bubble.filmStack,
+      page,
+      command: "scribble",
+      commandTargetFilm: films[films.length - 1],
+    });
+  }
+
+  coverFrame(page: Page, frame: FrameElement): void {
+    console.log("coverFrame", frame);
+    frameInspectorTarget.set({
+      frame,
+      filmStack: frame.filmStack,
+      page,
+      command: "cover",
+      commandTargetFilm: null,
+    });
+  }
+
+  coverBubble(page: Page, bubble: Bubble): void {
+    console.log("coverBubble", bubble);
+    bubbleInspectorTarget.set({
+      bubble,
+      filmStack: bubble.filmStack,
+      page,
+      command: "cover",
+      commandTargetFilm: null,
+    });
+  }
+
+  selectBubbleExternal(page: Page, bubble: Bubble): void {
+    if (!this.arrayLayer) {
+      console.warn("BookWorkspaceOperators not properly initialized");
+      return;
+    }
+
+    // ページのインデックスを見つける
+    const pageIndex = this.book.pages.findIndex((p: Page) => p.id === page.id);
+    if (pageIndex === -1) {
+      console.warn("Page not found in book");
+      return;
+    }
+
+    // そのページにフォーカス
+    this.focusToPage(pageIndex, 1, true);
+
+    // arrayLayerからそのページのpaperを取得
+    const paperEntry = this.arrayLayer.array.papers[pageIndex];
+    if (!paperEntry || !paperEntry.paper) {
+      console.warn("Paper not found for page index", pageIndex);
+      return;
+    }
+
+    // paperからBubbleLayerを取得
+    const bubbleLayer = paperEntry.paper.findLayer(BubbleLayer);
+    if (!bubbleLayer) {
+      console.warn("BubbleLayer not found in paper");
+      return;
+    }
+
+    // bubbleLayerでバブルを選択
+    bubbleLayer.selectBubble(bubble);
+  }
+
+}

@@ -22,11 +22,11 @@
       $bookOperators.insertPage($mainBook.pages.length);
       // Wait for page to be added, then focus
       setTimeout(() => {
-        if ($mainBook) $bookOperators.focusToPage($mainBook.pages.length - 1, 1, false);
+        if ($mainBook) $bookOperators.focusToPage($mainBook.pages.length - 1, 1, true);
       }, 100);
       return;
     }
-    $bookOperators.focusToPage(nextIndex, 1, false);
+    $bookOperators.focusToPage(nextIndex, 1, true);
   }
 
   function goRight() {
@@ -34,7 +34,7 @@
     let prevIndex = currentPageIndex - 1;
     
     if (prevIndex >= 0) {
-      $bookOperators.focusToPage(prevIndex, 1, false);
+      $bookOperators.focusToPage(prevIndex, 1, true);
     }
   }
 

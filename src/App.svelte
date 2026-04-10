@@ -1,0 +1,297 @@
+<script lang="ts">
+  import '@skeletonlabs/skeleton/themes/theme-skeleton.css';
+  import '@skeletonlabs/skeleton/styles/all.css';
+
+  import { Toast } from '@skeletonlabs/skeleton';
+  import { onMount, onDestroy } from 'svelte';
+  import { Modal, type ModalComponent } from '@skeletonlabs/skeleton';   
+  import { copyIndexedDB } from './utils/backUpIndexedDB';
+  import * as Sentry from "@sentry/svelte";
+  import { Modals } from 'svelte-modals'
+  import { bootstrap, onlineStatus } from './utils/accountStore';
+  import { developmentFlag } from "./utils/developmentFlagStore";
+  import { getPreferencePromise } from './preferences';
+  import { dominantMode } from './uiStore'
+  
+  //import '../app.postcss';  
+  import ControlPanel from './controlpanel/ControlPanel.svelte';
+  import BookEditor from './bookeditor/BookWorkspace.svelte';
+  import PassiveToolTip from './utils/PassiveToolTip.svelte';
+  import About from './about/About.svelte';
+  import PageInspector from './bookeditor/pageinspector/PageInspector.svelte';
+  import FrameInspector from './bookeditor/frameinspector/FrameInspector.svelte';
+  import BubbleInspector from './bookeditor/bubbleinspector/BubbleInspector.svelte';
+  import Comic from './utils/Comic.svelte'; 
+  import License from './utils/License.svelte';
+  import FontChooser from './bookeditor/bubbleinspector/FontChooser.svelte';
+  import ShapeChooser from './bookeditor/bubbleinspector/ShapeChooser.svelte';
+  import ImageGenerator from './generator/ImageGenerator.svelte';
+  import FileManager from './filemanager/FileManager.svelte';
+
+  import CabinetButton from './rootelements/CabinetButton.svelte';
+  import MaterialBucketButton from './rootelements/MaterialBucketButton.svelte';
+  import RulerButton from './rootelements/RulerButton.svelte';
+  import AboutButton from './rootelements/AboutButton.svelte';
+  import DownloadButton from './rootelements/DownloadButton.svelte';
+  import BookArchiver from './utils/BookArchiver.svelte';
+  import FileBrowser from './utils/FileBrowser.svelte';
+  import FullScreenLoading from './utils/FullScreenLoading.svelte';
+  import FullScreenProgress from './utils/FullScreenProgress.svelte';
+
+  import PageNavigations from './rootelements/PageNavigations.svelte';
+  import DebugOnly from './utils/DebugOnly.svelte';
+  import StructureTree from './about/StructureTree.svelte';
+  import MaterialBucket from './materialBucket/MaterialBucket.svelte';
+  import DolphinRoom from './dolphinroom/DolphinRoom.svelte';
+  import BubbleBucket from './bubbleBucket/BubbleBucket.svelte';
+  //  import JsonReader from './utils/JsonReader.svelte';
+  import VideoMaker from './videomaker/VideoMaker.svelte';
+  import ToolBar from './toolbar/ToolBar.svelte'
+  import Downloader from './downloader/Downloader.svelte';
+  import TemplateChooser from './bookeditor/TemplateChooser.svelte';
+  import ColorPickerDialog from './utils/colorpicker/ColorPickerDialog.svelte';
+  import EffectChooser from './bookeditor/effectchooser/EffectChooser.svelte';
+  import Notebook from './notebook/Notebook.svelte';
+  import MediaViewer from './gallery/MediaViewer.svelte';
+  import Roster from './notebook/Roster.svelte';
+  import VideoGenerator from './generator/VideoGenerator.svelte';
+  import ImageMaskDialog from './utils/ImageMaskDialog.svelte';
+  import InpaintDialog from './utils/InpaintDialog.svelte';
+  import TextEditDialog from './utils/TextEditDialog.svelte';
+  import TextLiftDialog from './utils/TextLiftDialog.svelte';
+  import AngleEditDialog from './utils/AngleEditDialog.svelte';
+  import LayerizeDialog from './utils/LayerizeDialog.svelte';
+  import Dump from './transfer/Dump.svelte';
+  import Undump from './transfer/Undump.svelte';
+  import CanvasBrowser from './utils/CanvasBrowser.svelte';
+  import NewStorageWizard from './filemanager/NewStorageWizard.svelte';
+  import ConfirmDialog from './utils/ConfirmDialog.svelte';
+
+  import BubbleStyleTemplateEditor from './notebook/BubbleStyleTemplateEditor.svelte';
+  import BulkRenameDialog from './filemanager/BulkRenameDialog.svelte';
+
+  // (Removed advertiser definition)
+
+  const modalComponentRegistry: Record<string, ModalComponent> = {
+    comic: {
+      ref: Comic,
+    },
+    license: {
+      ref: License,
+//      ref: JsonReader,
+    },
+    fileBrowser: {
+      ref: FileBrowser,
+    },
+    videoMaker: {
+      ref: VideoMaker,
+    },
+    mediaViewer: {
+      ref: MediaViewer,
+    },
+    videoGenerator: {
+      ref: VideoGenerator,
+    },
+    imageMask: {
+      ref: ImageMaskDialog,
+    },
+    inpaint: {
+      ref: InpaintDialog,
+    },
+    textedit: {
+      ref: TextEditDialog,
+    },
+    textlift: {
+      ref: TextLiftDialog,
+    },
+    angleedit: {
+      ref: AngleEditDialog,
+    },
+    layerize: {
+      ref: LayerizeDialog,
+    },
+    dump: {
+      ref: Dump
+    },
+    undump: {
+      ref: Undump
+    },
+    canvasBrowser: {
+      ref: CanvasBrowser
+    },
+    newStorageWizard: {
+      ref: NewStorageWizard
+    },
+    confirm: {
+      ref: ConfirmDialog,
+    },
+
+    bubbleStyleTemplateEditor: {
+      ref: BubbleStyleTemplateEditor,
+    },
+    bulkRename: {
+      ref: BulkRenameDialog,
+    }
+  };
+
+  let fileManagerActive = false;
+
+  // ブラウザのクライアント領域のサイズ変更を検知
+  const handleResize = () => {
+    // console.log(`クライアント領域がリサイズされました: ${window.innerWidth} x ${window.innerHeight}`);
+  };
+
+  onMount(async () => {
+    document.body.style.overflow = 'hidden'; // HACK
+
+    // リサイズイベントリスナーを登録
+    window.addEventListener('resize', handleResize);
+    
+    // 初回ログ
+    console.log(`初期クライアント領域サイズ: ${window.innerWidth} x ${window.innerHeight}`);
+
+    bootstrap();
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    if (urlParams.has('saveFiles')) {
+      const data: any = await copyIndexedDB('FileSystemDB');
+      const json = JSON.stringify(data);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'FileSystemDB.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    if (!urlParams.has('disableFileManager')) {
+      fileManagerActive = true;
+    }
+
+    // Initialize the Sentry SDK here
+    if ($developmentFlag) {
+      console.log("ignore sentry because this is development mode.");
+    } else {
+      const res = await fetch("/stamp.txt");
+      const text = await res.text();
+      const stamp = text.split("\n")[0].trim();
+      Sentry.init({
+        dsn: "https://d1b647c536ab49979532e731e8bebaaa@o4505054668062721.ingest.sentry.io/4505054670159872",
+        replaysSessionSampleRate: 0.1,
+        // If the entire session is not sampled, use the below sample rate to sample
+        // sessions when an error occurs.
+        replaysOnErrorSampleRate: 1.0,
+        ignoreErrors: ['WebGPU is not supported on this browser','No appropriate GPUAdapter found'],
+        release: stamp,
+        beforeSend(event, hint) {
+          const error = hint.originalException;
+          if (error && typeof error === 'object' && 'context' in error) {
+            const context = (error as any).context;
+            // 402（残高不足）や422（コンテンツポリシー違反）はコードの問題ではないので報告しない
+            if (context && (context.status === 402 || context.status === 422)) {
+              return null;
+            }
+            // FunctionsHttpErrorのステータスコードをタグに追加
+            if (context && context.status) {
+              event.tags = event.tags || {};
+              event.tags['http.status_code'] = context.status;
+            }
+          }
+          return event;
+        },
+      });
+    }
+  });
+
+  // コンポーネント破棄時のクリーンアップ
+  onDestroy(() => {
+    window.removeEventListener('resize', handleResize);
+  });
+</script>
+
+<div class="flex flex-col w-screen h-screen">
+  <ToolBar/>
+  <div class="flex-grow relative">
+    <BookEditor />
+
+    <!-- root items -->
+    {#if $dominantMode === "standard"}
+
+
+      <CabinetButton />
+      <PageNavigations />
+      <RulerButton/>
+      <AboutButton/>
+      <DownloadButton />
+    {/if}
+  </div>
+</div>
+
+<!-- dialogs -->
+<ControlPanel/>
+<PageInspector/>
+<FrameInspector/>
+<BubbleInspector/>
+<StructureTree/>
+<MaterialBucket/>
+<DolphinRoom/>
+<BubbleBucket/>
+<Downloader/>
+<ColorPickerDialog/>
+
+<!-- drawers -->
+<!-- 
+  順序に意味があるので注意(後ろほど上に来る)
+  例えばRosterはNotebookの上にないといけない
+-->
+<FontChooser/>
+<ShapeChooser itemSize={[64, 96]}/>
+<ImageGenerator/>
+{#await getPreferencePromise() then p}
+  {#if fileManagerActive}
+    <FileManager/>
+  {/if}
+{/await}
+<About/>
+<TemplateChooser/>
+<EffectChooser/>
+<Notebook/>
+<Roster/>
+
+<!-- tools -->
+<PassiveToolTip />
+<Toast zIndex={"z-[1001]"}/>
+<BookArchiver/>
+
+<!-- skeletonのModal -->
+<Modal components={modalComponentRegistry} zIndex={'z-[500]'}/>
+
+<!-- svelte-modals -->
+<Modals>
+  <div slot="backdrop" class="backdrop"/>
+</Modals>
+<FullScreenLoading/>
+<FullScreenProgress/>
+
+
+<style>
+
+:global(body) {
+    overflow: hidden;
+    height: 100vh;
+    max-height: 100vh;
+  }
+
+  .backdrop {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    background: rgba(0,0,0,0.50);
+    z-index: 999;
+  }
+  
+</style>

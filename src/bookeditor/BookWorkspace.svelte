@@ -91,6 +91,8 @@
       $mainBookExceptionHandler(e);
     }
   }
+  let isFirstBuild = true;
+
   function onChangeBook(canvas: HTMLCanvasElement | null, book: Book | null) {
     if (!canvas || !book) { return; }
 
@@ -101,7 +103,6 @@
     if (!$viewport) {
       console.log("================ viewport remake");
       const v = new Viewport(canvas, (p,s) => hint(canvas, p, s));
-      v.translate = [150, 0];
       $viewport = v;
     }
     $viewport.dirty = true;
@@ -122,6 +123,15 @@
     
     setLayerRefs(layeredCanvas, arrayLayer);
     layeredCanvas.redraw();
+
+    // 初回ロード時のみ、ページ遷移と同じ方法でページ0にフォーカスする
+    // (setTimeout でcanvasサイズが確定してから実行)
+    if (isFirstBuild) {
+      isFirstBuild = false;
+      setTimeout(() => {
+        operators.focusToPage(0, 1, true);
+      }, 0);
+    }
   }
 
   function makeBookSnapshot(book: Book) {

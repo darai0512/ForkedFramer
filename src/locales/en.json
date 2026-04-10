@@ -61,7 +61,6 @@
     "cloudTrash": "Cloud Trash",
     "cabinet": "Cabinet",
     "localStorageDescription": "This area is saved to local HDD, SSD, etc.",
-    "cloudStorageDescription": "Save data to the cloud. This feature is in beta. Service may be discontinued without notice. Available with BASIC plan.",
     "saveFolder": "Save Folder",
     "selectFolderDescription": "Select a folder to save data. If the previously selected folder is not visible, select the same location again to restore it.",
     "unlinkStorageDirectory": "Unlink Storage Directory",

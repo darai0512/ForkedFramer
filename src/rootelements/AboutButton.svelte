@@ -9,4 +9,4 @@
   }
 </script>
 
-<BaseRootButton icon={aboutIcon} alt={"about"} hint={$_('ui.about')} origin={"bottomleft"} location={[1,2]} on:click={download}/>
+<BaseRootButton icon={aboutIcon} alt={"about"} hint={$_('ui.about')} origin={"bottomleft"} location={[1,1]} on:click={download}/>

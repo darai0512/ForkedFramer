@@ -62,6 +62,11 @@
   <div class="panel {placement}" class:size>
     {#if open}
       <slot />
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <!-- svelte-ignore a11y-no-static-element-interactions -->
+      <div class="close-bar" on:click={handleClickAway}>
+        <span class="close-label">閉じる</span>
+      </div>
     {/if}
   </div>
 </aside>
@@ -143,5 +148,33 @@
 
   .drawer.open .panel {
     transform: translate(0, 0);
+  }
+
+  .close-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 12px 24px;
+    padding: 12px 0;
+    border-top: 1px solid rgba(128, 128, 128, 0.25);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.15s ease;
+  }
+
+  .close-bar:hover {
+    background: rgba(128, 128, 128, 0.12);
+  }
+
+  .close-bar:active {
+    background: rgba(128, 128, 128, 0.22);
+  }
+
+  .close-label {
+    font-family: '源暎アンチック', sans-serif;
+    font-size: 14px;
+    color: rgba(100, 100, 100, 0.8);
+    letter-spacing: 0.05em;
+    user-select: none;
   }
 </style>

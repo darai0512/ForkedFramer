@@ -18,12 +18,22 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Fetch upstream and push to sync branch
+        id: fetch_upstream
         run: |
-          git fetch https://github.com/darai0512/ForkedFramer.git sns-main
+          git fetch https://github.com/jonigata/FramePlanner2.git sns_main
+          git fetch origin main
+          # main との差分コミット数を確認
+          DIFF_COUNT=$(git rev-list --count origin/main..FETCH_HEAD)
+          echo "diff_count=$DIFF_COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$DIFF_COUNT" -eq "0" ]; then
+            echo "No new commits from upstream. Skipping."
+            exit 0
+          fi
           git checkout -B sync-upstream FETCH_HEAD
           git push origin sync-upstream --force
 
       - name: Create or Update Pull Request
+        if: steps.fetch_upstream.outputs.diff_count != '0'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -34,7 +44,7 @@ jobs:
             gh pr create \
               --base main \
               --head sync-upstream \
-              --title "$(TZ=Asia/Tokyo date +'%Y%m%d') upstream sns-main diff" \
+              --title "$(TZ=Asia/Tokyo date +'%Y%m%d') upstream sns_main diff" \
               --body ""
             echo "PR created."
           else

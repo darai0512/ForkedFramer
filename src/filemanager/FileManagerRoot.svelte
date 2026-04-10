@@ -12,7 +12,6 @@
   import { readEnvelope } from '../lib/book/envelope';
   import { type ModalSettings, modalStore } from '@skeletonlabs/skeleton';
   import type { Bubble } from "../lib/layeredCanvas/dataModels/bubble";
-  import { buildCloudFileSystem } from './shareFileSystem';
   import { toastStore } from '@skeletonlabs/skeleton';
   import { analyticsEvent } from "../utils/analyticsEvent";
   import Drawer from '../utils/Drawer.svelte'
@@ -21,13 +20,10 @@
   import { frameInspectorTarget } from '../bookeditor/frameinspector/frameInspectorStore';
   import { saveProhibitFlag } from '../utils/developmentFlagStore';
   import { filmProcessorQueue } from '../utils/filmprocessor/filmProcessorStore';
-  import { onlineStatus, onlineAccount, type OnlineAccount, type OnlineStatus } from '../utils/accountStore';
-  import { waitForChange } from '../utils/reactUtil';
   import { type Writable, writable } from 'svelte/store';
   import { waitDialog } from "../utils/waitDialog";
-  import { createPreference, type FileSystemPreference, type GadgetStorePreference } from '../preferences';
-  import { buildFileSystem as buildLocalFileSystem } from './localFileSystem';
-  import { RadioGroup, RadioItem, Accordion, AccordionItem } from '@skeletonlabs/skeleton';
+  import { createPreference } from '../preferences';
+  import { Accordion, AccordionItem, SlideToggle } from '@skeletonlabs/skeleton';
   import { createCoalescingWork } from '../utils/coalescingWork';
   import { saveStatusStore } from './saveStatusStore';
 
@@ -45,39 +41,39 @@
   let localFolders: RootFolders;
   let localState: Writable<StorageState> = writable('uncertain'); // waitForChangeで使うのでWritable
 
-  let cloudFileSystem: FileSystem;
-  let cloudFolders: RootFolders;
-  let cloudState: Writable<StorageState> = writable('uncertain'); // waitForChangeで使うのでWritable
-
-  let fsaFileSystem: FileSystem;
-  let fsaFolders: RootFolders;
-  let fsaState: Writable<StorageState> = writable('uncertain'); // waitForChangeで使うのでWritable
-
   let usedSize: string;
 
-  let fsaapi = 'showOpenFilePicker' in window;
-  let storageFolder: FileSystemDirectoryHandle | null = null;
-  $: storageFolderName = (storageFolder as FileSystemDirectoryHandle | null)?.name;
+  async function wipeLocalStorage() {
+    const confirmed = await waitDialog('confirm', {
+      title: 'ローカルデータの初期化',
+      message: 'このアプリで保存しているすべてのデータや設定（進行中の本や素材など）が消去されます。実行してよろしいですか？',
+      positiveButtonText: '初期化する',
+      negativeButtonText: 'キャンセル'
+    });
 
-  let gadgetStorage: 'local' | 'fsa' | null = null;
-  $: onGadgetStorageChanged(gadgetStorage);
-  async function onGadgetStorageChanged(gs: 'local' | 'fsa' | null) {
-    console.log("gadgetStorage changed", gs);
-    if (gs == null) { return; }
-    if (gs === 'fsa') {
-      if (fsaFileSystem) {
-        $gadgetFileSystem = fsaFileSystem;
-      } else {
-        console.warn("fsaFileSystem is lost");
-        $gadgetFileSystem = localFileSystem;
-        gs = 'local'; // ここでfsaFileSystemがない場合はlocalに戻す
+    if (confirmed) {
+      localStorage.clear();
+      if (window.indexedDB && window.indexedDB.databases) {
+        try {
+          const dbs = await window.indexedDB.databases();
+          for (const db of dbs) {
+            if (db.name) window.indexedDB.deleteDatabase(db.name);
+          }
+        } catch (e) {
+          console.error("Failed to delete indexedDB", e);
+        }
       }
-    } else {
-      $gadgetFileSystem = localFileSystem;
+      location.reload();
     }
-    const pref = createPreference<GadgetStorePreference | null>("gadgetStore", "current");
-    await pref.set({ store: gs });
   }
+
+  function onSaveProhibitChange() {
+    sessionStorage.setItem('saveProhibited', $saveProhibitFlag.toString());
+  }
+
+  onMount(() => {
+    $saveProhibitFlag = sessionStorage.getItem('saveProhibited') === 'true';
+  });
 
 
   async function getRootFolders(fs: FileSystem): Promise<RootFolders> {
@@ -91,62 +87,19 @@
     return { root, desktop, cabinet, trash };
   }
 
-  function getFileSystemType(id: string): 'local' | 'cloud' | 'fsa' {
+  function getFileSystemType(id: string): 'local' | 'fsa' {
     if (id === localFileSystem.id) {return 'local';}
-    if (id === cloudFileSystem?.id) {return 'cloud';}
     if (id === fsaFileSystem?.id) {return 'fsa';}
     return 'local';
   }  
   
-  function getFileSystemByType(type: 'local' | 'cloud' | 'fsa'): FileSystem {
+  function getFileSystemByType(type: 'local' | 'fsa'): FileSystem {
     if (type === 'fsa') { return fsaFileSystem; }
-    if (type === 'cloud') { return cloudFileSystem; }
     return localFileSystem;
   }
 
-  function getFileSystemName(id: string) {
-    switch (getFileSystemType(id)) {
-      case 'cloud':
-        return $_('storage.cloudStorage');
-      case 'fsa':
-        return $_('storage.localStorage');
-      case 'local':
-        return $_('storage.browserStorage');
-    }
-  }
-
-  $: onBuildCloudFileSystem($onlineStatus, $onlineAccount);
-  async function onBuildCloudFileSystem(os: OnlineStatus, oa: OnlineAccount | null) {
-    console.log("#### onBuildCloudFileSystem");
-    if (os == 'unknown') { $cloudState = 'uncertain'; return; }
-    if (os == 'signed-out') { $cloudState = 'unlinked'; return; }
-
-    if (oa == null) { $cloudState = 'uncertain'; return; }
-    const plan = oa.subscriptionPlan;
-    if (plan != 'basic' && plan != 'basic/en' && plan != 'premium') { $cloudState = 'unlinked'; return; }
-
-    try {
-      cloudFileSystem = await buildCloudFileSystem();
-      cloudFolders = await getRootFolders(cloudFileSystem);
-      $cloudState = 'linked';
-    } catch (e) {
-      console.error("Failed to build cloud file system:", e);
-      $cloudState = 'unlinked';
-    }
-  }
-
-  async function buildFsaFileSystem(pref: FileSystemPreference | null) {
-    if (!pref) { $fsaState = 'unlinked'; return; } 
-    try {
-      fsaFileSystem = await buildLocalFileSystem(pref.handle);
-      fsaFolders = await getRootFolders(fsaFileSystem);
-      storageFolder = pref.handle;
-      $fsaState = 'linked';
-    }
-    catch(e) {
-      console.error(e);
-      $fsaState = 'unlinked';
-    }
+  function getFileSystemName(_id: string) {
+    return $_('storage.browserStorage');
   }
 
   const coalescingSaveWork = createCoalescingWork(
@@ -218,23 +171,6 @@
         console.log("book initialize:2");
         const currentFileInfo = await fetchCurrentFileInfo();
         if (currentFileInfo) {
-          if (currentFileInfo.fileSystem === 'cloud') {
-            // 現状ここは使われないはず(クラウドファイルの直接編集ができないので)
-            toastStore.trigger({ message: $_('fileManager.lastAccessFileIsCloud'), timeout: 3000});
-            await waitForChange(cloudState, s => s != 'uncertain');
-            if ($cloudState === 'unlinked') {
-              // TODO: リロードしちゃうので無意味
-              toastStore.trigger({ message: $_('fileManager.cloudConnectionFailed'), timeout: 3000});
-            }
-            toastStore.trigger({ message: $_('fileManager.cloudFileLoadingMessage'), timeout: 3000});
-          }
-          if (currentFileInfo.fileSystem === 'fsa') {
-            await waitForChange(fsaState, s => s!= 'uncertain');
-            if ($fsaState === 'unlinked') {
-              // TODO: リロードしちゃうので無意味
-              toastStore.trigger({ message: $_('fileManager.localStorageConnectionFailed'), timeout: 3000 });
-            }
-          }
           try {
             console.log("book initialize:3");
             const fs = getFileSystemByType(currentFileInfo.fileSystem);
@@ -411,10 +347,7 @@
     await coalescingSaveWork.whenIdle();
 
     $loading = true;
-    const fsType = getFileSystemType(lt.fileSystem.id);
-    if (fsType == 'cloud') {
-      toastStore.trigger({ message: $_('fileManager.cloudFileLoadingMessage'), timeout: 3000});
-    }
+    $loading = true;
     const file = (await lt.fileSystem.getNode(lt.nodeId))!.asFile()!;
     const book = await loadBookFrom(lt.fileSystem, file);
     const title = (await lt.parent.getEmbodiedEntry(lt.bindId))![1]
@@ -513,48 +446,10 @@
     }
   }
 
-  async function selectStorageDirectory() {
-    const r = await waitDialog<boolean>('newStorageWizard');
-    if (r) {
-      const pref = createPreference<FileSystemPreference | null>("filesystem", "current");
-      let fileSystemPreference = await pref.getOrDefault(null);
-
-      fsaFileSystem = await buildLocalFileSystem(fileSystemPreference!.handle);
-      fsaFolders = await getRootFolders(fsaFileSystem);
-      storageFolder = fileSystemPreference!.handle;
-      $fsaState = 'linked';
-    }
-  }
-
-  async function unlinkStorageDirectory() {
-    const r = await waitDialog<boolean>('confirm', { 
-      title: $_('storage.unlinkStorageConfirm'),
-      message: $_('storage.unlinkStorageMessage'),
-      positiveButtonText: $_('storage.unlinkButton'),
-      negativeButtonText: $_('storage.notUnlinkButton'),
-    });
-    if (!r) { return; }
-
-    const pref = createPreference<FileSystemPreference | null>("filesystem", "current");
-    pref.set(null);
-    $fsaState = 'unlinked';
-  }
-
   onMount(async () => {
     console.log("###### FileManagerRoot.onMount");
     localFolders = await getRootFolders(localFileSystem);
     localState.set('linked');
-
-    const pref = createPreference<FileSystemPreference | null>("filesystem", "current");
-    let fileSystemPreference = await pref.getOrDefault(null);
-    console.log("###### fileSystemPreference", fileSystemPreference);
-    // fileSystemPreference = null;
-    await buildFsaFileSystem(fileSystemPreference);
-
-    const pref2 = createPreference<GadgetStorePreference | null>("gadgetStore", "current");
-    const gadgetStore = await pref2.getOrDefault(null);
-    gadgetStorage = gadgetStore?.store ?? 'local';
-    console.log("###### gadgetStorage", gadgetStore);
   });
 
 </script>
@@ -569,6 +464,7 @@
     on:clickAway={() => ($fileManagerOpen = false)}
   >
     <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
     <div class="drawer-content" on:click|self={clearSelection}>
       <h2>{$_('storage.browserStorage')}</h2>
       <Accordion class="my-2 px-4">
@@ -643,106 +539,19 @@
         <button class="btn-sm w-32 variant-filled"  on:click={() => dump(localFileSystem)}>{$_('storage.dump')}</button>
         <button class="btn-sm w-32 variant-filled"  on:click={() => undump(localFileSystem)}>{$_('storage.restore')}</button>
       </div>
-      <h2>{$_('storage.localStorage')}</h2>
-      <p>{$_('storage.localStorageDescription')}</p>
-      {#if $fsaState == 'unlinked'}
-        <h3>{$_('storage.saveFolder')}</h3>
-        <p>
-          {$_('storage.selectFolderDescription')}
-        </p>
-        <div class="flex flex-row ml-8 items-center gap-4">
-          <button class="btn-sm w-48 variant-filled" on:click={selectStorageDirectory} disabled={!fsaapi}>
-            {$_('storage.selectSaveFolder')}
-          </button>
-          {#if !fsaapi}
-            <div>
-              {$_('messages.localStorageNotAvailable')}
-            </div>  
-          {/if}
-        </div>
-      {:else if $fsaState == 'linked'}
-        <div class="cabinet variant-ghost-tertiary rounded-container-token">
-          <FileManagerFolder
-            fileSystem={fsaFileSystem} 
-            removability={"unremovable"} 
-            spawnability={"folder-spawnable"} 
-            filename={`${storageFolderName}${$_('storage.cabinet')}`} 
-            bindId={fsaFolders.cabinet[0]} 
-            parent={fsaFolders.root} 
-            index={0} 
-            path={[fsaFolders.cabinet[0]]} 
-            trash={fsaFolders.trash[2].asFolder()}
-          />
-        </div>
-        <div class="cabinet variant-ghost-tertiary rounded-container-token">
-          <FileManagerFolder
-            fileSystem={fsaFileSystem} 
-            removability={"unremovable"} 
-            spawnability={"unspawnable"} 
-            filename={`${storageFolderName}${$_('storage.trash')}`} 
-            bindId={fsaFolders.trash[0]} 
-            parent={fsaFolders.root} 
-            index={1} 
-            path={[fsaFolders.trash[0]]} 
-            trash={null}
-          />
-        </div>
-        <div class="flex flex-row ml-8 items-center gap-4">
-          <button class="btn-sm w-48 variant-filled" on:click={unlinkStorageDirectory} disabled={!fsaapi}>
-            {$_('storage.unlinkStorageDirectory')}
+
+      <h2>管理</h2>
+      <div class="flex flex-col gap-4 ml-6 mr-6 mb-4 mt-4">
+        <label class="flex items-center space-x-2">
+          <SlideToggle active="bg-primary-500" name="saveProhibitToggle" bind:checked={$saveProhibitFlag} on:change={onSaveProhibitChange} />
+          <span class="text-sm">現在セーブ禁止状態にする (現在のセッション中有効)</span>
+        </label>
+        <div>
+          <button class="btn variant-filled-error w-80 text-sm font-bold mt-2" on:click={wipeLocalStorage}>
+            ローカルの全データを空にする(初期化)
           </button>
         </div>
-        <div class="flex flex-row gap-2 items-center justify-center p-2">
-          <button class="btn-sm w-32 variant-filled"  on:click={() => dump(fsaFileSystem)}>{$_('storage.dump')}</button>
-          <button class="btn-sm w-32 variant-filled"  on:click={() => undump(fsaFileSystem)}>{$_('storage.restore')}</button>
-        </div>
-      {:else}
-        <p>
-          <button class="btn-sm w-48 variant-filled">{$_('storage.unlinkStorageDirectory')}</button>
-        </p>
-      {/if}
-
-      <h2>{$_('storage.cloudStorage')}</h2>
-      <p>{$_('storage.cloudStorageDescription')}</p>
-      {#if $cloudState == 'linked'}
-        <div class="cabinet variant-ghost-primary rounded-container-token">
-          <FileManagerFolder 
-            fileSystem={cloudFileSystem} 
-            removability={"unremovable"} 
-            spawnability={"folder-spawnable"} 
-            filename={$_('storage.cloudCabinet')} 
-            bindId={cloudFolders.cabinet[0]} 
-            parent={cloudFolders.root} 
-            index={0} 
-            path={[cloudFolders.cabinet[0]]} 
-            trash={cloudFolders.trash[2].asFolder()}
-          />
-        </div>
-        <div class="cabinet variant-ghost-primary rounded-container-token">
-          <FileManagerFolder 
-            fileSystem={cloudFileSystem} 
-            removability={"unremovable"} 
-            spawnability={"unspawnable"} 
-            filename={$_('storage.cloudTrash')} 
-            bindId={cloudFolders.trash[0]} 
-            parent={cloudFolders.root} 
-            index={1} 
-            path={[cloudFolders.trash[0]]} 
-            trash={null}
-          />
-        </div>
-      {/if}
-
-      {#if $fsaState == 'linked'}
-        <h2>補助データの保存場所</h2>
-        <p>フキダシシェイプ、素材ギャラリー、役者名簿などの保存場所を指定してください。</p>
-        <div class="radio-box hbox">
-          <RadioGroup active="variant-filled-primary" hover="hover:variant-soft-primary">
-            <RadioItem bind:group={gadgetStorage} name="gadget-storage" value={'local'}><span class="radio-text">ブラウザ</span></RadioItem>
-            <RadioItem bind:group={gadgetStorage} name="gadget-storage" value={'fsa'}><span class="radio-text">ローカル</span></RadioItem>
-          </RadioGroup>
-        </div>
-      {/if}
+      </div>
 
       <div class="h-24"></div>
     </div>

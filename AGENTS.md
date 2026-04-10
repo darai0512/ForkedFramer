@@ -2,7 +2,7 @@
 
 - 応答は日本語で
 - git commit はuserが行う。commit message の提案を英語で書いて
-- 変更内容を `change.log` に機能レベルで簡潔に追記して
+- 変更内容を `CHANGELOG.md` に簡潔に追記して。従来の内容を上書きしても良い。日付は不要
 - A11y警告はsvelte-ignoreでOK
 - src/lib以下は他プロジェクトからライブラリとして利用される可能性があるので、svelte関連のコード(storeなど)を使わないで。
 

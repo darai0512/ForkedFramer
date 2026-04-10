@@ -527,6 +527,16 @@ export class FrameLayer extends LayerBase {
     console.log("PASTED", position, media)
 
     let layoutlet = this.findReceiverLayout(position);
+    if (!layoutlet) { 
+      if (this.selectedLayout) {
+        layoutlet = this.selectedLayout;
+      } else {
+        layoutlet = this.calculateRootLayout();
+        while (layoutlet && layoutlet.children && layoutlet.children.length > 0) {
+          layoutlet = layoutlet.children[0];
+        }
+      }
+    }
     if (!layoutlet) { return false; }
 
     if (media instanceof HTMLCanvasElement) {
