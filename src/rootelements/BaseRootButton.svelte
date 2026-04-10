@@ -10,6 +10,7 @@
   export let hint: string;
   export let origin: string;
   export let location: [number, number];
+  export let customClass = "variant-ghost-tertiary";
 
   const baseUnit = 60;
   const baseGap = 10;
@@ -58,7 +59,7 @@
   });
 </script>
 
-<button style={style} class="variant-ghost-tertiary text-white hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-200 open-button hbox relative" on:click={onClick}
+<button style={style} class="{customClass} text-white hover:bg-slate-100 focus:bg-slate-100 active:bg-slate-200 open-button hbox relative" on:click={onClick}
   use:toolTip={hint}>
   <img src={icon} alt={alt}/>
   <div class="absolute w-full h-full">

@@ -15,8 +15,6 @@
   $: buttons = [
     {icon: downloadIcon, label: $_('downloader.download'), onClick: download, hint: $_('downloader.downloadHint')},
     {icon: clipboardIcon, label: $_('downloader.copyToClipboard'), onClick: copyToClipboard, hint: $_('downloader.copyToClipboardHint')},
-    {icon: downloadIcon, label: $_('downloader.upscaleAndDownload'), onClick: downloadAfterUpscale, hint: $_('downloader.upscaleAndDownloadHint')},
-    {icon: clipboardIcon, label: $_('downloader.upscaleAndCopy'), onClick: copyToClipboardAfterUpscale, hint: $_('downloader.upscaleAndCopyHint')},
     // {icon: aiPictorsIcon, label: "に投稿", onClick: postAIPictors, hint: "aiPictorsに投稿します"},
     {label: $_('downloader.exportPSD'), onClick: downloadPSD, hint: $_('downloader.exportPSDHint')},
     // {label: $_('downloader.share'), onClick: shareBook, hint: $_('downloader.shareHint')},
@@ -24,7 +22,6 @@
     {label: $_('downloader.downloadMaterials'), onClick: downloadMaterials, hint: $_('downloader.downloadMaterialsHint')},
     {label: $_('downloader.exportDialogues'), onClick: downloadDialogues, hint: $_('downloader.exportDialoguesHint')},
     {label: $_('downloader.exportPrompts'), onClick: exportPrompts, hint: $_('downloader.exportPromptsHint')},
-    {label: $_('downloader.publishToMangaFarm'), onClick: publishEnvelope, hint: $_('downloader.publishToMangaFarmHint')},
     // {label: "test", onClick: testIt }
     ...($developmentFlag ? [
       {label: $_('downloader.downloadFrames'), onClick: downloadFrames, hint: $_('downloader.downloadFramesHint')},

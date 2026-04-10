@@ -21,6 +21,7 @@ import { readVectorParam } from "../dataModels/proceduralEffects";
 import type { FilmProceduralEffectType } from "../dataModels/proceduralEffects";
 import { tailCoordToWorldCoord, worldCoordToTailCoord } from "../tools/geometry/bubbleGeometry";
 // import * as Sentry from "@sentry/svelte";
+import { sendMediaToMaterialCollection } from "../../../materialBucket/materialOperations";
 
 const SHEET_Y_MARGIN = 48;
 
@@ -1506,6 +1507,8 @@ export class FrameLayer extends LayerBase {
     const paperSize = this.getPaperSize();
     const film = Film.fromMedia(media);
     insertFrameLayers(this.frameTree, paperSize, element, element.filmStack.films.length, [film]);
+
+    sendMediaToMaterialCollection(media).catch(e => console.error("Auto material collection failed", e));
 
     this.onCommit();
     this.redraw();

@@ -4,7 +4,7 @@
   import { tick } from "svelte";
   import Drawer from '../utils/Drawer.svelte';
   import ImageGeneratorStableDiffusion from "./ImageGeneratorStableDiffusion.svelte";
-  import ImageGeneratorFlux from "./ImageGeneratorCloud.svelte";
+  import MaterialBucketContent from "../materialBucket/MaterialBucketContent.svelte";
   import ImageGeneratorPlain from "./ImageGeneratorPlain.svelte";
   import ImageGeneratorProcedural from "./ImageGeneratorProcedural.svelte";
   import { type Media } from "../lib/layeredCanvas/dataModels/media";
@@ -14,7 +14,7 @@
   import sprytIcon from '../assets/spryt.webp';
 
   let busy: boolean;
-  let tabSet: number = 0;
+  let tabSet: number = 1;
   let prompt: string = 'zzz';
   let gallery: Media[] = [];
   let chosen: Media | null = null;
@@ -74,14 +74,16 @@
   >
 
     <TabGroup>
-      <Tab bind:group={tabSet} name="tab3" value={0}><span class="tab"><img src={sprytIcon} alt="flux" width=24 height=24/>{$_('generator.cloud')}</span></Tab>
+      <Tab bind:group={tabSet} name="tab1" value={1}>{$_('ui.materialBucket')}</Tab>
       <Tab bind:group={tabSet} name="tab2" value={2}>Stable Diffusion</Tab>
       <Tab bind:group={tabSet} name="tab4" value={3}>{$_('generator.blank')}</Tab>
       <Tab bind:group={tabSet} name="tab5" value={4}>{$_('generator.procedural.title')}</Tab>
       <!-- Tab Panels --->
       <svelte:fragment slot="panel">
-        {#if tabSet === 0}
-          <ImageGeneratorFlux bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen} frameSize={$imageGeneratorTarget?.frameSize ?? [1024, 1024]}/>
+        {#if tabSet === 1}
+          <div class="material-bucket-wrapper">
+            <MaterialBucketContent selectionOnly={true} on:choose={(e) => chosen = e.detail} />
+          </div>
           {:else if tabSet === 2}
           <ImageGeneratorStableDiffusion bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
           {:else if tabSet === 3}
@@ -103,5 +105,9 @@
     display: flex;
     align-items: center;
     gap: 5px;
+  }
+  .material-bucket-wrapper {
+    height: calc(100vh - 120px);
+    overflow-y: auto;
   }
 </style>
