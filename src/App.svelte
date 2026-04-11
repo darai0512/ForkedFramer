@@ -63,6 +63,7 @@
 
   import BubbleStyleTemplateEditor from './notebook/BubbleStyleTemplateEditor.svelte';
   import BulkRenameDialog from './filemanager/BulkRenameDialog.svelte';
+  import PsdImportDialog from './utils/PsdImportDialog.svelte';
 
   // (Removed advertiser definition)
 
@@ -107,6 +108,9 @@
     },
     bulkRename: {
       ref: BulkRenameDialog,
+    },
+    psdImport: {
+      ref: PsdImportDialog,
     }
   };
 

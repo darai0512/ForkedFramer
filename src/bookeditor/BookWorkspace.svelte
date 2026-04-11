@@ -19,6 +19,10 @@
   import { currentLocale, type Locale } from '../stores/i18n';
   import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
   import { fatalStorageError } from '../utils/accountStore';
+  import { waitDialog } from '../utils/waitDialog';
+  import { parsePsd, createPageFromPsdComposite, createPageFromPsdLayers, type PsdImportMode } from '../lib/psd/psdParser';
+  import { toastStore } from '@skeletonlabs/skeleton';
+  import { _ } from 'svelte-i18n';
 
   let canvas: HTMLCanvasElement;
   let painter: Painter;
@@ -120,6 +124,9 @@
     // Painterなど他のコンポーネントでも使用するため、ローカル変数に保持
     layeredCanvas = builtBook.layeredCanvas;
     arrayLayer = builtBook.arrayLayer;
+
+    // PSDドロップコールバックを設定
+    layeredCanvas.onPsdDropped = handlePsdDropped;
     
     setLayerRefs(layeredCanvas, arrayLayer);
     layeredCanvas.redraw();
@@ -186,6 +193,45 @@
 
   $: if ($viewport?.dirty) {
     layeredCanvas?.redraw();
+  }
+
+  async function handlePsdDropped(files: File[]) {
+    for (const file of files) {
+      try {
+        const buffer = await file.arrayBuffer();
+        const psd = parsePsd(buffer);
+
+        const mode = await waitDialog<PsdImportMode | null>('psdImport', {
+          filename: file.name,
+          width: psd.width,
+          height: psd.height,
+          layerCount: psd.layers.length,
+        });
+        if (!mode) continue;
+
+        let page;
+        if (mode === 'composite') {
+          page = await createPageFromPsdComposite(psd);
+        } else {
+          page = await createPageFromPsdLayers(psd);
+        }
+
+        const book = $mainBook!;
+        book.pages.push(page);
+        $mainBook = book;
+        commit(null);
+
+        // 新しく追加されたページへフォーカス
+        setTimeout(() => {
+          operators.focusToPage(book.pages.length - 1, 1, true);
+        }, 0);
+
+        toastStore.trigger({ message: $_('psd.importComplete'), timeout: 2000 });
+      } catch (e) {
+        console.error('PSD import failed:', e);
+        toastStore.trigger({ message: $_('psd.importFailed'), timeout: 3000 });
+      }
+    }
   }
 
   onDestroy(() => {

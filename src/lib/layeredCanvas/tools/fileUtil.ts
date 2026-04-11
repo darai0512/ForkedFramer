@@ -1,12 +1,24 @@
 import { createCanvasFromBlob, createVideoFromBlob, createVideoFromDataUrl, getFirstFrameOfVideo } from "../tools/imageUtil";
 
-export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(HTMLCanvasElement | HTMLVideoElement | string)[]> {
+export type DataTransferResult = {
+  mediaResources: (HTMLCanvasElement | HTMLVideoElement | string)[];
+  psdFiles: File[];
+};
+
+function isPsdFile(file: File): boolean {
+  if (file.name.toLowerCase().endsWith('.psd')) return true;
+  if (file.type === 'image/vnd.adobe.photoshop') return true;
+  if (file.type === 'application/x-photoshop') return true;
+  return false;
+}
+
+export async function handleDataTransferWithPsd(dataTransfer: DataTransfer): Promise<DataTransferResult> {
   // video/mp4があればそれを優先
   const url = dataTransfer.getData('video/mp4');
   if (url !== "") {
     console.log("video url", url);
     const video = await createVideoFromDataUrl(url);
-    return [video];
+    return { mediaResources: [video], psdFiles: [] };
   }
 
   let files = [...dataTransfer.files];
@@ -16,9 +28,20 @@ export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(H
       .map(item => item.getAsFile())
       .filter((file): file is File => file !== null);
   }
-  const result = [];
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+
+  const psdFiles: File[] = [];
+  const normalFiles: File[] = [];
+  for (const file of files) {
+    if (isPsdFile(file)) {
+      psdFiles.push(file);
+    } else {
+      normalFiles.push(file);
+    }
+  }
+
+  const result: (HTMLCanvasElement | HTMLVideoElement | string)[] = [];
+  for (let i = 0; i < normalFiles.length; i++) {
+    const file = normalFiles[i];
     console.log("file", i, file.type);
     if (file.type.startsWith('image/svg')) { continue; } // 念の為
     if (file.type.startsWith('image/')) {
@@ -38,7 +61,7 @@ export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(H
     }
   }
 
-  if (result.length === 0) {
+  if (result.length === 0 && psdFiles.length === 0) {
     const uriListRaw = dataTransfer.getData('text/uri-list');
     if (uriListRaw) {
       const uri = uriListRaw
@@ -63,8 +86,15 @@ export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(H
     }
   }
 
-  return result;
+  return { mediaResources: result, psdFiles };
 }
+
+// 後方互換のためにhandleDataTransferもそのまま残す
+export async function handleDataTransfer(dataTransfer: DataTransfer): Promise<(HTMLCanvasElement | HTMLVideoElement | string)[]> {
+  const { mediaResources } = await handleDataTransferWithPsd(dataTransfer);
+  return mediaResources;
+}
+
 
 export function excludeTextFiles(mediaResources: (HTMLCanvasElement | HTMLVideoElement | string)[]): (HTMLCanvasElement | HTMLVideoElement)[] {
   const filteredResources = mediaResources.filter((resource) => {

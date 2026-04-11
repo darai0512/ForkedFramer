@@ -800,5 +800,16 @@
       "insertNewPage": "Insert new page",
       "moveMarkedPages": "Move marked pages here\nHold Ctrl to copy"
     }
+  },
+  "psd": {
+    "title": "Import PSD File",
+    "layerCount": "{count} layers",
+    "selectMode": "Select import mode",
+    "newPageNote": "PSD contents will be added as a new page",
+    "compositeMode": "Import as composite PNG (merged into one)",
+    "layersMode": "Import as separate layers (with visibility)",
+    "importing": "Importing PSD file...",
+    "importComplete": "PSD file imported",
+    "importFailed": "Failed to import PSD file"
   }
 }

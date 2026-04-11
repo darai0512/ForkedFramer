@@ -802,5 +802,16 @@
       "insertNewPage": "新しいページを挿入",
       "moveMarkedPages": "マークしたページをここに移動\nCtrlを押しているとコピー"
     }
+  },
+  "psd": {
+    "title": "PSDファイルの読み込み",
+    "layerCount": "{count}レイヤー",
+    "selectMode": "読み込み方法を選択してください",
+    "newPageNote": "PSDの内容は新しいページとして追加されます",
+    "compositeMode": "合成PNGとして読み込む（1枚に統合）",
+    "layersMode": "レイヤー分割で読み込む（可視状態を反映）",
+    "importing": "PSDファイルを読み込み中...",
+    "importComplete": "PSDファイルを読み込みました",
+    "importFailed": "PSDファイルの読み込みに失敗しました"
   }
 }
