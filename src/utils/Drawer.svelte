@@ -61,7 +61,9 @@
   {/if}
   <div class="panel {placement}" class:size>
     {#if open}
-      <slot />
+      <div class="slot-wrapper">
+        <slot />
+      </div>
       <!-- svelte-ignore a11y-click-events-have-key-events -->
       <!-- svelte-ignore a11y-no-static-element-interactions -->
       <div class="close-bar" on:click={handleClickAway}>
@@ -112,8 +114,17 @@
     background: white;
     z-index: 3;
     transition: transform var(--duration) ease;
-    overflow: auto;
+    overflow: hidden;
     pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slot-wrapper {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
   }
 
   .panel.left {
@@ -151,11 +162,12 @@
   }
 
   .close-bar {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 8px 12px 24px;
-    padding: 12px 0;
+    margin: 4px 12px 12px;
+    padding: 10px 0;
     border-top: 1px solid rgba(128, 128, 128, 0.25);
     cursor: pointer;
     border-radius: 8px;

@@ -55,12 +55,6 @@
   import MediaViewer from './gallery/MediaViewer.svelte';
   import Roster from './notebook/Roster.svelte';
   import VideoGenerator from './generator/VideoGenerator.svelte';
-  import ImageMaskDialog from './utils/ImageMaskDialog.svelte';
-  import InpaintDialog from './utils/InpaintDialog.svelte';
-  import TextEditDialog from './utils/TextEditDialog.svelte';
-  import TextLiftDialog from './utils/TextLiftDialog.svelte';
-  import AngleEditDialog from './utils/AngleEditDialog.svelte';
-  import LayerizeDialog from './utils/LayerizeDialog.svelte';
   import Dump from './transfer/Dump.svelte';
   import Undump from './transfer/Undump.svelte';
   import CanvasBrowser from './utils/CanvasBrowser.svelte';
@@ -91,24 +85,6 @@
     },
     videoGenerator: {
       ref: VideoGenerator,
-    },
-    imageMask: {
-      ref: ImageMaskDialog,
-    },
-    inpaint: {
-      ref: InpaintDialog,
-    },
-    textedit: {
-      ref: TextEditDialog,
-    },
-    textlift: {
-      ref: TextLiftDialog,
-    },
-    angleedit: {
-      ref: AngleEditDialog,
-    },
-    layerize: {
-      ref: LayerizeDialog,
     },
     dump: {
       ref: Dump

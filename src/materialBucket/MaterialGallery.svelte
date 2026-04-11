@@ -19,6 +19,7 @@
 
   export let targetNode: Node | null = null;
   export let columnWidth: number = 220;
+  export let selectionOnly: boolean = false;
 
   let items: (() => Promise<Media[]>)[] = [];
   let bindIds = new WeakMap<(() => Promise<Media[]>) | Media, BindId>();
@@ -105,9 +106,13 @@
     return true;
   }
 
-  function onChooseImage(e: CustomEvent<Media>) {
+  function onCommit(e: CustomEvent<Media>) {
+    if (selectionOnly) {
+      dispatch('choose', e.detail);
+      return;
+    }
+    // 通常モード: バブルとしてページに追加
     const page = $bookOperators!.getFocusedPage();
-    const canvas = e.detail;
     const bubble = new Bubble();
     const paperSize = page.paperSize;
     const imageSize = e.detail.size;
@@ -180,7 +185,7 @@
 
 <div class="dropzone" use:dropzone={onFileDrop}>
   {#if items.length > 0}
-    <Gallery {columnWidth} referable={false} bind:items={items} on:commit={onChooseImage} on:dragstart={onChildDragStart} on:delete={onDelete}/>
+    <Gallery {columnWidth} referable={false} bind:items={items} on:commit={onCommit} on:dragstart={onChildDragStart} on:delete={onDelete}/>
   {:else}
     <div class="empty-state">
       <p class="empty-message">ここに画像や動画をドロップしてください</p>

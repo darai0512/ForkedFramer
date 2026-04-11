@@ -2,15 +2,9 @@ import { type Writable, writable, get } from "svelte/store";
 import type { FrameElement } from "../../lib/layeredCanvas/dataModels/frameTree";
 import { calculatePhysicalLayout, findLayoutOf } from "../../lib/layeredCanvas/dataModels/frameTree";
 import { Film } from "../../lib/layeredCanvas/dataModels/film";
-import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Page } from '../../lib/book/book';
 import { trapezoidBoundingRect } from "../../lib/layeredCanvas/tools/geometry/trapezoid";
 import { minimumBoundingScale } from "../../lib/layeredCanvas/tools/geometry/geometry";
-import { outPaintFilmInline, calculateFramePadding } from '../../utils/outPaintFilm';
-import { toastStore } from '@skeletonlabs/skeleton';
-import { onlineStatus } from "../../utils/accountStore";
-import { get as getStore } from 'svelte/store';
-import { _ } from 'svelte-i18n';
 import { commit } from '../operations/commitOperations';
 import type { FilmOperationTarget } from '../operations/filmStackOperations';
 import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
@@ -18,21 +12,11 @@ import {
   setupCommandSubscription,
   handleScribbleCommand,
   handleGenerateCommand,
-  handlePunchCommand,
-  handleUpscaleCommand,
-  handleVideoCommand,
   processCommand,
   handleCoverCommand,
-  handleEraserCommand,
-  handleInpaintCommand,
-  handleTextEditCommand,
-  handleAngleEditCommand,
-  handleSendToMaterialCollectionCommand,
-  handleTextLiftCommand,
-  handleLayerizeCommand,
 } from '../operations/filmStackOperations';
 
-type FrameInspectorCommand = "generate" | "cover" | "scribble" | "punch" | "outpaint" | "video" | "upscale" | "eraser" | "inpaint" | "textedit" | "angleedit" | "sendToMaterialCollection" | "textlift" | "layerize";
+type FrameInspectorCommand = "generate" | "cover" | "scribble";
 
 export interface FrameInspectorTarget extends FilmOperationTarget {
   frame: FrameElement;
@@ -90,11 +74,6 @@ async function onFrameCommand(fit: FrameInspectorTarget | null) {
       },
       frameInspectorTarget,
     ),
-    "eraser": handleEraserCommand,
-    "inpaint": handleInpaintCommand,
-    "textedit": handleTextEditCommand,
-    "angleedit": handleAngleEditCommand,
-    "textlift": handleTextLiftCommand,
     "scribble": async (target) => handleScribbleCommand(target, painterRunWithFrame!, target.frame),
     "generate": async (target) => {
       const pageLayout = calculatePhysicalLayout(target.page.frameTree, target.page.paperSize, [0,0]);
@@ -113,34 +92,7 @@ async function onFrameCommand(fit: FrameInspectorTarget | null) {
         frameSize
       );
     },
-    "punch": handlePunchCommand,
-    "upscale": handleUpscaleCommand,
-    "outpaint": outPaintFrameFilm,
-    "video": handleVideoCommand,
-    "sendToMaterialCollection": handleSendToMaterialCollectionCommand,
-    "layerize": handleLayerizeCommand,
   });
   
   frameInspectorRebuildToken.update(v => v + 1);
 }
-
-// アウトペインティング処理（フレーム特有の機能）
-async function outPaintFrameFilm(fit: FrameInspectorTarget) {
-  if (get(onlineStatus) !== 'signed-in') {
-    toastStore.trigger({ message: getStore(_)('frame.errors.notLoggedIn'), timeout: 3000});
-    return;
-  }
-
-  const film = fit.commandTargetFilm!;
-  if (film.content.kind !== 'media' || !(film.content.media instanceof ImageMedia)) { return; }
-
-  const padding = calculateFramePadding(fit.page, fit.frame, film);
-  const newFilm = outPaintFilmInline(film, padding);
-  if (newFilm) {
-    const index = fit.frame.filmStack.films.indexOf(film);
-    fit.frame.filmStack.films.splice(index + 1, 0, newFilm);
-    commit(null);
-  }
-}
-
-// modalFrameVideo関数は共通化された handleVideoCommand に置き換えられました

@@ -12,8 +12,6 @@
 
   export let showsBarrier: boolean;
   export let filmStack: FilmStack;
-  export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
-  export let calculateInPaintingCost: ((film: Film) => number) | null = null;
   export let paperSize: [number, number] | null = null;
   export let downloadPrefix: string = '';
 
@@ -117,8 +115,6 @@
         on:delete={onDeleteFilm}
         on:tool
         on:commit
-        calculateOutPaintingCost={calculateOutPaintingCost}
-        calculateInPaintingCost={calculateInPaintingCost}
       />
     {/each}
     {#if isDragging && ghostIndex === filmStack.films.length}

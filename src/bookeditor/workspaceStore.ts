@@ -24,6 +24,9 @@ export const renderPreference: RenderPreference = { bubbleRenderMode: BubbleRend
 
 export let mainBookExceptionHandler: Writable<((e: any) => void) | null> = writable(null);
 
+// ページ削除後にonChangeBooksで新operatorsを使ってフォーカスするための橋渡し
+export const pendingFocusIndex: Writable<number | null> = writable(null);
+
 export function insertNewPageToBook(book: Book, index: number) {
   const p = book.newPageProperty;
   const example = frameExamples[p.templateName];

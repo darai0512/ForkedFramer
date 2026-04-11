@@ -20,7 +20,7 @@ import { bubbleInspectorTarget } from './bubbleinspector/bubbleInspectorStore';
 import { batchImagingPage } from '../generator/batchImagingStore';
 import { bubbleBucketPage } from '../bubbleBucket/bubbleBucketStore';
 import { pageInspectorTarget } from './pageinspector/pageInspectorStore';
-import { redrawToken, viewport } from './workspaceStore';
+import { redrawToken, viewport, pendingFocusIndex } from './workspaceStore';
 import { analyticsEvent } from '../utils/analyticsEvent';
 import { copyToClipboard } from '../utils/saver/copyToClipboard';
 import { toolTipRequest } from '../utils/passiveToolTipStore';
@@ -213,9 +213,10 @@ export class BookWorkspaceOperators implements BookOperators {
       index, 
       (tag: HistoryTag) => commit(tag)
     );
-    setTimeout(() => {
-      this.focusToPage(0, 1, false);
-    }, 100);
+    // 削除したページの前のページへ移動（なければ0ページ目）
+    // onChangeBook でキャンバスが再構築された後に新operatorsが実行する
+    const targetIndex = Math.max(0, index - 1);
+    pendingFocusIndex.set(targetIndex);
   }
 
   movePages(from: number[], to: number): void {

@@ -3,20 +3,18 @@
   import { TabGroup, Tab } from '@skeletonlabs/skeleton';
   import { tick } from "svelte";
   import Drawer from '../utils/Drawer.svelte';
-  import ImageGeneratorStableDiffusion from "./ImageGeneratorStableDiffusion.svelte";
   import MaterialBucketContent from "../materialBucket/MaterialBucketContent.svelte";
   import ImageGeneratorPlain from "./ImageGeneratorPlain.svelte";
   import ImageGeneratorProcedural from "./ImageGeneratorProcedural.svelte";
   import { type Media } from "../lib/layeredCanvas/dataModels/media";
   import type { GeneratedFilmResult } from "./imageGeneratorStore";
   import type { FilmProceduralEffect } from "../lib/layeredCanvas/dataModels/proceduralEffects";
+  import { makePlainCanvas } from "../lib/layeredCanvas/tools/imageUtil";
+  import { ImageMedia } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
-  import sprytIcon from '../assets/spryt.webp';
 
-  let busy: boolean;
   let tabSet: number = 1;
-  let prompt: string = 'zzz';
-  let gallery: Media[] = [];
+  let prompt: string = '';
   let chosen: Media | null = null;
 
   $: onTargetChanged($imageGeneratorTarget);
@@ -29,9 +27,7 @@
   $: onChangeGallery($imageGeneratorTarget?.gallery);
   async function onChangeGallery(g: Media[] | undefined) {
     if (g) {
-      gallery = [];
       await tick(); // HACK: なんかこうしないとHTMLが更新されない
-      gallery = g;
     }
   }
 
@@ -50,7 +46,6 @@
   }
 
   function onClickAway() {
-    if (busy) { return; }
     const t = $imageGeneratorTarget!;
     // onChosen直後にonClickAwayが呼ばれてすでにnullになっていることがある
     if (t != null) {
@@ -62,6 +57,16 @@
   function handleProceduralCreate(event: CustomEvent<{ effect: FilmProceduralEffect; label: string | null }>) {
     const { effect, label } = event.detail;
     notify({ kind: 'procedural', effect, prompt: label });
+  }
+
+  // タブ4: 透明レイヤー即時作成
+  $: if (tabSet === 4 && $imageGeneratorTarget) {
+    const [fw, fh] = $imageGeneratorTarget.frameSize;
+    const w = Math.max(256, Math.ceil(fw));
+    const h = Math.max(256, Math.ceil(fh));
+    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+    tabSet = 1; // resetしてからnotify
+    notify({ kind: 'media', media, prompt: '' });
   }
 </script>
 
@@ -75,9 +80,9 @@
 
     <TabGroup>
       <Tab bind:group={tabSet} name="tab1" value={1}>{$_('ui.materialBucket')}</Tab>
-      <Tab bind:group={tabSet} name="tab2" value={2}>Stable Diffusion</Tab>
-      <Tab bind:group={tabSet} name="tab4" value={3}>{$_('generator.blank')}</Tab>
-      <Tab bind:group={tabSet} name="tab5" value={4}>{$_('generator.procedural.title')}</Tab>
+      <Tab bind:group={tabSet} name="tab2" value={2}>{$_('generator.blank')}</Tab>
+      <Tab bind:group={tabSet} name="tab3" value={3}>{$_('generator.procedural.title')}</Tab>
+      <Tab bind:group={tabSet} name="tab4" value={4}>{$_('hint.frame.addTransparentLayer')}</Tab>
       <!-- Tab Panels --->
       <svelte:fragment slot="panel">
         {#if tabSet === 1}
@@ -85,10 +90,8 @@
             <MaterialBucketContent selectionOnly={true} on:choose={(e) => chosen = e.detail} />
           </div>
           {:else if tabSet === 2}
-          <ImageGeneratorStableDiffusion bind:busy={busy} bind:prompt={prompt} bind:gallery={gallery} bind:chosen={chosen}/>
-          {:else if tabSet === 3}
           <ImageGeneratorPlain bind:chosen={chosen}/>
-          {:else if tabSet === 4}
+          {:else if tabSet === 3}
           <ImageGeneratorProcedural on:create={handleProceduralCreate}/>
         {/if}
       </svelte:fragment>
@@ -100,11 +103,6 @@
 <style>
   .drawer-outer :global(.drawer .panel) {
     background-color: rgb(var(--color-surface-100));
-  }
-  .tab {
-    display: flex;
-    align-items: center;
-    gap: 5px;
   }
   .material-bucket-wrapper {
     height: calc(100vh - 120px);

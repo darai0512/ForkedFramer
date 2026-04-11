@@ -2,25 +2,11 @@ import { get } from "svelte/store";
 import { Film } from "../../lib/layeredCanvas/dataModels/film";
 import { ImageMedia } from "../../lib/layeredCanvas/dataModels/media";
 import type { Page } from '../../lib/book/book';
-import { toastStore } from '@skeletonlabs/skeleton';
-import { punchFilmInline } from '../../utils/punchImage';
-import { upscaleFilmInline } from '../../utils/upscaleImage';
-import { requireSignIn } from '../../utils/signInPrompt';
-import { loading } from '../../utils/loadingStore';
-import { sendMediaToMaterialCollection } from '../../materialBucket/materialOperations';
 import { toolTipRequest } from '../../utils/passiveToolTipStore';
 import { commit, delayedCommiter } from './commitOperations';
-import { generateMovie } from '../../utils/generateMovie';
 import { makePlainCanvas } from "../../lib/layeredCanvas/tools/imageUtil";
-import { eraserFilmInline } from "../../utils/eraserFilm";
-import { inpaintFilmInline } from "../../utils/inpaintFilm";
-import { textEditFilmInline } from "../../utils/textEditFilm";
-import { angleEditFilmInline } from "../../utils/angleEditFilm";
-import { mainBook } from '../workspaceStore'; // デバッグ用
-import { textLiftFilm } from "../../utils/textLiftFilm";
-import { layerizeFilm } from "../../utils/layerizeFilm";
+import { mainBook } from '../workspaceStore';
 import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
-import type { FrameElement } from "../../lib/layeredCanvas/dataModels/frameTree";
 
 // 共通インターフェース - フィルムオペレーション対象
 export interface FilmOperationTarget {
@@ -111,62 +97,6 @@ export async function handleGenerateCommand<T extends FilmOperationTarget>(
   commit(null);
 }
 
-// パンチ処理の共通処理
-export async function handlePunchCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  if (!await requireSignIn('ログインしていないと使えません')) {
-    return;
-  }
-
-  const film = target.commandTargetFilm!;
-  if (film.content.kind !== 'media') { return; }
-  if (!(film.content.media instanceof ImageMedia)) { return; }
-
-  const newFilm = punchFilmInline(film);
-  if (newFilm) {
-    const index = target.filmStack.films.indexOf(film);
-    target.filmStack.films.splice(index + 1, 0, newFilm);
-  }
-  commit(null);
-}
-
-// アップスケール処理の共通処理
-export async function handleUpscaleCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  if (!await requireSignIn('ログインしていないと使えません')) {
-    return;
-  }
-
-  const film = target.commandTargetFilm!;
-  if (film.content.kind !== 'media') { return; }
-  if (!(film.content.media instanceof ImageMedia)) { return; }
-
-  const newFilm = await upscaleFilmInline(film);
-  if (newFilm) {
-    const index = target.filmStack.films.indexOf(film);
-    target.filmStack.films.splice(index + 1, 0, newFilm);
-    toastStore.trigger({ message: `アップスケール処理を開始しました`, timeout: 3000});
-  }
-  commit(null);
-}
-
-// 動画生成の共通処理
-export async function handleVideoCommand<T extends FilmOperationTarget & { bubble?: any, frame?: any }>(
-  target: T,
-): Promise<void> {
-  // frameまたはbubbleに実際のFilmStackオブジェクトが含まれている
-  const actualFilmStack = target.frame?.filmStack || target.bubble?.filmStack;
-  if (!actualFilmStack) {
-    console.error("No valid filmStack found in target");
-    return;
-  }
-  
-  if (target.commandTargetFilm?.content.kind !== 'media') { return; }
-  await generateMovie(actualFilmStack, target.commandTargetFilm!);
-  commit(null);
-}
 
 export async function handleCoverCommand<T extends FilmOperationTarget>(
   target: T,
@@ -176,107 +106,13 @@ export async function handleCoverCommand<T extends FilmOperationTarget>(
   const size = calculateSize();
   size[0] = Math.max(size[0], 256);
   size[1] = Math.max(size[1], 256);
-  console.log("handleCoverCommand", size);
   const media = new ImageMedia(makePlainCanvas(size[0], size[1], "#ffffff00"));
   const film = Film.fromMedia(media);
   film.setShiftedScale(target.page.paperSize, 1.0);
-  
   target.filmStack.films.push(film);
   commit(null);
 }
 
-export async function handleEraserCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  const newFilm = await eraserFilmInline(target.commandTargetFilm!);
-  if (newFilm) {
-    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
-    target.filmStack.films.splice(index + 1, 0, newFilm);
-  }
-  commit(null);
-}
-
-export async function handleInpaintCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  const newFilm = await inpaintFilmInline(target.commandTargetFilm!);
-  if (newFilm) {
-    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
-    target.filmStack.films.splice(index + 1, 0, newFilm);
-  }
-  commit(null);
-}
-
-export async function handleTextEditCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  const newFilm = await textEditFilmInline(target.commandTargetFilm!);
-  if (newFilm) {
-    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
-    target.filmStack.films.splice(index + 1, 0, newFilm);
-  }
-  commit(null);
-}
-
-export async function handleAngleEditCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  const newFilm = await angleEditFilmInline(target.commandTargetFilm!);
-  if (newFilm) {
-    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
-    target.filmStack.films.splice(index + 1, 0, newFilm);
-  }
-  commit(null);
-}
-
-export async function handleSendToMaterialCollectionCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  if (target.commandTargetFilm?.content.kind !== 'media') { return; }
-  const result = await sendMediaToMaterialCollection(target.commandTargetFilm.content.media);
-  
-  toastStore.trigger({ 
-    message: result.message, 
-    timeout: 3000 
-  });
-}
-
-export async function handleTextLiftCommand<T extends FilmOperationTarget & { frame?: FrameElement }>(
-  target: T
-): Promise<void> {
-  const result = await textLiftFilm(target.page, target.commandTargetFilm!, target.frame);
-  if (result?.erasedFilm) {
-    const index = target.filmStack.films.indexOf(target.commandTargetFilm!);
-    const insertIndex = index >= 0 ? index + 1 : target.filmStack.films.length;
-    target.filmStack.films.splice(insertIndex, 0, result.erasedFilm);
-  }
-  if (result?.committed) {
-    commit(null);
-  }
-  loading.set(false);
-}
-
-export async function handleLayerizeCommand<T extends FilmOperationTarget>(
-  target: T
-): Promise<void> {
-  const film = target.commandTargetFilm!;
-
-  try {
-    const newFilms = await layerizeFilm(film);
-    if (newFilms.length > 0) {
-      const index = target.filmStack.films.indexOf(film);
-      const insertIndex = index >= 0 ? index + 1 : target.filmStack.films.length;
-      target.filmStack.films.splice(insertIndex, 0, ...newFilms);
-      commit(null);
-      toastStore.trigger({ message: `${newFilms.length}枚のレイヤーに分解しました`, timeout: 3000});
-    }
-  } catch (e) {
-    console.error(e);
-    toastStore.trigger({ message: `レイヤー化に失敗しました`, timeout: 3000});
-  } finally {
-    loading.set(false);
-  }
-}
 
 // コマンド処理の共通フロー
 export function processCommand<T extends FilmOperationTarget & { command: string | null }>(

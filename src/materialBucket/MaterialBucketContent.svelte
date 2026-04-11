@@ -5,6 +5,7 @@
   import { _ } from 'svelte-i18n';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
   import type { Node, EmbodiedEntry } from '../lib/filesystem/fileSystem';
+  import type { Media } from '../lib/layeredCanvas/dataModels/media';
   import { toolTip } from '../utils/passiveToolTipStore';
   import { tick, createEventDispatcher } from 'svelte';
   import {
@@ -22,9 +23,11 @@
   import trashIcon from '../assets/fileManager/trash.webp';
   import renameIcon from '../assets/fileManager/rename.webp';
 
-  const dispatch = createEventDispatcher<{ dragstart: void; addcollection: void }>();
+  const dispatch = createEventDispatcher<{ dragstart: void; addcollection: void; choose: Media }>(
+);
 
   export let galleryColumnWidth: number = 220;
+  export let selectionOnly: boolean = false;
 
   let materialCollectionFolders: EmbodiedEntry[] = [];
   let openStates: { [key: string]: boolean } = {};
@@ -207,7 +210,7 @@
         </svelte:fragment>
         <svelte:fragment slot="content">
           <div class="accordion-content">
-            <MaterialGallery targetNode={folder[2]} columnWidth={galleryColumnWidth} on:dragstart={onDragStart} />
+            <MaterialGallery targetNode={folder[2]} columnWidth={galleryColumnWidth} {selectionOnly} on:dragstart={onDragStart} on:choose={(e) => dispatch('choose', e.detail)} />
           </div>
         </svelte:fragment>
       </AccordionItem>

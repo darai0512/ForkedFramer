@@ -21,32 +21,17 @@
 
   import visibleIcon from '../../assets/filmlist/eye.webp';
   import trashIcon from '../../assets/filmlist/trash.webp';
-  import punchIcon from '../../assets/filmlist/punch.webp';
-  import outPaintingIcon from '../../assets/filmlist/outpainting.webp';
   import popupIcon from '../../assets/filmlist/popup.webp';
-  import videoIcon from '../../assets/video.webp';
-  import upscaleIcon from '../../assets/filmlist/upscale.webp';
   import dupliateIcon from '../../assets/filmlist/duplicate.webp';
-  import eraserIcon from '../../assets/filmlist/eraser.webp';
-  import inpaintIcon from '../../assets/filmlist/inpaint.webp';
-  import texteditIcon from '../../assets/filmlist/textedit.webp';
-  import angleeditIcon from '../../assets/filmlist/angleedit.webp';
   import downloadIcon from '../../assets/download.webp';
-  import textLiftIcon from '../../assets/filmlist/textlift.webp';
-  import layerizeIcon from '../../assets/filmlist/layerize.webp';
-  import stampIcon from '../../assets/stamp.webp';
   import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
   import { tick } from 'svelte';
   
   export let showsBarrier: boolean;
   export let film: Film | null;
-  export let calculateOutPaintingCost: ((film: Film) => number) | null = null;
-  export let calculateInPaintingCost: ((film: Film) => number) | null = null;
   export let downloadName: string = '';
 
   let effectVisible = false;
-  let outPaintingCost = 0;
-  let inPaintingCost = 0;
   let popupVisible = false;
   let popupButton: HTMLButtonElement;
 
@@ -137,57 +122,10 @@
     dispatch('tool', {film, tool});
   }
 
-  function onEraser(ev: MouseEvent) {
-    dispatchFilmTool('eraser');
-  }
-
-  function onInpaint(ev: MouseEvent) {
-    dispatchFilmTool('inpaint');
-  }
-
-  function onTextEdit(ev: MouseEvent) {
-    dispatchFilmTool('textedit');
-  }
-
-  function onAngleEdit(ev: MouseEvent) {
-    dispatchFilmTool('angleedit');
-  }
-
-  function onSendToMaterialCollection(ev: MouseEvent) {
-    dispatchFilmTool('sendToMaterialCollection');
-  }
-
-  function onPunch(ev: MouseEvent) {
-    dispatchFilmTool('punch');
-  }
-
-  function onUpscale(ev: MouseEvent) {
-    dispatchFilmTool('upscale');
-  }
-
   function onDuplicate(ev: MouseEvent) {
     dispatchFilmTool('duplicate');
   }
 
-  function onLayerize(ev: MouseEvent) {
-    dispatchFilmTool('layerize');
-  }
-
-  function onOutPainting(ev: MouseEvent) {
-    if (outPaintingCost === 0) {
-      toastStore.trigger({ message: "アウトペインティング余地がありません", timeout: 3000 });
-      return;
-    }
-    dispatchFilmTool('outpaint');
-  }
-
-  function onVideo(ev: MouseEvent) {
-    dispatchFilmTool('video');
-  }
-
-  function onTextLift(ev: MouseEvent) {
-    dispatchFilmTool('textlift')
-  }
 
   function onToggleeffectVisible(ev: MouseEvent) {
     ev.stopPropagation();
@@ -257,14 +195,6 @@
       e.stopPropagation?.();
       e.preventDefault?.();
   }
-
-  $: outPaintingCost = film && film.content.kind === 'media' && calculateOutPaintingCost
-    ? calculateOutPaintingCost(film)
-    : 0;
-
-  $: inPaintingCost = film && film.content.kind === 'media' && calculateInPaintingCost
-    ? calculateInPaintingCost(film)
-    : 0;
 
   // ダウンロードボタンの処理
   async function onDownload(ev: MouseEvent) {
@@ -434,43 +364,8 @@
     <div class="card p-4 shadow-xl z-[1001]" style="z-index: 100;">
       <div class="barrier-transformix-row">
         <div class="transformix-grid">
-          {#if calculateOutPaintingCost != null}
-            <button class="transformix-item" use:toolTip={outPaintingCost == 0 ? `${$_('frame.actions.outpaint')}(余地がないので不可)` : `${$_('frame.actions.outpaint')}[${outPaintingCost}]`} on:click={onOutPainting}>
-              <img draggable={false} src={outPaintingIcon} alt={$_('frame.actions.outpaint')}/>
-            </button>
-          {/if}
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.eraser')}[6]`} on:click={onEraser}>
-            <img draggable={false} src={eraserIcon} alt={$_('frame.actions.eraser')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.backgroundRemoval')}[3]`} on:click={onPunch}>
-            <img draggable={false} src={punchIcon} alt={$_('frame.actions.backgroundRemoval')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.upscale')}[1]`} on:click={onUpscale}>
-            <img draggable={false} src={upscaleIcon} alt={$_('frame.actions.upscale')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.inpaint')}[${inPaintingCost}]`} on:click={onInpaint}>
-            <img draggable={false} src={inpaintIcon} alt={$_('frame.actions.inpaint')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.textEdit')}[6]`} on:click={onTextEdit}>
-            <img draggable={false} src={texteditIcon} alt={$_('frame.actions.textEdit')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.angleEdit')}[5]`} on:click={onAngleEdit}>
-            <img draggable={false} src={angleeditIcon} alt={$_('frame.actions.angleEdit')}/>
-          </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.duplicate')} on:click={onDuplicate}>
             <img draggable={false} src={dupliateIcon} alt={$_('frame.actions.duplicate')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.movieCreation')}...`} on:click={onVideo}>
-            <img draggable={false} src={videoIcon} alt={$_('frame.actions.movieCreation')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={$_('frame.actions.sendToMaterialCollection')} on:click={onSendToMaterialCollection}>
-            <img draggable={false} src={stampIcon} alt={$_('frame.actions.sendToMaterialCollection')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={$_('frame.actions.textlift')} on:click={onTextLift}>
-            <img draggable={false} src={textLiftIcon} alt={$_('frame.actions.textlift')}/>
-          </button>
-          <button class="transformix-item" use:toolTip={`${$_('frame.actions.layerize')}[8]`} on:click={onLayerize}>
-            <img draggable={false} src={layerizeIcon} alt={$_('frame.actions.layerize')}/>
           </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
             <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>

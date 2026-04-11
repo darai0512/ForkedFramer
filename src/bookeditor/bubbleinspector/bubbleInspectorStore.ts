@@ -11,20 +11,12 @@ import type { GeneratedFilmResult } from "../../generator/imageGeneratorStore";
 import {
   setupCommandSubscription,
   handleCoverCommand,
-  handleEraserCommand,
-  handleInpaintCommand,
-  handleTextEditCommand,
-  handleAngleEditCommand,
-  handleSendToMaterialCollectionCommand,
   handleScribbleCommand,
   handleGenerateCommand,
-  handlePunchCommand,
-  handleUpscaleCommand,
-  handleVideoCommand,
   processCommand
 } from '../operations/filmStackOperations';
 
-type BubbleInspectorCommand = "generate" | "cover" | "scribble" | "punch" | "upscale" | "video" | "split" | "inpaint" | "eraser" | "textedit" | "angleedit" | "sendToMaterialCollection";
+type BubbleInspectorCommand = "generate" | "cover" | "scribble" | "split";
 
 export interface BubbleInspectorTarget extends FilmOperationTarget {
   bubble: Bubble;
@@ -84,10 +76,6 @@ async function onBubbleCommand(bit: BubbleInspectorTarget | null) {
       },
       bubbleInspectorTarget,
     ),
-    "eraser": handleEraserCommand,
-    "inpaint": handleInpaintCommand,
-    "textedit": handleTextEditCommand,
-    "angleedit": handleAngleEditCommand,
     "scribble": async (target) => handleScribbleCommand(target, painterRunWithBubble!, target.bubble),
     "generate": async (target) => {
       const paperSize = target.page.paperSize;
@@ -105,11 +93,7 @@ async function onBubbleCommand(bit: BubbleInspectorTarget | null) {
         frameSize
       );
     },
-    "punch": handlePunchCommand,
-    "upscale": handleUpscaleCommand,
     "split": splitBubble,
-    "video": handleVideoCommand,
-    "sendToMaterialCollection": handleSendToMaterialCollectionCommand
   });
   
   bubbleInspectorRebuildToken.update(v => v + 1);

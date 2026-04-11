@@ -7,7 +7,7 @@
   import { setBubbleCommandTools } from './bubbleinspector/bubbleInspectorStore';
   import { setFrameCommandTools } from './frameinspector/frameInspectorStore';
   import type { Book } from '../lib/book/book';
-  import { mainBook, bookOperators, viewport, redrawToken, undoToken, resetFontCacheKey, mainBookExceptionHandler } from './workspaceStore';
+  import { mainBook, bookOperators, viewport, redrawToken, undoToken, resetFontCacheKey, mainBookExceptionHandler, pendingFocusIndex } from './workspaceStore';
   import { buildBookEditor } from './operations/buildBookEditor';
   import { hint } from './bookEditorUtils';
   import AutoSizeCanvas from '../utils/AutoSizeCanvas.svelte';
@@ -124,9 +124,15 @@
     setLayerRefs(layeredCanvas, arrayLayer);
     layeredCanvas.redraw();
 
-    // 初回ロード時のみ、ページ遷移と同じ方法でページ0にフォーカスする
-    // (setTimeout でcanvasサイズが確定してから実行)
-    if (isFirstBuild) {
+    // pendingFocusIndex がセットされている場合（ページ削除後）は
+    // 新しいoperatorsでそのページへフォーカス
+    const pfi = $pendingFocusIndex;
+    if (pfi !== null) {
+      pendingFocusIndex.set(null);
+      setTimeout(() => {
+        operators.focusToPage(Math.min(pfi, book.pages.length - 1), 1, true);
+      }, 0);
+    } else if (isFirstBuild) {
       isFirstBuild = false;
       setTimeout(() => {
         operators.focusToPage(0, 1, true);

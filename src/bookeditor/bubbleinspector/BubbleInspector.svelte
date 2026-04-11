@@ -89,7 +89,17 @@
     }
   );
 
-  $: opened = $dominantMode != "painting" && $bubble != null;
+  $: opened = !manuallyHidden && $dominantMode != "painting" && $bubble != null;
+  let manuallyHidden = false;
+
+  // 新しい吹き出しが選択されたらドロワーを再表示
+  $: if ($bubbleInspectorTarget?.bubble) {
+    manuallyHidden = false;
+  }
+
+  function close() {
+    manuallyHidden = true;
+  }
 
   $: onOpen(opened);
   async function onOpen(o: boolean) {
@@ -264,24 +274,10 @@
     $bookOperators!.commit(e.detail ? null : "effect");
   }
 
-  function onScribble(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "scribble";
-  }
 
   async function onGenerate(e: CustomEvent<Film>) {
     $bubbleInspectorTarget!.commandTargetFilm = e.detail;
     $bubbleInspectorTarget!.command = "generate";
-  }
-
-  function onPunch(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "punch";
-  }
-
-  function onUpscale(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "upscale";
   }
 
   function onDuplicate(e: CustomEvent<Film>) {
@@ -298,11 +294,6 @@
     $bookOperators!.commit(null);
   }
 
-  function onVideo(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "video";
-  }
-
   function onAccept(e: CustomEvent<{index: number, films: Film[]}>) {
     const {index, films} = e.detail;
     const page = $bubbleInspectorTarget!.page;
@@ -314,63 +305,12 @@
     $bookOperators!.commit(null);
   }
 
-  function onEraser(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "eraser";
-  }
-
-  function onInpaint(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "inpaint";
-  }
-
-  function onTextEdit(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "textedit";
-  }
-
-  function onAngleEdit(e: CustomEvent<Film>) {
-    $bubbleInspectorTarget!.commandTargetFilm = e.detail;
-    $bubbleInspectorTarget!.command = "angleedit";
-  }
-
-  function onSendToMaterialCollection(film: Film) {
-    $bubbleInspectorTarget!.commandTargetFilm = film;
-    $bubbleInspectorTarget!.command = "sendToMaterialCollection";
-  }
 
   function onTool(e: CustomEvent<{tool: string, film: Film}>) {
     const { tool, film } = e.detail;
     switch(tool) {
-      case "punch":
-        onPunch({ detail: film } as CustomEvent<Film>);
-        break;
-      case "upscale":
-        onUpscale({ detail: film } as CustomEvent<Film>);
-        break;
-      case "video":
-        onVideo({ detail: film } as CustomEvent<Film>);
-        break;
-      case "eraser":
-        onEraser({ detail: film } as CustomEvent<Film>);
-        break;
-      case "inpaint":
-        onInpaint({ detail: film } as CustomEvent<Film>);
-        break;
-      case "textedit":
-        onTextEdit({ detail: film } as CustomEvent<Film>);
-        break;
-      case "angleedit":
-        onAngleEdit({ detail: film } as CustomEvent<Film>);
-        break;
-      case "scribble":
-        onScribble({ detail: film } as CustomEvent<Film>);
-        break;
       case "duplicate":
         onDuplicate({ detail: film } as CustomEvent<Film>);
-        break;
-      case "sendToMaterialCollection":
-        onSendToMaterialCollection(film);
         break;
     }
   }

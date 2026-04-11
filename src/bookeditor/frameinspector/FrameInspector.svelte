@@ -8,10 +8,8 @@
   import Drawer from "../../utils/Drawer.svelte";
   import { bookOperators, mainBook } from "../workspaceStore";
   import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
-  import { calculateFramePadding } from '../../utils/outPaintFilm'
   import type { FilmTool } from '../../utils/filmTools';
   import { _ } from 'svelte-i18n';
-  import { calculateOutPaintingCost as calcOutPaintCost, calculateInPaintingCost as calcInPaintCost } from '../../utils/edgeFunctions/calculateCost';
 
   let innerWidth = window.innerWidth;
   let innerHeight = window.innerHeight;
@@ -26,7 +24,17 @@
     }
   );
 
-  $: opened = $dominantMode != "painting" && $frameInspectorTarget?.frame != null
+  $: opened = !manuallyHidden && $dominantMode != "painting" && $frameInspectorTarget?.frame != null;
+  let manuallyHidden = false;
+
+  // 新しいコマが選択されたらドロワーを再表示
+  $: if ($frameInspectorTarget?.frame) {
+    manuallyHidden = false;
+  }
+
+  function close() {
+    manuallyHidden = true;
+  }
   $: filmStack = $frameInspectorTarget?.frame.filmStack!;
 
   $: downloadPrefix = (() => {
@@ -65,60 +73,10 @@
   function onTool(e: CustomEvent<{tool:FilmTool, film:Film}>) {
     const { tool, film } = e.detail;
     switch(tool) {
-      case "punch":
-        onPunch(film);
-        break;
-      case "video":
-        onVideo(film);
-        break;
-      case "upscale":
-        onUpscale(film);
-        break;
       case "duplicate":
         onDuplicate(film);
         break;
-      case "outpaint":
-        onOutPaint(film);
-        break;
-      case "eraser":
-        onEraser(film);
-        break;
-      case "inpaint":
-        onInpaint(film);
-        break;
-      case "textedit":
-        onTextEdit(film);
-        break;
-      case "angleedit":
-        onAngleEdit(film);
-        break;
-      case "textlift":
-        onTextLift({ detail: film } as CustomEvent<Film>);
-        break;
-      case "sendToMaterialCollection":
-        onSendToMaterialCollection(film);
-        break;
-      case "layerize":
-        onLayerize(film);
-        break;
     }
-  }
-
-  function onPunch(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "punch";
-  }
-
-  function onVideo(film: Film) {
-    console.log("FrameInspector.onVideo",)
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "video";
-  }
-
-  function onUpscale(film: Film) {
-    console.log("FrameInspector.onUpscale")
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "upscale";
   }
 
   function onDuplicate(film: Film) {
@@ -133,72 +91,7 @@
     $bookOperators!.commit(null);
   }
 
-  function onOutPaint(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "outpaint";
-  }
 
-  function onEraser(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "eraser";
-  }
-
-  function onInpaint(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "inpaint";
-  }
-
-  function onTextEdit(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "textedit";
-  }
-  
-  function onAngleEdit(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "angleedit";
-  }
-
-  function onSendToMaterialCollection(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "sendToMaterialCollection";
-  }
-
-  function onLayerize(film: Film) {
-    $frameInspectorTarget!.commandTargetFilm = film;
-    $frameInspectorTarget!.command = "layerize";
-  }
-
-  function onTextLift(e: CustomEvent<Film>) {
-    $frameInspectorTarget!.commandTargetFilm = e.detail;
-    $frameInspectorTarget!.command = "textlift";
-  }
-
-  function calculateOutPaintingCost(film: Film) {
-    if (film.content.kind !== 'media') {
-      return 0;
-    }
-    const fit = $frameInspectorTarget!;
-    const padding = calculateFramePadding(fit.page, fit.frame, film);
-    
-    const size = {
-      width: film.content.media.naturalWidth,
-      height: film.content.media.naturalHeight
-    };
-    
-    return calcOutPaintCost(size, padding);
-  }
-
-  function calculateInPaintingCost(film: Film) {
-    if (film.content.kind !== 'media') {
-      return 0;
-    }
-    const size = {
-      width: film.content.media.naturalWidth,
-      height: film.content.media.naturalHeight
-    };
-    
-    return calcInPaintCost(size);
-  }
 
 </script>
 
@@ -224,9 +117,7 @@
           on:commit={onCommit}
           on:generate={onGenerate}
           on:accept={onAccept}
-          on:tool={onTool}
-          calculateOutPaintingCost={calculateOutPaintingCost}
-          calculateInPaintingCost={calculateInPaintingCost}/>
+          on:tool={onTool}/>
       {/key}
     </div>
   </Drawer>

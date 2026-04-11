@@ -44,6 +44,7 @@
   let usedSize: string;
 
   async function wipeLocalStorage() {
+    $fileManagerOpen = false;
     const confirmed = await waitDialog('confirm', {
       title: 'ローカルデータの初期化',
       message: 'このアプリで保存しているすべてのデータや設定（進行中の本や素材など）が消去されます。実行してよろしいですか？',
@@ -379,6 +380,7 @@
   }
 
   async function displayStoredImages() {
+    $fileManagerOpen = false;
     const d: ModalSettings = {
       type: 'component',
       component: 'fileBrowser',
@@ -392,6 +394,7 @@
 
   async function dump(fs: FileSystem) {
     console.log("dump");
+    $fileManagerOpen = false;
     const r = await waitDialog<boolean>('dump', {sourceTitle: getFileSystemName(fs.id)});
     if (r) {
       // 新インターフェイス: optionsオブジェクトでonProgressを渡す
@@ -415,6 +418,7 @@
 
   async function undump(fs: FileSystem) {
     console.log("undump");
+    $fileManagerOpen = false;
     const dumpFiles = await waitDialog<FileList>('undump', {sourceTitle: getFileSystemName(fs.id)});
     if (dumpFiles) {
       console.log("undump start");
@@ -450,6 +454,8 @@
     console.log("###### FileManagerRoot.onMount");
     localFolders = await getRootFolders(localFileSystem);
     localState.set('linked');
+    // 素材集などのgadgetStorageは常にlocalFileSystemを使用
+    $gadgetFileSystem = localFileSystem;
   });
 
 </script>
@@ -538,6 +544,7 @@
       <div class="flex flex-row gap-2 items-center justify-center p-2">
         <button class="btn-sm w-32 variant-filled"  on:click={() => dump(localFileSystem)}>{$_('storage.dump')}</button>
         <button class="btn-sm w-32 variant-filled"  on:click={() => undump(localFileSystem)}>{$_('storage.restore')}</button>
+        <button class="btn-sm w-20 variant-filled-error font-bold" on:click={wipeLocalStorage}>初期化</button>
       </div>
 
       <h2>管理</h2>
@@ -546,14 +553,8 @@
           <SlideToggle active="bg-primary-500" name="saveProhibitToggle" bind:checked={$saveProhibitFlag} on:change={onSaveProhibitChange} />
           <span class="text-sm">現在セーブ禁止状態にする (現在のセッション中有効)</span>
         </label>
-        <div>
-          <button class="btn variant-filled-error w-80 text-sm font-bold mt-2" on:click={wipeLocalStorage}>
-            ローカルの全データを空にする(初期化)
-          </button>
-        </div>
       </div>
 
-      <div class="h-24"></div>
     </div>
   </Drawer>
 </div>
