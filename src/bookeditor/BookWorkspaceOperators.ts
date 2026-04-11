@@ -385,28 +385,6 @@ export class BookWorkspaceOperators implements BookOperators {
     });
   }
 
-  coverFrame(page: Page, frame: FrameElement): void {
-    console.log("coverFrame", frame);
-    frameInspectorTarget.set({
-      frame,
-      filmStack: frame.filmStack,
-      page,
-      command: "cover",
-      commandTargetFilm: null,
-    });
-  }
-
-  coverBubble(page: Page, bubble: Bubble): void {
-    console.log("coverBubble", bubble);
-    bubbleInspectorTarget.set({
-      bubble,
-      filmStack: bubble.filmStack,
-      page,
-      command: "cover",
-      commandTargetFilm: null,
-    });
-  }
-
   selectBubbleExternal(page: Page, bubble: Bubble): void {
     if (!this.arrayLayer) {
       console.warn("BookWorkspaceOperators not properly initialized");

@@ -148,12 +148,13 @@ export class FrameLayer extends LayerBase {
 
     const isImageActiveDraggable = () => this.interactable && 0 < (this.selectedLayout?.element.filmStack.films.length ?? 0);
     const isImageActive = () => this.interactable && 0 < (this.selectedLayout?.element.filmStack.films.length ?? 0) && !this.pointerHandler;
+    const isFrameSelected = () => this.interactable && this.selectedLayout != null && !this.pointerHandler;
     this.scaleIcon = new ClickableIcon(["frameLayer/scale.webp"],unit,[1,1],"hint.frame.dragToScale", isImageActiveDraggable, mp);
     this.rotateIcon = new ClickableIcon(["frameLayer/rotate.webp"],unit,[1,1],"hint.frame.dragToRotate", isImageActiveDraggable, mp);
-    this.scribbleIcon = new ClickableIcon(["frameLayer/scribble.webp"],unit,[1,1],"hint.frame.scribbleOnTop", isImageActive, mp);
-    this.flipHorizontalIcon = new ClickableIcon(["frameLayer/flip-horizontal.webp"],unit,[1,1],"hint.frame.flipHorizontal", isImageActive, mp);
-    this.flipVerticalIcon = new ClickableIcon(["frameLayer/flip-vertical.webp"],unit,[1,1],"hint.frame.flipVertical", isImageActive, mp);
-    this.fitIcon = new ClickableIcon(["frameLayer/fit.webp"],unit,[1,1],"hint.frame.fit", isImageActive, mp);
+    this.scribbleIcon = new ClickableIcon(["frameLayer/scribble.webp"],unit,[1,1],"hint.frame.scribbleOnTop", isFrameSelected, mp);
+    this.flipHorizontalIcon = new ClickableIcon(["frameLayer/flip-horizontal.webp"],unit,[1,1],"hint.frame.flipHorizontal", isFrameSelected, mp);
+    this.flipVerticalIcon = new ClickableIcon(["frameLayer/flip-vertical.webp"],unit,[1,1],"hint.frame.flipVertical", isFrameSelected, mp);
+    this.fitIcon = new ClickableIcon(["frameLayer/fit.webp"],unit,[1,1],"hint.frame.fit", isFrameSelected, mp);
 
     const isBorderActive = (dir: 'h' | 'v') => this.interactable && this.selectedBorder?.layout.dir === dir;
     this.expandHorizontalIcon = new ClickableIcon(["frameLayer/expand-horizontal.webp"],unit,[0.5,1],"hint.frame.changeWidth", () => isBorderActive('h'), mp);

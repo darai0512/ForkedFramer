@@ -94,7 +94,7 @@ export class BubbleLayer extends LayerBase {
     this.imageScaleLockIcon.index = 0;
     this.scaleIcon = new ClickableIcon(["bubbleLayer/bubble-scale.webp"],unit,[1,1],"hint.bubble.dragToScale", () => this.interactable && this.selected != null && 0 < this.selected?.filmStack.films.length, mp);
 
-    this.scribbleIcon = new ClickableIcon(["bubbleLayer/scribble.webp"],unit,[0,1],"hint.bubble.scribbleOnTop", () => this.interactable && this.selected != null && 0 < this.selected?.filmStack.films.length, mp);
+    this.scribbleIcon = new ClickableIcon(["bubbleLayer/scribble.webp"],unit,[0,1],"hint.bubble.scribbleOnTop", () => this.interactable && this.selected != null, mp);
 
     this.optionIcons = {};
     this.optionIcons.tail = new ClickableIcon(["bubbleLayer/tail-tip.webp"],unit,[0.5,0.5],"hint.bubble.dragTail", () => this.interactable && this.selected != null, mp);
@@ -843,8 +843,6 @@ export class BubbleLayer extends LayerBase {
       yield* this.translateImage(dragStart, payload.bubble);
     } else if (payload.action === "image-scale") {
       yield* this.scaleImage(dragStart, payload.bubble);
-    } else if (payload.action === "cover") {
-      this.onCover(payload.bubble);
     } else if (payload.action === "scribble") {
       this.onScribble(payload.bubble);
     } else if (payload.action === "options-tailTip") {
@@ -965,8 +963,7 @@ export class BubbleLayer extends LayerBase {
 
     this.scaleIcon.position = cp([1,1],[-2,0]);
 
-    this.coverIcon.position = cp([0,1], [0,0]);
-    this.scribbleIcon.position = cp([0,1], [1,0]);
+    this.scribbleIcon.position = cp([0,1], [0,0]);
   }
 
   *createBubble(dragStart: Vector, createsSurface: boolean): Generator<void, void, Vector> {

@@ -9,8 +9,6 @@
   import { type Media } from "../lib/layeredCanvas/dataModels/media";
   import type { GeneratedFilmResult } from "./imageGeneratorStore";
   import type { FilmProceduralEffect } from "../lib/layeredCanvas/dataModels/proceduralEffects";
-  import { makePlainCanvas } from "../lib/layeredCanvas/tools/imageUtil";
-  import { ImageMedia } from "../lib/layeredCanvas/dataModels/media";
   import { _ } from 'svelte-i18n';
 
   let tabSet: number = 1;
@@ -59,15 +57,7 @@
     notify({ kind: 'procedural', effect, prompt: label });
   }
 
-  // タブ4: 透明レイヤー即時作成
-  $: if (tabSet === 4 && $imageGeneratorTarget) {
-    const [fw, fh] = $imageGeneratorTarget.frameSize;
-    const w = Math.max(256, Math.ceil(fw));
-    const h = Math.max(256, Math.ceil(fh));
-    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
-    tabSet = 1; // resetしてからnotify
-    notify({ kind: 'media', media, prompt: '' });
-  }
+
 </script>
 
 <div class="drawer-outer">
@@ -82,7 +72,7 @@
       <Tab bind:group={tabSet} name="tab1" value={1}>{$_('ui.materialBucket')}</Tab>
       <Tab bind:group={tabSet} name="tab2" value={2}>{$_('generator.blank')}</Tab>
       <Tab bind:group={tabSet} name="tab3" value={3}>{$_('generator.procedural.title')}</Tab>
-      <Tab bind:group={tabSet} name="tab4" value={4}>{$_('hint.frame.addTransparentLayer')}</Tab>
+
       <!-- Tab Panels --->
       <svelte:fragment slot="panel">
         {#if tabSet === 1}
