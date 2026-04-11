@@ -1,11 +1,6 @@
 <script lang="ts">
   import { type ModalSettings, modalStore } from '@skeletonlabs/skeleton';
   import aiPictorsIcon from '../assets/aipictors_logo_0.webp';
-  import { toastStore } from '@skeletonlabs/skeleton';
-  import { onlineAccount } from '../utils/accountStore';
-  import { contact } from '../supabase';
-
-  let contactText = "";
 
   function showComic() {
     const d: ModalSettings = {
@@ -14,69 +9,9 @@
     };
     modalStore.trigger(d);    
   }
-
-  function showLicense() {
-    const d: ModalSettings = {
-      type: 'component',
-      component: 'license',
-    };
-    modalStore.trigger(d);    
-  }
-  
-  async function doContact() {
-    console.log(contactText);
-    if (contactText == null || contactText == "") {
-      toastStore.trigger({ message: '要望を入力してください', timeout: 1500});
-      return;
-    }
-    if (contactText === "throw error") {
-      throw new Error("intentional error");
-    }
-    try {
-      await contact({message:contactText});
-      toastStore.trigger({ message: '要望を投稿しました', timeout: 1500});
-      contactText = "";
-    }
-    catch (e) {
-      toastStore.trigger({ message: '要望の投稿に失敗しました', timeout: 1500});
-      console.log(e);
-    }
-  }
 </script>
 
 <div>
-  <h2>FramePlanner</h2>
-
-  <h3>紹介・入門記事</h3>
-  <p>
-    <a href="https://www.youtube.com/channel/UC3kZKl2Q5IvlFKnJ8RHKBGw">Youtube ムービーマニュアル</a>
-  </p>
-  <p>
-    <a href="https://note.com/super_lilac52/n/n63eee9724a03" target="_blank" rel="noopener noreferrer">「FramePlanner」とは？誰でも簡単にAIマンガが作れる神ツールを解説！</a>
-  </p>
-  <p>
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <span class="comic-link" on:click={showComic}>はじめてのFramePlanner（まんが入門！）</span>(<a href="https://twitter.com/aiai61555228" target="_blank" rel="noopener noreferer">@aiai61555228</a>)
-  </p>
-
-  <h3>ギャラリー</h3>
-  <p class="inline-elements">
-    <a href="https://www.aipictors.com/tags/frameplanner?orderBy=LIKES_COUNT&sort=DESC&page=0&prompt=0
-    https://www.aipictors.com/search/?tag=frameplanner" target="_blank" rel="noopener noreferrer">
-      <img width=110 src={aiPictorsIcon} alt="aipictors"/>
-    </a>
-    <a href="https://www.chichi-pui.com/posts/tags/FramePlanner/" target="_blank" rel="noopener noreferrer">ちちぷい</a>
-    <a href="https://twitter.com/hashtag/frameplanner?src=hashtag_click&f=live" target="_blank" rel="noopener noreferrer">#frameplanner(Twitter)</a>
-  </p>
-
-  <h3>資料</h3>
-  <p>
-    <a href="https://github.com/jonigata/FramePlanner2" target="_blank" rel="noopener noreferrer">github</a>
-    <a href="https://twitter.com/jonigata_ai" target="_blank" rel="noopener noreferrer">twitter</a>
-    <a href="https://t.co/UC3jJOJJtS" target="_blank" rel="noopener noreferrer">anonymous request</a>
-  </p>
-
   <h2>チートシート</h2>
   <p>※文字キー＋クリックはインスペクタを非表示にしてから</p>
 
@@ -126,23 +61,35 @@
   <p>画像ファイルを左上のフキダシアイコンにドロップ: 作成</p>
   <p>画像をペースト: 作成</p>
 
-  <h3>sdwebui連携</h3>
-  <dl>
-    <dt>API有効化、CORS対応</dt>
-    <dd>sdwebui起動時に、COMMANDLINE_ARGSに'--api --cors-allow-origins https://frameplanner-e5569.web.app'を指定する</dd>
-    <dt>Mixed content対応</dt>
-    <dd>以下のどれかを行う
-      <ol>
-        <li>sdwebuiをhttpsでホスト</li>
-        <li>sdwebuiでngrokなどを使う</li>
-        <li><a href="https://t.co/m48tNsHWzB">ブラウザのセキュリティを緩める</a></li>
-      </ol>
-    </dd>
-    <dt>URL入力</dt>
-    <dd>各コマやフキダシのレイヤーリストで「＋」ボタンを押し、右サイドに画像生成パネルが出たら「Stable Diffusion」タブを選択する。「URL」にsdwebuiのURLを入力する</dd>
-    <dt>scribble</dt>
-    <dd><a href="https://twitter.com/jonigata_ai/status/1659567680695992320">動画(Twitter)</a></dd>
-  </dl>
+  <h3>紹介・入門記事</h3>
+  <p>
+    <a href="https://www.youtube.com/channel/UC3kZKl2Q5IvlFKnJ8RHKBGw">Youtube ムービーマニュアル</a>
+  </p>
+  <p>
+    <a href="https://note.com/super_lilac52/n/n63eee9724a03" target="_blank" rel="noopener noreferrer">「FramePlanner」とは？誰でも簡単にAIマンガが作れる神ツールを解説！</a>
+  </p>
+  <p>
+    <!-- svelte-ignore a11y-click-events-have-key-events -->
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
+    <span class="comic-link" on:click={showComic}>はじめてのFramePlanner（まんが入門！）</span>(<a href="https://twitter.com/aiai61555228" target="_blank" rel="noopener noreferer">@aiai61555228</a>)
+  </p>
+
+  <h3>ギャラリー</h3>
+  <p class="inline-elements">
+    <a href="https://www.aipictors.com/tags/frameplanner?orderBy=LIKES_COUNT&sort=DESC&page=0&prompt=0
+    https://www.aipictors.com/search/?tag=frameplanner" target="_blank" rel="noopener noreferrer">
+      <img width=110 src={aiPictorsIcon} alt="aipictors"/>
+    </a>
+    <a href="https://www.chichi-pui.com/posts/tags/FramePlanner/" target="_blank" rel="noopener noreferrer">ちちぷい</a>
+    <a href="https://twitter.com/hashtag/frameplanner?src=hashtag_click&f=live" target="_blank" rel="noopener noreferrer">#frameplanner(Twitter)</a>
+  </p>
+
+  <h3>資料</h3>
+  <p>
+    <a href="https://github.com/jonigata/FramePlanner2" target="_blank" rel="noopener noreferrer">github</a>
+    <a href="https://twitter.com/jonigata_ai" target="_blank" rel="noopener noreferrer">twitter</a>
+    <a href="https://t.co/UC3jJOJJtS" target="_blank" rel="noopener noreferrer">anonymous request</a>
+  </p>
 
   <h2>Q&A</h2>
   <dl>
@@ -153,31 +100,6 @@
     <dt>Q.ダウンロードしたパッケージを読み込むには？</dt>
     <dd>A.ファイルマネージャにドロップしてください</dd>
   </dl>
-
-  <h2>注意</h2>
-  <ul>
-    <li>Share機能で作ったドキュメントは突然予告もなく消すことがあります</li>
-  </ul>
-
-  <h2>ライセンス</h2>
-  <p>
-    <!-- svelte-ignore a11y-click-events-have-key-events -->
-    <!-- svelte-ignore a11y-no-static-element-interactions -->
-    <span class="comic-link" on:click={showLicense}>ライセンス</span>
-  </p>
-
-  {#if $onlineAccount}
-    <h2>要望(Contact)</h2>
-    <p>回答はX(<a href="https://x.com/jonigata_ai" target="_blank" rel="noopener noreferrer">https://x.com/jonigata_ai</a>)で行うことがあります</p>
-    <div class="hbox mx-2" style="margin-top: 4px;">
-      <textarea class="mx-2 my-2 rounded-container-token grow textarea" bind:value={contactText}></textarea>
-      <button class="btn btn-sm variant-filled paper-size"  on:click={doContact}>送信</button>
-    </div>
-  {:else}
-    <h2>要望(Contact)</h2>
-    <p>ログインすると匿名の要望を送ることができます。</p>
-    <p>回答はX(<a href="https://x.com/jonigata_ai" target="_blank" rel="noopener noreferrer">https://x.com/jonigata_ai</a>)で行うことがあります</p>
-  {/if}
 </div>
 
 <style>

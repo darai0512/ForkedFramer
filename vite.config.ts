@@ -6,11 +6,13 @@ import { glob } from 'glob'
 import * as path from 'path'
 import { visualizer } from "rollup-plugin-visualizer"
 import { sentryVitePlugin } from "@sentry/vite-plugin";
+import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // https://vitejs.dev/config/
 export default vitestDefineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  
+  const useHttps = !!process.env.HTTPS_MODE;
+
   return {
   build: {
     minify: false,
@@ -35,7 +37,8 @@ export default vitestDefineConfig(({ mode }) => {
       org: env.SENTRY_ORG,
       project: env.SENTRY_PROJECT,
       authToken: env.SENTRY_AUTH_TOKEN,
-    })
+    }),
+    ...(useHttps ? [basicSsl()] : []),
   ],
   resolve: {
     alias: {

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev-https": "HTTPS_MODE=1 vite",
     "build": "npm run stamp && vite build",
     "devbuild": "vite build --mode development",
     "preview": "vite preview",
@@ -27,6 +28,7 @@
     "@types/node": "^22.10.5",
     "@types/seedrandom": "^3.0.8",
     "@types/webfontloader": "^1.6.35",
+    "@vitejs/plugin-basic-ssl": "^1.2.0",
     "autoprefixer": "^10.4.7",
     "jsdom": "^22.1.0",
     "postcss": "^8.4.14",

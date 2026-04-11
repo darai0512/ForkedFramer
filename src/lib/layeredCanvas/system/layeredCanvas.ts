@@ -1,4 +1,4 @@
-import { handleDataTransfer } from "../tools/fileUtil";
+import { handleDataTransferWithPsd } from "../tools/fileUtil";
 import { convertPointFromNodeToPage, convertPointFromPageToNode } from "../tools/geometry/convertPoint";
 import type { Vector, Rect } from "../tools/geometry/geometry";
 import { rectIntersectsRect, scale2D } from "../tools/geometry/geometry";
@@ -463,6 +463,8 @@ export class LayeredCanvas {
   get pointerCursor(): Vector | null {return (this.viewport.canvas as any)["pointerCursor"];}
   set pointerCursor(p: Vector | null) {(this.viewport.canvas as any)["pointerCursor"] = p;}
 
+  onPsdDropped: ((files: File[]) => void) | null = null;
+
   constructor(viewport: Viewport, editable: boolean) {
     this.viewport = viewport;
     this.rootPaper = new Paper([0,0], true);
@@ -656,11 +658,9 @@ export class LayeredCanvas {
 
   handleContextMenu(event: PointerEvent): void {
     event.preventDefault();
-    if (this.dragging) {
-      const p = this.eventPositionToRootPaperPosition(event);
-      this.pointerCursor = p;
-      this.rootPaper.handleCancel(p, this.dragging);
-    }
+    // macOSではmousedown時に直ちにcontextmenuイベントが発生するため、
+    // ここでドラッグをキャンセルすると右ドラッグでのスクロール操作ができなくなってしまいます。
+    // そのため、コンテキストメニューは防ぐのみでキャンセル処理は行いません。
   }
         
   handleDragOver(event: DragEvent): void {
@@ -672,7 +672,10 @@ export class LayeredCanvas {
     this.pointerCursor = p;
 
     event.preventDefault();  // ブラウザのデフォルトの画像表示処理をOFF
-    const mediaResources = await handleDataTransfer(event.dataTransfer!);
+    const { mediaResources, psdFiles } = await handleDataTransferWithPsd(event.dataTransfer!);
+    if (psdFiles.length > 0 && this.onPsdDropped) {
+      this.onPsdDropped(psdFiles);
+    }
     for (let media of mediaResources) {
       this.rootPaper.handleDrop(p, media);
     }
@@ -695,7 +698,10 @@ export class LayeredCanvas {
       }
     }
 
-    const mediaResources = await handleDataTransfer(event.clipboardData);
+    const { mediaResources, psdFiles } = await handleDataTransferWithPsd(event.clipboardData);
+    if (psdFiles.length > 0 && this.onPsdDropped) {
+      this.onPsdDropped(psdFiles);
+    }
     for (let media of mediaResources) {
       if (this.rootPaper.handlePaste(cursor, media)) {
         accepted = true;

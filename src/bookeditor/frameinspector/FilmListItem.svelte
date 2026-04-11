@@ -100,7 +100,7 @@
     }
 
   function onClick(e: MouseEvent) {
-    dispatch('select', { film, ctrlKey: e.ctrlKey, metaKey: e.metaKey });
+    dispatch('select', { film, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey });
   }
 
   function onDelete(ev: MouseEvent) {

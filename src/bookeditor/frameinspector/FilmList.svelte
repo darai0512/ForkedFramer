@@ -40,15 +40,40 @@
     onAcceptDrop,
     onGhost);
 
-  function onSelectFilm(e: CustomEvent<{ film: Film, ctrlKey: boolean, metaKey: boolean }>) {
-    const { film, ctrlKey, metaKey } = e.detail;
+  // 最後に選択したフィルムの参照（Shift範囲選択で使用）
+  let lastSelectedFilm: Film | null = null;
 
-    if (!ctrlKey && !metaKey) {
+  function onSelectFilm(e: CustomEvent<{ film: Film, ctrlKey: boolean, metaKey: boolean, shiftKey: boolean }>) {
+    const { film, ctrlKey, metaKey, shiftKey } = e.detail;
+    // 表示順（逆順）の配列
+    const displayFilms = filmStack.films.toReversed();
+
+    if (shiftKey && lastSelectedFilm) {
+      // Shift+クリック: 範囲選択
+      const lastIndex = displayFilms.indexOf(lastSelectedFilm);
+      const currentIndex = displayFilms.indexOf(film);
+      if (lastIndex !== -1 && currentIndex !== -1) {
+        const from = Math.min(lastIndex, currentIndex);
+        const to = Math.max(lastIndex, currentIndex);
+        // Ctrl/Metaを併用しない場合は既存選択をクリア
+        if (!ctrlKey && !metaKey) {
+          filmStack.films.forEach(f => f.selected = false);
+        }
+        for (let i = from; i <= to; i++) {
+          displayFilms[i].selected = true;
+        }
+      }
+      // lastSelectedFilm は更新しない（範囲の起点を維持）
+    } else if (ctrlKey || metaKey) {
+      // Ctrl/Meta+クリック: トグル
+      film.selected = !film.selected;
+      lastSelectedFilm = film;
+    } else {
+      // 通常クリック: 単一選択
       const oldSelected = film.selected;
       filmStack.films.forEach(f => f.selected = false);
       film.selected = !oldSelected;
-    } else {
-      film.selected = !film.selected;
+      lastSelectedFilm = film.selected ? film : null;
     }
     filmStack = filmStack;
     $redrawToken = true;
@@ -92,6 +117,23 @@
   // 結合可能かどうかを判定
   $: canMerge = filmStack.getOperationTargetFilms().length > 1;
 
+  // 全選択状態
+  $: selectedCount = filmStack.films.filter(f => f.selected).length;
+  $: allSelected = filmStack.films.length > 0 && selectedCount === filmStack.films.length;
+
+  function onSelectAll() {
+    filmStack.films.forEach(f => f.selected = true);
+    lastSelectedFilm = filmStack.films.length > 0 ? filmStack.films[filmStack.films.length - 1] : null;
+    filmStack = filmStack;
+    $redrawToken = true;
+  }
+
+  function onDeselectAll() {
+    filmStack.films.forEach(f => f.selected = false);
+    lastSelectedFilm = null;
+    filmStack = filmStack;
+    $redrawToken = true;
+  }
 </script>
 
 <!-- svelte-ignore a11y-no-static-element-interactions -->
@@ -121,6 +163,26 @@
       <div data-ghost class="ghost-element"/>
     {/if}
   </div>  
+  <!-- 選択操作ボタン群 -->
+  {#if filmStack.films.length > 1}
+    <div class="selection-actions">
+      {#if allSelected}
+        <button
+          class="btn btn-sm variant-ghost-surface w-full h-6"
+          on:click={onDeselectAll}
+        >
+          {$_('frame.deselectAll')}
+        </button>
+      {:else}
+        <button
+          class="btn btn-sm variant-ghost-surface w-full h-6"
+          on:click={onSelectAll}
+        >
+          {$_('frame.selectAll')}
+        </button>
+      {/if}
+    </div>
+  {/if}
   <!-- 結合ボタン -->
   {#if canMerge}
     <button 
@@ -140,5 +202,8 @@
   }
   :global(.listbox) {
     gap: 16px;
+  }
+  .selection-actions {
+    margin-top: 4px;
   }
 </style>
