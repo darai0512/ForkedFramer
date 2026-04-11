@@ -24,6 +24,7 @@
   import popupIcon from '../../assets/filmlist/popup.webp';
   import dupliateIcon from '../../assets/filmlist/duplicate.webp';
   import downloadIcon from '../../assets/download.webp';
+  import stampIcon from '../../assets/stamp.webp';
   import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
   import { tick } from 'svelte';
   
@@ -124,6 +125,10 @@
 
   function onDuplicate(ev: MouseEvent) {
     dispatchFilmTool('duplicate');
+  }
+
+  function onSendToMaterialCollection(ev: MouseEvent) {
+    dispatchFilmTool('sendToMaterialCollection');
   }
 
 
@@ -369,6 +374,9 @@
           </button>
           <button class="transformix-item" use:toolTip={$_('frame.actions.download')} on:click={onDownload}>
             <img draggable={false} src={downloadIcon} alt={$_('frame.actions.download')}/>
+          </button>
+          <button class="transformix-item" use:toolTip={$_('frame.actions.sendToMaterialCollection')} on:click={onSendToMaterialCollection}>
+            <img draggable={false} src={stampIcon} alt={$_('frame.actions.sendToMaterialCollection')}/>
           </button>
         </div>
       </div>

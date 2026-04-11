@@ -70,7 +70,7 @@ export class FSAFilePersistenceProvider implements FilePersistenceProvider {
     if (!this.dirHandle) throw new Error('No dirHandle');
     const fileHandle = await this.dirHandle.getFileHandle(name, { create: true });
     const writable = await fileHandle.createWritable({ keepExistingData: false });
-    await writable.write(data);
+    await writable.write(data as any);
     await writable.close();
   }
 

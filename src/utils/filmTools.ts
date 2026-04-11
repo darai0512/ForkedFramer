@@ -1,1 +1,1 @@
-export type FilmTool = 'duplicate' | 'download';
+export type FilmTool = 'duplicate' | 'download' | 'sendToMaterialCollection';

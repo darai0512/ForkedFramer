@@ -4,7 +4,7 @@
   import { Accordion, AccordionItem, SlideToggle } from '@skeletonlabs/skeleton';
   import { _ } from 'svelte-i18n';
   import { gadgetFileSystem } from '../filemanager/fileManagerStore';
-  import type { Node, EmbodiedEntry } from '../lib/filesystem/fileSystem';
+  import type { Node, EmbodiedEntry, NodeId, BindId } from '../lib/filesystem/fileSystem';
   import type { Media } from '../lib/layeredCanvas/dataModels/media';
   import { toolTip } from '../utils/passiveToolTipStore';
   import { tick, createEventDispatcher } from 'svelte';
@@ -74,7 +74,7 @@
       if (sourceNodeId !== targetFolderNode.id) {
         const fs = $gadgetFileSystem;
         if (fs) {
-           const srcFolderNode = await fs.getNode(sourceNodeId);
+           const srcFolderNode = await fs.getNode(sourceNodeId as NodeId);
            if (srcFolderNode) {
              const srcFolder = srcFolderNode.asFolder()!;
              const dstFolder = targetFolderNode.asFolder()!;

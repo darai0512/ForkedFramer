@@ -39,7 +39,7 @@ export default vitestDefineConfig(({ mode }) => {
       authToken: env.SENTRY_AUTH_TOKEN,
     }),
     ...(useHttps ? [basicSsl()] : []),
-  ],
+  ] as any,
   resolve: {
     alias: {
       $bookTypes: path.resolve(__dirname, 'src/lib/book/types'),

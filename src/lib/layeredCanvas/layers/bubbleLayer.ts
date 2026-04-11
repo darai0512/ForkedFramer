@@ -50,7 +50,6 @@ export class BubbleLayer extends LayerBase {
   rotateIcon: ClickableIcon;
   imageScaleLockIcon: ClickableIcon;
   scaleIcon: ClickableIcon;
-  coverIcon: ClickableIcon;
   scribbleIcon: ClickableIcon;
   optionIcons: Record<string, ClickableIcon>;
 
@@ -65,7 +64,6 @@ export class BubbleLayer extends LayerBase {
     private onCommit: (weak?: boolean) => void,
     private onRevert: () => void,
     private onPotentialCrossPage: (bubble: Bubble) => void,
-    private onCover: (bubble: Bubble) => void,
     private onScribble: (bubble: Bubble) => void) {
 
     super();
@@ -96,7 +94,6 @@ export class BubbleLayer extends LayerBase {
     this.imageScaleLockIcon.index = 0;
     this.scaleIcon = new ClickableIcon(["bubbleLayer/bubble-scale.webp"],unit,[1,1],"hint.bubble.dragToScale", () => this.interactable && this.selected != null && 0 < this.selected?.filmStack.films.length, mp);
 
-    this.coverIcon = new ClickableIcon(["bubbleLayer/newlayer.webp"],unit,[0,1],"hint.bubble.addTransparentLayer", () => this.interactable && this.selected != null, mp);
     this.scribbleIcon = new ClickableIcon(["bubbleLayer/scribble.webp"],unit,[0,1],"hint.bubble.scribbleOnTop", () => this.interactable && this.selected != null && 0 < this.selected?.filmStack.films.length, mp);
 
     this.optionIcons = {};
@@ -173,7 +170,6 @@ export class BubbleLayer extends LayerBase {
         this.imageScaleLockIcon.render(ctx);
         this.scaleIcon.render(ctx);
 
-        this.coverIcon.render(ctx);
         this.scribbleIcon.render(ctx);
       }
       catch (e) {
@@ -389,7 +385,6 @@ export class BubbleLayer extends LayerBase {
         this.zPlusIcon.hintIfContains(p, this.hint) ||
         this.imageScaleLockIcon.hintIfContains(p, this.hint) ||
         this.scaleIcon.hintIfContains(p, this.hint) ||
-        this.coverIcon.hintIfContains(p, this.hint) ||
         this.scribbleIcon.hintIfContains(p, this.hint) ||
         this.hintOptionIcon(this.selected.shape, p)) {
         this.handle = null;
@@ -706,8 +701,6 @@ export class BubbleLayer extends LayerBase {
         return { action: "image-scale-lock", bubble };
       } else if (this.scaleIcon.contains(point)) {
         return { action: "image-scale", bubble };
-      } else if (this.coverIcon.contains(point)) {
-        return { action: "cover", bubble };
       } else if (this.scribbleIcon.contains(point)) {
         return { action: "scribble", bubble };
       } else {

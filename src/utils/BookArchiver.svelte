@@ -11,7 +11,6 @@
   import { mainBookFileSystem, loadBookFrom, saveBookTo } from '../filemanager/fileManagerStore';
   import type { NodeId } from '../lib/filesystem/fileSystem';
   import { saveAs } from 'file-saver';
-  import { exportPrompts } from "./saver/exportPrompts";
   import { exportDialogues } from "./saver/exportDialogues";
   import { getPublishUrl, getTransportUrl, recordPublication } from "../supabase";
   import { blobToSha1 } from '../lib/layeredCanvas/tools/misc';
@@ -91,9 +90,6 @@
             saveAs(blob, "manga.envelope");
             $progress = null;
             toastStore.trigger({ message: $_('bookArchiver.packageDownloaded'), timeout: 3000});
-            break;
-          case 'export-prompts':
-            await exportPrompts(targetPages);
             break;
           case 'publish':
             await publishEnvelope();

@@ -6,18 +6,14 @@
   import { _ } from 'svelte-i18n';
 
   let dumpFiles: FileList | null;
-  let undumpCounter = 5;
   let sourceTitle: string = '';  
 
   function handleCancel() {
     modalStore.close();
   }
 
-  async function onUndumpCounter() {
-    undumpCounter--;
-    if (undumpCounter == 0) {
-      $modalStore[0].response!(dumpFiles);
-    }
+  async function onUndump() {
+    $modalStore[0].response!(dumpFiles);
   }
 
   onMount(() => {
@@ -109,10 +105,9 @@
       type="button" 
       class="btn variant-filled-primary"
       disabled={!dumpFiles}
-      on:click={onUndumpCounter} 
-      use:toolTip={$_('undump.tooltipExecute')}
+      on:click={onUndump} 
     >
-      {$_('undump.startRestore')} {undumpCounter}
+      {$_('undump.startRestore')}
     </button>
   </div>
 </div>

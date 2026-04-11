@@ -21,8 +21,6 @@
     {label: $_('downloader.package'), onClick: downloadEnvelop, hint: $_('downloader.packageHint')},
     {label: $_('downloader.downloadMaterials'), onClick: downloadMaterials, hint: $_('downloader.downloadMaterialsHint')},
     {label: $_('downloader.exportDialogues'), onClick: downloadDialogues, hint: $_('downloader.exportDialoguesHint')},
-    {label: $_('downloader.exportPrompts'), onClick: exportPrompts, hint: $_('downloader.exportPromptsHint')},
-    // {label: "test", onClick: testIt }
     ...($developmentFlag ? [
       {label: $_('downloader.downloadFrames'), onClick: downloadFrames, hint: $_('downloader.downloadFramesHint')},
       {label: $_('downloader.downloadFramesNoBubbles'), onClick: downloadFramesNoBubbles, hint: $_('downloader.downloadFramesNoBubblesHint')},
@@ -99,12 +97,6 @@
   async function downloadEnvelop() {
     analyticsEvent('download_envelop');
     archive('envelope');
-  }
-
-  async function exportPrompts() {
-    analyticsEvent('export_prompts');
-    archive('export-prompts');
-    toastStore.trigger({ message: $_('downloader.copiedToClipboard'), timeout: 1500});
   }
 
   async function publishEnvelope() {

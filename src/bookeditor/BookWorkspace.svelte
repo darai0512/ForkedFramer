@@ -6,8 +6,9 @@
   import { PaperRendererLayer } from '../lib/layeredCanvas/layers/paperRendererLayer';
   import { setBubbleCommandTools } from './bubbleinspector/bubbleInspectorStore';
   import { setFrameCommandTools } from './frameinspector/frameInspectorStore';
-  import type { Book } from '../lib/book/book';
+  import { type Book, commitBook, emptyNotebook, trivialNewPageProperty } from '../lib/book/book';
   import { mainBook, bookOperators, viewport, redrawToken, undoToken, resetFontCacheKey, mainBookExceptionHandler, pendingFocusIndex } from './workspaceStore';
+  import { newBookToken } from '../filemanager/fileManagerStore';
   import { buildBookEditor } from './operations/buildBookEditor';
   import { hint } from './bookEditorUtils';
   import AutoSizeCanvas from '../utils/AutoSizeCanvas.svelte';
@@ -216,15 +217,24 @@
           page = await createPageFromPsdLayers(psd);
         }
 
-        const book = $mainBook!;
-        book.pages.push(page);
-        $mainBook = book;
-        commit(null);
+        // PSDのサイズを版形の紙サイズとして設定した新しいBookを作成
+        const paperSize: [number, number] = [psd.width, psd.height];
+        const newPageProperty = { ...trivialNewPageProperty, paperSize };
+        const book: Book = {
+          revision: { id: 'not visited', revision: 1, prefix: 'drop-' },
+          pages: [page],
+          history: { entries: [], cursor: 0 },
+          direction: 'right-to-left',
+          wrapMode: 'none',
+          chatLogs: [],
+          notebook: emptyNotebook(null),
+          attributes: { publishUrl: null, showVideoPlayButton: true, showVideoDottedBorder: true },
+          newPageProperty,
+        };
+        commitBook(book, null);
 
-        // 新しく追加されたページへフォーカス
-        setTimeout(() => {
-          operators.focusToPage(book.pages.length - 1, 1, true);
-        }, 0);
+        // newBookTokenに設定すると、FileManagerRootが新規ファイルとして保存・切替する
+        $newBookToken = book;
 
         toastStore.trigger({ message: $_('psd.importComplete'), timeout: 2000 });
       } catch (e) {

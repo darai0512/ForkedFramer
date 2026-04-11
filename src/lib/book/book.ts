@@ -347,8 +347,6 @@ export interface BookOperators {
   focusToPage: (index: number, pageScale?: number, keepScale?: boolean) => void;
   scribbleFrame: (page: Page, frame: FrameElement) => void;
   scribbleBubble: (page: Page, bubble: Bubble) => void;
-  coverFrame: (page: Page, frame: FrameElement) => void;
-  coverBubble: (page: Page, bubble: Bubble) => void;
   selectBubbleExternal: (page: Page, bubble: Bubble) => void;
 }
 

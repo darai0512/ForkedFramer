@@ -110,7 +110,7 @@ export async function createVideoWithImages(w: number, h: number, fps: number, d
   if (result.length == 0) {
     throw new Error('Failed to read output.mp4');
   }
-  const blob = new Blob([result], { type: 'video/mp4' });
+  const blob = new Blob([result as any], { type: 'video/mp4' });
   const url = URL.createObjectURL(blob);
   reportProgress(1.0);
   return url;

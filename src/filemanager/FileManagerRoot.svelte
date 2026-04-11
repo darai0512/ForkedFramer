@@ -28,6 +28,7 @@
   import { saveStatusStore } from './saveStatusStore';
 
   export let localFileSystem: FileSystem;
+  export let fsaFileSystem: FileSystem | null = null;
 
   type RootFolders = {
     root: Folder;
@@ -94,8 +95,8 @@
     return 'local';
   }  
   
-  function getFileSystemByType(type: 'local' | 'fsa'): FileSystem {
-    if (type === 'fsa') { return fsaFileSystem; }
+  function getFileSystemByType(type: 'local' | 'fsa' | 'cloud'): FileSystem {
+    if (type === 'fsa' && fsaFileSystem) { return fsaFileSystem; }
     return localFileSystem;
   }
 

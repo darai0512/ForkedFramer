@@ -15,7 +15,6 @@
   import { getAvailableWeights, fontWeightLabels } from './fontWeightMap';
   import BubbleInspectorAppendix from './BubbleInspectorAppendix.svelte';
   import { Bubble, insertBubbleLayers } from "../../lib/layeredCanvas/dataModels/bubble";
-  import type { Film } from "../../lib/layeredCanvas/dataModels/film";
   import { bubbleInspectorRebuildToken, bubbleInspectorTarget } from './bubbleInspectorStore';
   import { saveBubbleToken } from '../../filemanager/fileManagerStore';
   import FilmList from "../frameinspector/FilmList.svelte";
@@ -29,6 +28,12 @@
   import { ProgressRadial } from '@skeletonlabs/skeleton';
   import { toastStore } from '@skeletonlabs/skeleton';
   import { onlineStatus } from "../../utils/accountStore";
+  import { makePlainCanvas } from '../../lib/layeredCanvas/tools/imageUtil';
+  import { ImageMedia } from '../../lib/layeredCanvas/dataModels/media';
+  import { Film } from '../../lib/layeredCanvas/dataModels/film';
+  import { sendMediaToMaterialCollection } from '../../materialBucket/materialOperations';
+
+  import scribbleIcon from '../../assets/bubbleLayer/scribble.webp';
 
   import horizontalIcon from '../../assets/horizontal.webp';
   import verticalIcon from '../../assets/vertical.webp';
@@ -312,7 +317,17 @@
       case "duplicate":
         onDuplicate({ detail: film } as CustomEvent<Film>);
         break;
+      case "sendToMaterialCollection":
+        onSendToMaterialCollection(film);
+        break;
     }
+  }
+
+  async function onSendToMaterialCollection(film: Film) {
+    if (film.content.kind !== 'media') return;
+    const media = film.content.media;
+    const result = await sendMediaToMaterialCollection(media);
+    toastStore.trigger({ message: result.message, timeout: 2000 });
   }
 
   function onSelectionChanged(info: SelectionInfo) {
@@ -373,6 +388,37 @@
     }
   }
 
+  function onScribble() {
+    const bit = $bubbleInspectorTarget;
+    if (!bit || !$bubble) return;
+
+    const page = bit.page;
+    const b = bit.bubble;
+    const paperSize = page.paperSize;
+
+    // 透明レイヤを一番上に追加
+    const bubbleSize = b.getPhysicalSize(paperSize);
+    const w = Math.max(256, Math.ceil(bubbleSize[0]));
+    const h = Math.max(256, Math.ceil(bubbleSize[1]));
+    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+    const newFilm = Film.fromMedia(media);
+    insertBubbleLayers(paperSize, b, b.filmStack.films.length, [newFilm]);
+    bubble.update(b => b);
+    $bookOperators!.commit(null);
+
+    // モーダルを閉じる
+    manuallyHidden = true;
+
+    // scribbleコマンド発行
+    bubbleInspectorTarget.set({
+      bubble: b,
+      filmStack: b.filmStack,
+      page,
+      command: "scribble",
+      commandTargetFilm: newFilm,
+    });
+  }
+
 </script>
 
 <svelte:window bind:innerWidth bind:innerHeight/>
@@ -381,6 +427,17 @@
   <Drawer placement={"left"} open={opened} overlay={false} size="350px" on:clickAway={close}>
     {#if $bubble}
     <div class="drawer-content" bind:this={drawerContent}>
+      <div class="scribble-header">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img
+          class="scribble-btn"
+          src={scribbleIcon}
+          alt="scribble"
+          on:click={onScribble}
+          title={$_('hint.bubble.scribbleOnTop')}
+        />
+      </div>
       <details open>
         <summary>{$_('bubble.overall')}</summary>
         <div class="section">
@@ -693,5 +750,23 @@
   :global(body.dark) .vertical-note {
     color: rgba(255, 255, 255, 0.85);
     background-color: rgba(255, 255, 255, 0.08);
+  }
+  .scribble-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .scribble-btn {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .scribble-btn:hover {
+    background: rgba(0,0,0,0.1);
   }
 </style>

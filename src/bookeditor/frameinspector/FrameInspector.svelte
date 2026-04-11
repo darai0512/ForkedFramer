@@ -2,7 +2,7 @@
   import writableDerived from "svelte-writable-derived";
   import { frameInspectorTarget, frameInspectorRebuildToken } from './frameInspectorStore';
   import { insertFrameLayers, collectLeaves } from "../../lib/layeredCanvas/dataModels/frameTree";
-  import { type Film } from "../../lib/layeredCanvas/dataModels/film";
+  import { Film } from "../../lib/layeredCanvas/dataModels/film";
   import FilmList from "./FilmList.svelte";
   import { dominantMode } from "../../uiStore";
   import Drawer from "../../utils/Drawer.svelte";
@@ -10,6 +10,12 @@
   import { RadioGroup, RadioItem } from '@skeletonlabs/skeleton';
   import type { FilmTool } from '../../utils/filmTools';
   import { _ } from 'svelte-i18n';
+  import { makePlainCanvas } from '../../lib/layeredCanvas/tools/imageUtil';
+  import { ImageMedia } from '../../lib/layeredCanvas/dataModels/media';
+  import { sendMediaToMaterialCollection } from '../../materialBucket/materialOperations';
+  import { toastStore } from '@skeletonlabs/skeleton';
+
+  import scribbleIcon from '../../assets/frameLayer/scribble.webp';
 
   let innerWidth = window.innerWidth;
   let innerHeight = window.innerHeight;
@@ -76,6 +82,9 @@
       case "duplicate":
         onDuplicate(film);
         break;
+      case "sendToMaterialCollection":
+        onSendToMaterialCollection(film);
+        break;
     }
   }
 
@@ -91,7 +100,43 @@
     $bookOperators!.commit(null);
   }
 
+  async function onSendToMaterialCollection(film: Film) {
+    if (film.content.kind !== 'media') return;
+    const media = film.content.media;
+    const result = await sendMediaToMaterialCollection(media);
+    toastStore.trigger({ message: result.message, timeout: 2000 });
+  }
 
+  function onScribble() {
+    const fit = $frameInspectorTarget;
+    if (!fit) return;
+
+    const page = fit.page;
+    const element = fit.frame;
+    const paperSize = page.paperSize;
+
+    // 透明レイヤを一番上に追加
+    const [fw, fh] = paperSize;
+    const w = Math.max(256, Math.ceil(fw));
+    const h = Math.max(256, Math.ceil(fh));
+    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+    const newFilm = Film.fromMedia(media);
+    insertFrameLayers(page.frameTree, paperSize, element, element.filmStack.films.length, [newFilm]);
+    filmStack = filmStack;
+    $bookOperators!.commit(null);
+
+    // モーダルを閉じる
+    manuallyHidden = true;
+
+    // scribbleコマンド発行 (新しい透明レイヤで落書き)
+    frameInspectorTarget.set({
+      frame: element,
+      filmStack: element.filmStack,
+      page,
+      command: "scribble",
+      commandTargetFilm: newFilm,
+    });
+  }
 
 </script>
 
@@ -100,8 +145,16 @@
 <div class="drawer-outer">
   <Drawer placement={"left"} open={opened} overlay={false} size={"350px"} on:clickAway={close}>
     <div class="drawer-content">
-      <div class="h-full flex items-center justify-center gap-4 mb-4">
-        <h2>{$_('frame.visibility')}</h2>
+      <div class="header-row">
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <img
+          class="scribble-btn"
+          src={scribbleIcon}
+          alt="scribble"
+          on:click={onScribble}
+          title={$_('hint.frame.scribbleOnTop')}
+        />
         <RadioGroup active="variant-filled-primary" hover="hover:variant-soft-primary">
           <RadioItem bind:group={$visibility} name="embed" value={0}>{$_('frame.hidden')}</RadioItem>
           <RadioItem bind:group={$visibility} name="embed" value={1}>{$_('frame.frameOnly')}</RadioItem>
@@ -134,9 +187,22 @@
   .drawer-outer :global(.drawer .panel) {
     background-color: rgb(var(--color-surface-100));
   }
-  h2 {
-    font-family: '源暎エムゴ';
-    font-size: 16px;
-    line-height: normal;
+  .header-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .scribble-btn {
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .scribble-btn:hover {
+    background: rgba(0,0,0,0.1);
   }
 </style>
