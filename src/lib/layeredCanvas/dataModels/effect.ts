@@ -63,7 +63,7 @@ export class Effect {
     this.outputMedia = null;
   }
 
-  async apply(inputMedia: Media): Promise<Media> { 
+  async apply(inputMedia: Media): Promise<Media> {
     throw new Error("Not implemented");
   }
 
@@ -116,7 +116,7 @@ export class OutlineEffect extends Effect {
     const width = this.width * baseWidth;
 
     const c = parseColor(this.color);
-    const color = {r: c.values[0] / 255, g: c.values[1] / 255, b: c.values[2] / 255};
+    const color = { r: c.values[0] / 255, g: c.values[1] / 255, b: c.values[2] / 255 };
     const dull = 1.0 - this.sharp;
     const f = (t: number) => dull <= t ? 1 : t * (1.0 / dull);
     const distanceField = JFACompute.generateDistanceField(

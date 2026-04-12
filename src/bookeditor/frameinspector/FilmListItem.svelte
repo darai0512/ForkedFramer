@@ -7,7 +7,6 @@
   import { moveInArray } from '../../utils/moveInArray';
   import { sortableList } from '../../utils/sortableList';
   import { filmProcessorQueue } from '../../utils/filmprocessor/filmProcessorStore';
-  import { effectChoiceNotifier } from '../effectchooser/effectChooserStore';
   import { toastStore } from '@skeletonlabs/skeleton';
   import { toolTip } from '../../utils/passiveToolTipStore';
   import Popup from '../../utils/Popup.svelte';
@@ -146,17 +145,10 @@
   }
 
   function onNewEffect() {
-    console.log("onNewEffect");
-    $effectChoiceNotifier = (tag: string | null) => {
-      switch (tag) {
-        case "OutlineEffect":
-          film!.effects.push(new OutlineEffect("#000000", 0.01, 0.8));
-          dispatch('commit', true);
-          break;
-      }
-      film!.effects = film!.effects;
-      filmProcessorQueue.publish({ film: film! });
-    };
+    film!.effects.push(new OutlineEffect("#000000", 0.01, 0.8));
+    film!.effects = film!.effects;
+    dispatch('commit', true);
+    filmProcessorQueue.publish({ film: film! });
   }
 
   function onUpdateEffectList(e: {oldIndex: number | undefined, newIndex:number | undefined}) {

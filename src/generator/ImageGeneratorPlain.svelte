@@ -8,7 +8,7 @@
 
   let width: number = 512;
   let height: number = 512;
-  let color: string = "#ffffff00";
+  let color: string = "#ffffffff";
 
   async function generate() {
     chosen = new ImageMedia(makePlainCanvas(width, height, color));

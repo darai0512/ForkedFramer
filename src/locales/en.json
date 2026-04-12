@@ -274,21 +274,11 @@
       "delete": "Delete",
       "visibilityToggle": "Visible/Invisible",
       "effects": "Effects",
-      "addEffect": "Add Effect",
-      "outpaint": "Outpaint",
-      "eraser": "Eraser",
-      "backgroundRemoval": "Background Removal",
-      "upscale": "Upscale",
-      "inpaint": "Inpaint",
-      "textEdit": "Text Edit",
-      "angleEdit": "Angle Edit",
+      "addEffect": "Add Outline",
       "duplicate": "Duplicate",
-      "movieCreation": "Movie Creation",
       "sendToMaterialCollection": "Send to Material Collection",
       "sendVideoFrameToMaterialCollection": "Send this frame as image to Material Collection",
-      "download": "Download",
-      "textlift": "Text Lifting",
-      "layerize": "Layerize"
+      "download": "Download"
     },
     "procedural": {
       "settings": "Procedural Settings"

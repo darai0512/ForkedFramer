@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import type { Effect } from "../../lib/layeredCanvas/dataModels/effect";
+  import { isWebGPUAvailable } from "../../lib/layeredCanvas/dataModels/effect";
   import { RangeSlider } from '@skeletonlabs/skeleton';
   import NumberEdit from '../../utils/NumberEdit.svelte';
 	import ColorPickerLabel from '../../utils/colorpicker/ColorPickerLabel.svelte';
@@ -28,6 +29,7 @@
   export let effect: Effect;
   $: effectAny = effect as any;
   $: effectTag = effect.tag as keyof typeof parameterLists;
+  const webgpuAvailable = isWebGPUAvailable();
 
   function onDelete() {
     dispatch("delete", effect);
@@ -46,7 +48,12 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="list" on:click={e => e.stopPropagation()}>
-  <h1>{titles[effectTag]}</h1>
+  <div class="title-row">
+    <h1>{titles[effectTag]}</h1>
+    {#if !webgpuAvailable}
+      <span class="webgpu-warn">現在WebGPU無効</span>
+    {/if}
+  </div>
   <div class="delete-icon">
     <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
     <img src={deleteIcon} alt="delete" on:click={onDelete}/>
@@ -127,6 +134,20 @@
   h1 {
     font-family: '源暎エムゴ';
     font-size: 16px;
+  }
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .webgpu-warn {
+    font-size: 11px;
+    color: #c0392b;
+    background: #fdecea;
+    border: 1px solid #e74c3c;
+    border-radius: 4px;
+    padding: 1px 5px;
+    white-space: nowrap;
   }
   .label {
     font-family: '源暎エムゴ';
