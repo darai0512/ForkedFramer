@@ -33,6 +33,7 @@ export type LoadToken = {
 export const fileManagerOpen = writable(false);
 export const fileManagerDragging: Writable<Dragging | null> = writable(null);
 export const newBookToken: Writable<Book | null> = writable(null);
+export const newBookTitleHint: Writable<string | null> = writable(null);
 export const saveBubbleToken: Writable<Bubble | null> = writable(null);
 export const fileManagerUsedSizeToken: Writable<FileSystem | null> = writable(null);
 export const loadToken: Writable<LoadToken | null> = writable(null);

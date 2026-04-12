@@ -1,4 +1,5 @@
 import type { FilmStack, Film } from '../../dataModels/film';
+import type { Media } from '../../dataModels/media';
 import type { Vector } from '../geometry/geometry';
 import { drawProceduralEffect } from "./proceduralEffectRenderer";
 
@@ -7,6 +8,7 @@ export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStac
 
   for (let film of films) {
     if (!film.visible) { continue; }
+    if (film.isGroupHeader) { continue; }
 
     const scale = film.getShiftedScale(paperSize);
     const translation = film.getShiftedTranslation(paperSize);
@@ -31,11 +33,24 @@ export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStac
 
       ctx.translate(-media.naturalWidth * 0.5, -media.naturalHeight * 0.5);
       ctx.drawImage(media.drawSource, 0, 0, media.naturalWidth, media.naturalHeight);
-    } else {
-      const [contentWidth, contentHeight] = film.getContentSize(paperSize);
-      const side = Math.max(contentWidth, contentHeight);
-      ctx.translate(-side * 0.5, -side * 0.5);
-      drawProceduralEffect(film.content.effect, ctx, side);
+    } else if (film.content.kind === 'procedural') {
+      // effectの出力があればそちらを描画（OutlineEffect等）
+      let effectOutput: Media | null = null;
+      for (let i = film.effects.length - 1; 0 <= i; i--) {
+        if (film.effects[i].outputMedia) {
+          effectOutput = film.effects[i].outputMedia!;
+          break;
+        }
+      }
+      if (effectOutput) {
+        ctx.translate(-effectOutput.naturalWidth * 0.5, -effectOutput.naturalHeight * 0.5);
+        ctx.drawImage(effectOutput.drawSource, 0, 0, effectOutput.naturalWidth, effectOutput.naturalHeight);
+      } else {
+        const [contentWidth, contentHeight] = film.getContentSize(paperSize);
+        const side = Math.max(contentWidth, contentHeight);
+        ctx.translate(-side * 0.5, -side * 0.5);
+        drawProceduralEffect(film.content.effect, ctx, side);
+      }
     }
 
     ctx.restore();
@@ -47,6 +62,7 @@ export function drawFilmStackBorders(ctx: CanvasRenderingContext2D, filmStack: F
 
   for (let film of films) {
     if (!film.visible) { continue; }
+    if (film.isGroupHeader) { continue; }
 
     const scale = film.getShiftedScale(paperSize);
     const translation = film.getShiftedTranslation(paperSize);

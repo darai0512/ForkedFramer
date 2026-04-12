@@ -10,7 +10,8 @@ export type FilmProceduralEffectType = FilmProceduralEffect['type'];
 
 export type FilmContent =
   | { kind: 'media'; media: Media }
-  | { kind: 'procedural'; effect: FilmProceduralEffect };
+  | { kind: 'procedural'; effect: FilmProceduralEffect }
+  | { kind: 'groupHeader' };
 
 export type Barriers = {
   top: boolean;
@@ -30,6 +31,8 @@ export class Film  {
   prompt: string | null;
   effects: Effect[];
   barriers: Barriers;
+  groupDepth: number; // PSDグループのネスト深度（0 = ルート直下）
+  groupName: string | null; // 所属グループ名（直近の親グループ名）
   
   selected: boolean; // 揮発性
   matrix: DOMMatrix | undefined; // 揮発性
@@ -47,6 +50,8 @@ export class Film  {
     this.effects = [];
     this.selected = false;
     this.barriers = { top: true, right: true, bottom: true, left: true };
+    this.groupDepth = 0;
+    this.groupName = null;
   }
 
   clone() {
@@ -59,6 +64,8 @@ export class Film  {
     f.prompt = this.prompt;
     f.effects = this.effects.map(e => e.clone());
     f.barriers = {...this.barriers};
+    f.groupDepth = this.groupDepth;
+    f.groupName = this.groupName;
     return f;
   }
 
@@ -74,6 +81,18 @@ export class Film  {
         params: cloneProceduralParams(effect.params),
       },
     });
+  }
+
+  static fromGroupHeader(name: string, depth: number): Film {
+    const film = new Film({ kind: 'groupHeader' });
+    film.prompt = name;
+    film.groupDepth = depth;
+    film.groupName = null;
+    return film;
+  }
+
+  get isGroupHeader(): boolean {
+    return this.content.kind === 'groupHeader';
   }
 
   get media(): Media {
@@ -106,6 +125,9 @@ export class Film  {
     if (this.content.kind === 'media') {
       return { kind: 'media', media: this.content.media };
     }
+    if (this.content.kind === 'groupHeader') {
+      return { kind: 'groupHeader' };
+    }
     return {
       kind: 'procedural',
       effect: {
@@ -118,6 +140,9 @@ export class Film  {
   getContentSize(paperSize: Vector): Vector {
     if (this.content.kind === 'media') {
       return [this.content.media.naturalWidth, this.content.media.naturalHeight];
+    }
+    if (this.content.kind === 'groupHeader') {
+      return [0, 0];
     }
     const side = Film.getProceduralBaseSize(paperSize);
     return [side, side];

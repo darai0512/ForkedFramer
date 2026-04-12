@@ -226,12 +226,22 @@
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="film" draggable={false}>
+<div class="film" draggable={false} style={film ? `padding-left: ${film.groupDepth * 16}px` : ''}>
   {#if !film}
     <div class="w-full h-full variant-soft-tertiary" on:click={onClick}>
       <div class="new-film" use:toolTip={$_('frame.actions.newImage')}>
         ＋
       </div>
+    </div>
+  {:else if film.isGroupHeader}
+    <div
+      class="group-header"
+      class:variant-filled-primary={film.selected}
+      class:variant-soft-tertiary={!film.selected}
+      on:click={onClick}
+    >
+      <span class="group-header-icon">📁</span>
+      <span class="group-header-name">{film.prompt ?? ''}</span>
     </div>
   {:else if proceduralFilm}
     <div
@@ -283,6 +293,16 @@
         <div class="effect-item variant-ghost-primary procedural-effect-item">
           <FilmProceduralControls film={proceduralFilm} on:change={onProceduralEffectChange} />
         </div>
+        <div class="flex flex-col gap-2 w-full" use:sortableList={{ animation: 100, onUpdate: onUpdateEffectList }}>
+          {#each film.effects as effect, index (effect.ulid)}
+            <div class="effect-item variant-ghost-primary p-2">
+              <FilmEffect effect={effect} on:delete={() => onDeleteEffect(index)} on:update={onUpdateEffect} />
+            </div>
+          {/each}
+        </div>
+        <div class="effect-item variant-ghost-primary mt-1 flex flex-col items-center text-4xl" on:click={onNewEffect} use:toolTip={$_('frame.actions.addEffect')}>
+          +
+        </div>
       </div>
     {/if}
   {:else}
@@ -315,22 +335,27 @@
         </div>
       {/if}
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
-      <button
-        class="effect-icon"
-        class:active={effectVisible}
-        aria-label={$_('frame.actions.effects')}
-        use:toolTip={$_('frame.actions.effects')}
-        on:click={onToggleeffectVisible}
-      >
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M 5 8 L 10 13 L 15 8"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"/>
-        </svg>
-      </button>
+      <div class="effect-name-row">
+        <button
+          class="effect-icon"
+          class:active={effectVisible}
+          aria-label={$_('frame.actions.effects')}
+          use:toolTip={$_('frame.actions.effects')}
+          on:click={onToggleeffectVisible}
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M 5 8 L 10 13 L 15 8"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
+          </svg>
+        </button>
+        {#if film.prompt}
+          <span class="layer-name">{film.prompt}</span>
+        {/if}
+      </div>
 
       <button class="transformix-icon" bind:this={popupButton} on:click={togglePopup}>
         <img draggable={false} src={popupIcon} alt="変換メニュー" />
@@ -635,5 +660,57 @@
     grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     padding: 4px;
+  }
+  .group-header {
+    width: 100%;
+    height: 32px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(100, 120, 200, 0.12);
+    border-left: 3px solid rgba(100, 120, 200, 0.5);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .group-header:hover {
+    background: rgba(100, 120, 200, 0.2);
+  }
+  .group-header-icon {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .group-header-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #4a5568;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .effect-name-row {
+    position: absolute;
+    left: 4px;
+    bottom: 4px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    max-width: calc(100% - 48px);
+  }
+  .effect-name-row .effect-icon {
+    position: static;
+  }
+  .layer-name {
+    font-size: 10px;
+    color: #666;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
+    line-height: 1;
+    opacity: 0.8;
   }
 </style>

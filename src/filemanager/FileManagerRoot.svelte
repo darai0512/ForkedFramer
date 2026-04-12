@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import streamSaver from 'streamsaver';
   import { _ } from 'svelte-i18n';
-  import { fileManagerUsedSizeToken, fileManagerOpen, saveBookTo, loadBookFrom, getCurrentDateTime, newBookToken, saveBubbleToken, newFile, fileManagerMarkedFlag, saveBubbleTo, loadToken, type LoadToken, mainBookFileSystem, gadgetFileSystem, clearSelection } from "./fileManagerStore";
+  import { fileManagerUsedSizeToken, fileManagerOpen, saveBookTo, loadBookFrom, getCurrentDateTime, newBookToken, newBookTitleHint, saveBubbleToken, newFile, fileManagerMarkedFlag, saveBubbleTo, loadToken, type LoadToken, mainBookFileSystem, gadgetFileSystem, clearSelection } from "./fileManagerStore";
   import type { FileSystem, NodeId, Folder, EmbodiedEntry } from '../lib/filesystem/fileSystem';
   import { type Book } from '../lib/book/book';
   import { newBook, revisionEqual, getHistoryWeight, collectAllFilms } from '../lib/book/book';
@@ -315,7 +315,9 @@
       $newBookToken = null;
       await coalescingSaveWork.whenIdle();
       const desktop = localFolders.desktop[2].asFolder()!;
-      const title = getCurrentDateTime();
+      const hint = $newBookTitleHint;
+      $newBookTitleHint = null;
+      const title = hint ? `${hint} ${getCurrentDateTime()}` : getCurrentDateTime();
       const { file } = await newFile(localFileSystem, desktop, title, book);
       await recordCurrentFileInfo({id: file.id as NodeId, fileSystem: 'local', title});
       currentRevision = {...book.revision};

@@ -8,7 +8,7 @@
   import { setFrameCommandTools } from './frameinspector/frameInspectorStore';
   import { type Book, commitBook, emptyNotebook, trivialNewPageProperty } from '../lib/book/book';
   import { mainBook, bookOperators, viewport, redrawToken, undoToken, resetFontCacheKey, mainBookExceptionHandler, pendingFocusIndex } from './workspaceStore';
-  import { newBookToken } from '../filemanager/fileManagerStore';
+  import { newBookToken, newBookTitleHint } from '../filemanager/fileManagerStore';
   import { buildBookEditor } from './operations/buildBookEditor';
   import { hint } from './bookEditorUtils';
   import AutoSizeCanvas from '../utils/AutoSizeCanvas.svelte';
@@ -234,6 +234,8 @@
         commitBook(book, null);
 
         // newBookTokenに設定すると、FileManagerRootが新規ファイルとして保存・切替する
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        $newBookTitleHint = baseName;
         $newBookToken = book;
 
         toastStore.trigger({ message: $_('psd.importComplete'), timeout: 2000 });

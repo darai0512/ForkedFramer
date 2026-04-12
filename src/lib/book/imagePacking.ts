@@ -230,6 +230,8 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
       prompt: film.prompt,
       effects,
       barriers: film.barriers,
+      groupDepth: film.groupDepth,
+      groupName: film.groupName,
     };
 
     if (film.content.kind === 'media') {
@@ -237,11 +239,13 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
       const fileId = await saveMediaFunc(media.persistentSource, media.type);
       filmMarkUp.mediaType = media.type;
       filmMarkUp.image = fileId;
-    } else {
+    } else if (film.content.kind === 'procedural') {
       filmMarkUp.proceduralEffect = {
         type: film.content.effect.type,
         params: { ...film.content.effect.params },
       };
+    } else if (film.content.kind === 'groupHeader') {
+      filmMarkUp.groupHeader = true;
     }
 
     packedFilms.push(filmMarkUp);
@@ -262,7 +266,9 @@ export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Pr
 
     let film: Film | null = null;
 
-    if (filmMarkUp.proceduralEffect) {
+    if (filmMarkUp.groupHeader) {
+      film = Film.fromGroupHeader(filmMarkUp.prompt ?? '', filmMarkUp.groupDepth ?? 0);
+    } else if (filmMarkUp.proceduralEffect) {
       film = Film.fromProcedural({
         type: filmMarkUp.proceduralEffect.type,
         params: filmMarkUp.proceduralEffect.params ?? {},
@@ -287,6 +293,8 @@ export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Pr
     film.prompt = filmMarkUp.prompt;
     film.effects = effects;
     film.barriers = filmMarkUp.barriers ?? { top: true, right: true, bottom: true, left: true };
+    film.groupDepth = filmMarkUp.groupDepth ?? 0;
+    film.groupName = filmMarkUp.groupName ?? null;
     films.push(film);
   }
   return films;

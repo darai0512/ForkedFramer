@@ -1,5 +1,6 @@
 import { type Film, fitFilms, FilmStackTransformer } from "../../lib/layeredCanvas/dataModels/film";
-import { ImageMedia, VideoMedia, type RemoteMediaReference } from "../../lib/layeredCanvas/dataModels/media";
+import { ImageMedia, VideoMedia, type Media, type RemoteMediaReference } from "../../lib/layeredCanvas/dataModels/media";
+import { drawProceduralEffect } from "../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer";
 import type { Vector } from "../../lib/layeredCanvas/tools/geometry/geometry";
 import type { ImagingAction } from "$protocolTypes/imagingTypes";
 import { redrawToken, bookOperators } from "../../bookeditor/workspaceStore";
@@ -22,10 +23,31 @@ export const filmProcessorQueue = new PubSubQueue<FilmProcessorTask>({ maxConcur
 filmProcessorQueue.subscribe(async (task: FilmProcessorTask) => {
   const { film, onLoaded } = task;
 
-  if (film.content.kind !== 'media') {
+  if (film.content.kind === 'groupHeader') {
     return;
   }
 
+  if (film.content.kind === 'procedural') {
+    // proceduralにeffectsが無ければ処理不要
+    if (film.effects.length === 0) return;
+
+    // proceduralをCanvasにレンダリングしてImageMediaを作成
+    const RENDER_SIZE = 1024;
+    const canvas = document.createElement('canvas');
+    canvas.width = RENDER_SIZE;
+    canvas.height = RENDER_SIZE;
+    const ctx = canvas.getContext('2d')!;
+    drawProceduralEffect(film.content.effect, ctx, RENDER_SIZE);
+    let inputMedia: Media = new ImageMedia(canvas);
+
+    for (const effect of film.effects) {
+      inputMedia = await effect.apply(inputMedia);
+    }
+    redrawToken.set(true);
+    return;
+  }
+
+  // media kind
   const media = film.content.media;
   if (!media.isLoaded) {
     const rmr = media.persistentSource as RemoteMediaReference;
