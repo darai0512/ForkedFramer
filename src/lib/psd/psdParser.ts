@@ -18,6 +18,8 @@ export interface PsdLayerInfo {
   groupPath: string; // "GroupA/GroupB" のようなパス
   depth: number; // グループのネスト深度
   parentGroupName: string | null; // 直近の親グループ名
+  opacity: number; // 0.0〜1.0
+  blendMode: string; // PSDブレンドモード文字列 (norm, mul, scrn, hLit, etc.)
 }
 
 /** グループヘッダー情報 */
@@ -63,15 +65,62 @@ export async function extractPsdFlatItems(psd: Psd): Promise<PsdFlatItem[]> {
   return items;
 }
 
+/**
+ * ノードの非表示状態を確実に取得する。
+ * @webtoon/psd の isHidden はGroupノードに対して undefined を返すバグがあるため、
+ * layerFrame.layerProperties.hidden を直接参照する。
+ */
+function isNodeHidden(node: any): boolean {
+  // layerFrame.layerProperties.hidden が最も信頼できるソース
+  const lp = node.layerFrame?.layerProperties;
+  if (lp && typeof lp.hidden === 'boolean') {
+    return lp.hidden;
+  }
+  // フォールバック: isHidden が boolean ならそれを使う
+  if (typeof node.isHidden === 'boolean') {
+    return node.isHidden;
+  }
+  // Psdルートノード等: 表示扱い
+  return false;
+}
+
+/**
+ * ノードのopacity (0-255) を取得する
+ */
+function getNodeOpacity(node: any): number {
+  const lp = node.layerFrame?.layerProperties;
+  if (lp && typeof lp.opacity === 'number') {
+    return lp.opacity / 255;
+  }
+  return 1.0;
+}
+
+/**
+ * ノードのブレンドモード文字列を取得する
+ */
+function getNodeBlendMode(node: any): string {
+  const lp = node.layerFrame?.layerProperties;
+  if (lp && typeof lp.blendMode === 'string') {
+    return lp.blendMode;
+  }
+  return 'norm';
+}
+
 async function traverseNodeFlat(
-  node: Node,
+  node: any,
   results: PsdFlatItem[],
   groupStack: string[],
-  depth: number
+  depth: number,
+  isVisible: boolean = true
 ): Promise<void> {
+  const nodeHidden = isNodeHidden(node);
+  const currentVisible = isVisible && (node.type === 'Psd' || !nodeHidden);
+
   if (node.type === "Layer") {
     try {
-      const pixelData = await node.composite(true, true);
+      // composite(false, false): 生のピクセルデータを取得（effectsやopacity未適用）
+      // opacityはFilm.opacityで別途適用する（composite(true,*)だとopacityがalphaに焼き込まれ二重適用になる）
+      const pixelData = await node.composite(false, false);
       if (pixelData && node.width > 0 && node.height > 0) {
         const canvas = pixelDataToCanvas(pixelData, node.width, node.height);
         results.push({
@@ -79,13 +128,15 @@ async function traverseNodeFlat(
           info: {
             canvas,
             name: node.name,
-            visible: !node.isHidden,
+            visible: currentVisible,
             top: node.top,
             left: node.left,
             isGroup: false,
             groupPath: groupStack.join("/"),
             depth,
             parentGroupName: groupStack.length > 0 ? groupStack[groupStack.length - 1] : null,
+            opacity: getNodeOpacity(node),
+            blendMode: getNodeBlendMode(node),
           },
         });
       }
@@ -99,19 +150,20 @@ async function traverseNodeFlat(
       header: {
         name: node.name,
         depth,
-        visible: true,
+        visible: currentVisible,
       },
     });
-    const newGroupStack = [...groupStack, node.name];
+    groupStack.push(node.name);
     if (node.children) {
       for (const child of node.children) {
-        await traverseNodeFlat(child, results, newGroupStack, depth + 1);
+        await traverseNodeFlat(child, results, groupStack, depth + 1, currentVisible);
       }
     }
+    groupStack.pop();
   } else if (node.type === "Psd") {
     if (node.children) {
       for (const child of node.children) {
-        await traverseNodeFlat(child, results, groupStack, depth);
+        await traverseNodeFlat(child, results, groupStack, depth, currentVisible);
       }
     }
   }
@@ -134,7 +186,7 @@ function pixelDataToCanvas(
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d")!;
-  const imageData = new ImageData(new Uint8ClampedArray(pixelData.buffer as ArrayBuffer), width, height);
+  const imageData = new ImageData(new Uint8ClampedArray(pixelData), width, height);
   ctx.putImageData(imageData, 0, 0);
   return canvas;
 }
@@ -154,6 +206,36 @@ export async function createPageFromPsdComposite(psd: Psd): Promise<Page> {
   const page = newPage(frameTree, []);
   page.paperSize = paperSize;
   return page;
+}
+
+/**
+ * PSDブレンドモード文字列をCanvas 2DのglobalCompositeOperationにマッピング
+ * @see https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/#50577409_pgfId-1055819
+ */
+const PSD_BLEND_MODE_MAP: Record<string, GlobalCompositeOperation> = {
+  'norm': 'source-over',    // Normal
+  'mul ': 'multiply',       // Multiply
+  'scrn': 'screen',         // Screen
+  'over': 'overlay',        // Overlay
+  'dark': 'darken',         // Darken
+  'lite': 'lighten',        // Lighten
+  'hLit': 'hard-light',     // Hard Light
+  'sLit': 'soft-light',     // Soft Light
+  'diff': 'difference',     // Difference
+  'smud': 'exclusion',      // Exclusion
+  'div ': 'color-dodge',    // Color Dodge
+  'idiv': 'color-burn',     // Color Burn
+  'lbrn': 'color-burn',     // Linear Burn → closest: color-burn
+  'lddg': 'lighter',        // Linear Dodge (Add) → additive blending
+  'hue ': 'hue',            // Hue
+  'sat ': 'saturation',     // Saturation
+  'colr': 'color',          // Color
+  'lum ': 'luminosity',     // Luminosity
+  'pass': 'source-over',    // Pass Through (グループ用) → normal扱い
+};
+
+function psdBlendModeToCanvas(psdMode: string): GlobalCompositeOperation {
+  return PSD_BLEND_MODE_MAP[psdMode] ?? 'source-over';
 }
 
 /**
@@ -179,6 +261,8 @@ export async function createPageFromPsdLayers(psd: Psd): Promise<Page> {
       const media = new ImageMedia(info.canvas);
       const film = Film.fromMedia(media);
       film.visible = info.visible;
+      film.opacity = info.opacity;
+      film.blendMode = psdBlendModeToCanvas(info.blendMode);
 
       // レイヤー名
       film.prompt = info.name;

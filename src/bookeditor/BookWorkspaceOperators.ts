@@ -1,4 +1,4 @@
-import { Bubble } from '../lib/layeredCanvas/dataModels/bubble';
+import { Bubble, insertBubbleLayers } from '../lib/layeredCanvas/dataModels/bubble';
 import type { Border } from '../lib/layeredCanvas/dataModels/frameTree';
 import type { Book, Page, BookOperators, HistoryTag } from '../lib/book/book';
 import { DefaultBubbleSlot, BubbleLayer } from '../lib/layeredCanvas/layers/bubbleLayer';
@@ -10,8 +10,9 @@ import type { FocusKeeper } from "../lib/layeredCanvas/tools/focusKeeper";
 import { FilmStackTransformer } from "../lib/layeredCanvas/dataModels/film";
 import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
 import { Film } from '../lib/layeredCanvas/dataModels/film';
-import { buildMedia } from '../lib/layeredCanvas/dataModels/media';
-import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf } from '../lib/layeredCanvas/dataModels/frameTree';
+import { buildMedia, ImageMedia } from '../lib/layeredCanvas/dataModels/media';
+import { FrameElement, calculatePhysicalLayout, findLayoutOf, constraintLeaf, insertFrameLayers } from '../lib/layeredCanvas/dataModels/frameTree';
+import { makePlainCanvas } from '../lib/layeredCanvas/tools/imageUtil';
 import { get } from 'svelte/store';
 
 // ストアを直接インポート
@@ -360,28 +361,42 @@ export class BookWorkspaceOperators implements BookOperators {
   }
 
   scribbleFrame(page: Page, frame: FrameElement): void {
-    const films = frame.filmStack.getOperationTargetFilms();
-    if (films.length === 0) {return;}
+    const paperSize = page.paperSize;
+    const [fw, fh] = paperSize;
+    const w = Math.max(256, Math.ceil(fw));
+    const h = Math.max(256, Math.ceil(fh));
+    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+    const newFilm = Film.fromMedia(media);
+
+    insertFrameLayers(page.frameTree, paperSize, frame, frame.filmStack.films.length, [newFilm]);
+    this.commit(null);
 
     frameInspectorTarget.set({
       frame,
       filmStack: frame.filmStack,
       page,
       command: "scribble",
-      commandTargetFilm: films[films.length - 1],
+      commandTargetFilm: newFilm,
     });
   }
 
   scribbleBubble(page: Page, bubble: Bubble): void {
-    const films = bubble.filmStack.getOperationTargetFilms();
-    if (films.length === 0) {return;}
+    const paperSize = page.paperSize;
+    const bubbleSize = bubble.getPhysicalSize(paperSize);
+    const w = Math.max(256, Math.ceil(bubbleSize[0]));
+    const h = Math.max(256, Math.ceil(bubbleSize[1]));
+    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+    const newFilm = Film.fromMedia(media);
+
+    insertBubbleLayers(paperSize, bubble, bubble.filmStack.films.length, [newFilm]);
+    this.commit(null);
 
     bubbleInspectorTarget.set({
       bubble,
       filmStack: bubble.filmStack,
       page,
       command: "scribble",
-      commandTargetFilm: films[films.length - 1],
+      commandTargetFilm: newFilm,
     });
   }
 

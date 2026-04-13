@@ -73,7 +73,7 @@ export class FloorLayer extends LayerBase {
   }
 
   accepts(_point: Vector, button: number, depth: number): any {
-    return keyDownFlags["Space"] || 0 < button;
+    return true;
   }
 
   *pointer(p: Vector) {

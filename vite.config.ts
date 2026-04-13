@@ -14,6 +14,7 @@ export default vitestDefineConfig(({ mode }) => {
   const useHttps = !!process.env.HTTPS_MODE;
 
   return {
+  base: './',
   build: {
     minify: false,
     sourcemap: true,

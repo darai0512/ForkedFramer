@@ -634,12 +634,24 @@
         </div>
       </details>
 
-      <h1>{$_('bubble.layer')}</h1>
+      <div class="scribble-header">
+        <h1>{$_('bubble.layer')}</h1>
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <img
+          class="scribble-btn"
+          src={scribbleIcon}
+          alt="scribble"
+          on:click={onScribble}
+          title={$_('hint.bubble.scribbleOnTop')}
+        />
+      </div>
       <div class="w-full text-left mb-32">
         {#key $bubbleInspectorRebuildToken}
           <FilmList
             showsBarrier={false}
             filmStack={$bubble.filmStack}
+            paperSize={$bubbleInspectorTarget?.page?.paperSize || null}
             on:commit={onCommit}
             on:generate={onGenerate}
             on:accept={onAccept}

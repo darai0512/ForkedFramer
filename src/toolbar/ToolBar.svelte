@@ -82,7 +82,7 @@
       <div class="flex items-center justify-between bg-surface-700/90 backdrop-blur-sm px-2 py-1 border border-surface-500 rounded shadow-md h-8 w-full">
         <span class="text-white text-sm whitespace-nowrap">{$_('editor.scale')}</span>
         <div class="w-full mx-2 flex items-center">
-          <SliderEdit bind:value={$scale} min={50} max={200} step={1}/>
+          <SliderEdit bind:value={$scale} min={10} max={200} step={1}/>
         </div>
         <div class="flex items-center whitespace-nowrap">
           <span class="text-white text-sm">%</span>

@@ -77,6 +77,8 @@ export class FrameLayer extends LayerBase {
   expandVerticalIcon: ClickableIcon;
   slantVerticalIcon: ClickableIcon;
   insertVerticalIcon: ClickableIcon;
+  deleteHorizontalIcon: ClickableIcon;
+  deleteVerticalIcon: ClickableIcon;
   swapIcon: ClickableIcon;
   zvalue: ClickableSelfRenderer;
 
@@ -157,18 +159,26 @@ export class FrameLayer extends LayerBase {
     this.fitIcon = new ClickableIcon(["frameLayer/fit.webp"],unit,[1,1],"hint.frame.fit", isFrameSelected, mp);
 
     const isBorderActive = (dir: 'h' | 'v') => this.interactable && this.selectedBorder?.layout.dir === dir;
+    const isBorderActiveAndDeletable = (dir: 'h' | 'v') => 
+      this.interactable && 
+      this.selectedBorder?.layout.dir === dir &&
+      this.selectedBorder.layout.children![this.selectedBorder.index-1].element.isLeaf() &&
+      this.selectedBorder.layout.children![this.selectedBorder.index].element.isLeaf();
+
     this.expandHorizontalIcon = new ClickableIcon(["frameLayer/expand-horizontal.webp"],unit,[0.5,1],"hint.frame.changeWidth", () => isBorderActive('h'), mp);
     this.slantHorizontalIcon = new ClickableIcon(["frameLayer/slant-horizontal.webp"], unit,[0.5,0],"hint.frame.slant", () => isBorderActive('h'), mp);
     this.insertHorizontalIcon = new ClickableIcon(["frameLayer/insert-horizontal.webp"],unit,[0.5,0],"hint.frame.insertFrame", () => isBorderActive('h'), mp);
+    this.deleteHorizontalIcon = new ClickableIcon(["frameLayer/delete.webp"],unit,[0.5,0],"hint.frame.delete", () => isBorderActiveAndDeletable('h'), mp);
     this.expandVerticalIcon = new ClickableIcon(["frameLayer/expand-vertical.webp"],unit,[1,0.5],"hint.frame.changeWidth", () => isBorderActive('v'), mp);
     this.slantVerticalIcon = new ClickableIcon(["frameLayer/slant-vertical.webp"], unit,[0,0.5],"hint.frame.slant", () => isBorderActive('v'), mp);
     this.insertVerticalIcon = new ClickableIcon(["frameLayer/insert-vertical.webp"],unit,[0,0.5],"hint.frame.insertFrame", () => isBorderActive('v'), mp);
+    this.deleteVerticalIcon = new ClickableIcon(["frameLayer/delete.webp"],unit,[0,0.5],"hint.frame.delete", () => isBorderActiveAndDeletable('v'), mp);
 
     const isSwapVisible = () => this.interactable && this.litLayout != null && this.selectedLayout != null && this.litLayout.element !== this.selectedLayout.element && !this.pointerHandler && 0 < this.litLayout.element.visibility;
     this.swapIcon = new ClickableIcon(["frameLayer/swap.webp"],unit,[0.5,0],"hint.frame.swapSelected", isSwapVisible, mp);
 
     this.frameIcons = [this.splitHorizontalIcon, this.splitVerticalIcon, this.deleteIcon, this.duplicateIcon, this.shiftIcon, this.unshiftIcon, this.resetPaddingIcon, this.zplusIcon, this.zminusIcon, this.visibilityIcon, this.scaleIcon, this.rotateIcon, this.scribbleIcon, this.flipHorizontalIcon, this.flipVerticalIcon, this.fitIcon, this.zvalue];
-    this.borderIcons = [this.slantVerticalIcon, this.expandVerticalIcon, this.slantHorizontalIcon, this.expandHorizontalIcon, this.insertHorizontalIcon, this.insertVerticalIcon];
+    this.borderIcons = [this.slantVerticalIcon, this.expandVerticalIcon, this.slantHorizontalIcon, this.expandHorizontalIcon, this.insertHorizontalIcon, this.insertVerticalIcon, this.deleteHorizontalIcon, this.deleteVerticalIcon];
     this.litIcons = [this.swapIcon];
 
     const handleVisibleFor = (type: FilmProceduralEffectType) => () => {
@@ -561,7 +571,6 @@ export class FrameLayer extends LayerBase {
   }
 
   pointerHover(position: Vector, depth: number): Layer | null {
-    if (keyDownFlags["Space"]) { return null; }
     this.cursorPosition = position;
     if (depth === 2) {
       return this.pointerHoverSelected(position);
@@ -675,7 +684,6 @@ export class FrameLayer extends LayerBase {
 
   accepts(point: Vector, button: number, depth: number): any {
     if (!this.interactable) {return null;}
-    if (keyDownFlags["Space"]) {return null;}
 
     if (depth == 2) {
       const q = this.acceptsForeground(point, button);
@@ -762,6 +770,9 @@ export class FrameLayer extends LayerBase {
     } else if (
       this.insertHorizontalIcon.contains(p) || this.insertVerticalIcon.contains(p)) {
       return { action: "insert", border: this.selectedBorder };
+    } else if (
+      this.deleteHorizontalIcon.contains(p) || this.deleteVerticalIcon.contains(p)) {
+      return { action: "delete-border", border: this.selectedBorder };
     } else if (pointToQuadrilateralDistance(p, this.selectedBorder!.corners, false) < BORDER_MARGIN) {
       return { action: "move-border" , border: this.selectedBorder };
     }
@@ -984,6 +995,10 @@ export class FrameLayer extends LayerBase {
         break;
       case "insert":
         this.onInsert(this.selectedBorder!);
+        this.selectedBorder = null;
+        break;
+      case "delete-border":
+        this.deleteBorder(this.selectedBorder!);
         this.selectedBorder = null;
         break;
 
@@ -1542,6 +1557,14 @@ export class FrameLayer extends LayerBase {
     this.relayoutBorderIcons(border);
   }
 
+  deleteBorder(border: Border): void {
+    FrameElement.deleteBorder(this.frameTree, border.layout.element, border.index);
+    this.litLayout = null;
+    this.selectLayout(null);
+    this.onCommit();
+    this.redraw();
+  }
+
   relayoutIcons() {
     if (this.selectedLayout) {
       this.relayoutFrameIcons(this.selectedLayout);
@@ -1593,9 +1616,11 @@ export class FrameLayer extends LayerBase {
     this.slantVerticalIcon.position = [bt.topLeft[0],(bt.topLeft[1] + bt.bottomLeft[1]) * 0.5];
     this.expandVerticalIcon.position = [(bt.topRight[0] + bt.topRight[0]) * 0.5, (bt.topRight[1] + bt.bottomRight[1]) * 0.5];
     this.insertVerticalIcon.position = [bt.topLeft[0]-40,(bt.topLeft[1] + bt.bottomLeft[1]) * 0.5];
+    this.deleteVerticalIcon.position = [bt.topLeft[0]-80,(bt.topLeft[1] + bt.bottomLeft[1]) * 0.5];
     this.slantHorizontalIcon.position = [(bt.topLeft[0] + bt.topRight[0]) * 0.5,bt.topLeft[1]];
     this.expandHorizontalIcon.position = [(bt.bottomLeft[0] + bt.bottomRight[0]) * 0.5, (bt.bottomLeft[1] + bt.bottomRight[1]) * 0.5];
     this.insertHorizontalIcon.position = [(bt.topLeft[0] + bt.topRight[0]) * 0.5,bt.topLeft[1]-40];
+    this.deleteHorizontalIcon.position = [(bt.topLeft[0] + bt.topRight[0]) * 0.5,bt.topLeft[1]-80];
   }
 
   relayoutLitIcons(layout: Layout): void {

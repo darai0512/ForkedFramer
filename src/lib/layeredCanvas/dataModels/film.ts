@@ -32,6 +32,7 @@ export class Film  {
   prompt: string | null;
   effects: Effect[];
   barriers: Barriers;
+  blendMode: GlobalCompositeOperation; // Canvas 2D blend mode
   groupDepth: number; // PSDグループのネスト深度（0 = ルート直下）
   groupName: string | null; // 所属グループ名（直近の親グループ名）
   
@@ -52,6 +53,7 @@ export class Film  {
     this.effects = [];
     this.selected = false;
     this.barriers = { top: true, right: true, bottom: true, left: true };
+    this.blendMode = 'source-over';
     this.groupDepth = 0;
     this.groupName = null;
   }
@@ -67,6 +69,7 @@ export class Film  {
     f.prompt = this.prompt;
     f.effects = this.effects.map(e => e.clone());
     f.barriers = {...this.barriers};
+    f.blendMode = this.blendMode;
     f.groupDepth = this.groupDepth;
     f.groupName = this.groupName;
     return f;

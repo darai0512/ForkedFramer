@@ -81,8 +81,6 @@
   <p>※ Hide inspector before using letter key + click combinations</p>
 
   <h3>Overall View</h3>
-  <p>Space+Drag: Scroll (Hand Tool)</p>
-  <p>Right Drag: Scroll (Hand Tool)</p>
   <p>Wheel: Zoom</p>
   <p>Undo/Redo: Ctrl+Z/Shift+Ctrl+Z</p>
 

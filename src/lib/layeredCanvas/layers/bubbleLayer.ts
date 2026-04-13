@@ -367,7 +367,6 @@ export class BubbleLayer extends LayerBase {
   }
 
   pointerHover(p: Vector, depth: number): Layer | null {
-    if (keyDownFlags["Space"]) { return null; }
     if (depth === 2){
       return this.pointerHoverSelected(p);
     } else {
@@ -662,10 +661,6 @@ export class BubbleLayer extends LayerBase {
 
   accepts(point: Vector, _button: number, depth: number): any {
     if (!this.interactable) {
-      return null;
-    }
-
-    if (keyDownFlags["Space"]) {
       return null;
     }
 

@@ -153,7 +153,6 @@ export class ViewerLayer extends LayerBase {
 
   accepts(point: Vector, button: number, depth: number): any {
     // if (!this.interactable) { return null; }　// 破壊的ではないので敢えて無視
-    if (keyDownFlags["Space"]) { return null; }
 
     if (depth === 1) {
       for (const bubble of this.bubbles) {

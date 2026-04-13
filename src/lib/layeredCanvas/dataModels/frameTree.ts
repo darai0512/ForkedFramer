@@ -260,6 +260,45 @@ export class FrameElement {
     // ルート要素は削除できない
   }
 
+  static deleteBorder(root: FrameElement, container: FrameElement, borderIndex: number): void {
+    if (!container || !container.children || borderIndex < 1 || borderIndex >= container.children.length) return;
+
+    const prev = container.children[borderIndex - 1];
+    const curr = container.children[borderIndex];
+
+    if (!prev.isLeaf() || !curr.isLeaf()) return;
+
+    const spacing = prev.divider.spacing;
+    prev.rawSize = prev.rawSize + spacing + curr.rawSize;
+    prev.divider = { ...curr.divider };
+
+    container.children.splice(borderIndex, 1);
+    
+    if (container.children.length === 1) {
+      if (container === root) {
+        const child = container.children[0];
+        root.direction = null;
+        root.children = [];
+        root.filmStack = child.filmStack;
+        root.bgColor = child.bgColor;
+        root.borderColor = child.borderColor;
+        root.borderWidth = child.borderWidth;
+      } else {
+        const parentOfContainer = this.findParent(root, container);
+        if (parentOfContainer) {
+            const index = parentOfContainer.children.indexOf(container);
+            const child = container.children[0];
+            child.rawSize = container.rawSize;
+            child.divider = { ...container.divider };
+            parentOfContainer.children[index] = child;
+            parentOfContainer.calculateLengthAndBreadth();
+        }
+      }
+    } else {
+      container.calculateLengthAndBreadth();
+    }
+  }
+
   static duplicateElement(root: FrameElement, target: FrameElement): void {
     console.log('duplicateElement', root, target);
     const parent = this.findParent(root, target);

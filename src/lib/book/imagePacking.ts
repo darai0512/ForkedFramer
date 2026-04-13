@@ -231,6 +231,7 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
       prompt: film.prompt,
       effects,
       barriers: film.barriers,
+      blendMode: film.blendMode !== 'source-over' ? film.blendMode : undefined,
       groupDepth: film.groupDepth,
       groupName: film.groupName,
     };
@@ -295,6 +296,7 @@ export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Pr
     film.prompt = filmMarkUp.prompt;
     film.effects = effects;
     film.barriers = filmMarkUp.barriers ?? { top: true, right: true, bottom: true, left: true };
+    film.blendMode = filmMarkUp.blendMode ?? 'source-over';
     film.groupDepth = filmMarkUp.groupDepth ?? 0;
     film.groupName = filmMarkUp.groupName ?? null;
     films.push(film);

@@ -203,8 +203,7 @@ export class ArrayLayer extends LayerBase {
     }
   }
 
-  accepts(p: Vector, button: number, depth: number): any { 
-    if (keyDownFlags["Space"] || 0 < button) {return null;}
+  accepts(p: Vector, button: number, depth: number): any {
 
     const {paper, index, position} = this.array.parentPositionToNearestChildPosition(p);
     const innerDragging = paper.handleAccepts(position, button, depth);

@@ -1,4 +1,13 @@
 # 修正履歴
+- Added: GitHub Pagesデプロイ用のGitHub Actionsワークフロー (`.github/workflows/deploy-gh-pages.yml`) を追加
+- Changed: `vite.config.ts` で `base: './'` を指定し、GitHub Pagesのサブディレクトリホスティングに完全対応
+- Fixed: PSDレイヤー分割インポートの表示崩れを大幅改善。①Groupの非表示判定を`layerFrame.layerProperties.hidden`で正確に実装、②opacityの二重適用を修正（composite()がalpha焼き込み済みだったのをraw pixelデータ取得に変更）、③ブレンドモード対応（multiply/screen/hard-light/overlay等をCanvas 2DのglobalCompositeOperationにマッピング）、④Linear Dodge(Add)を`lighter`（加算合成）に正しくマッピング
+- Changed: 倍率スライダーの最小値を50%→10%に変更
+- Added: キャビネット（ファイルマネージャ）内で、bookをドラッグ＆ドロップして別のbookに重ねることで、それらを1つのbookに統合する機能を追加しました（版形が同一の場合のみ統合可能）。
+- Fixed: 吹き出しやコマ上の落書きアイコン（scribble）が何もしない問題を修正。透明なレイヤーを挿入してペイントモードに入るように挙動を変更。
+- Added: 吹き出しインスペクターの「レイヤー」ラベル横にも落書きアイコン（scribble）を追加。
+
+- 吹き出しインスペクター内で「選択レイヤーを結合」機能が動作しなかった不具合を修正（paperSizeがFilmListに渡されていなかった問題を解決）
 - 「吹き出し一括編集」ドロワー内で、個別のフキダシに対して「複製」が行えるボタンを追加。テキストだけでなく、スタイル（枠、色、フォント）や内部の画像（FilmStack）もまるごと完全複製可能に
 - デフォルトで全レイヤーに付与されていた不要なランダム名称（1 dog, 1 rabbitなど）を廃止し、PSDのレイヤー名やフォルダ名の読み込みなどの表示すべき命名情報のみが右側に表示されるように変更
 - ブラウザの戻る/進む（履歴）操作によるBook（キャンバスデータ）間の移動に対応。URLパラメータ(`?book=`)を用いてステートを管理するよう処理を刷新

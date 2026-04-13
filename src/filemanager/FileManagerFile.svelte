@@ -37,6 +37,7 @@
   let loaded = false;
   let renameEdit: RenameEdit | null = null;
   let renaming = false;
+  let isDraggingOverMerge = false;
 
   $: if ($mainBook) {
     loaded = $mainBook.revision.id === nodeId;
@@ -66,6 +67,100 @@
     console.log("file dragend")
     ev.stopPropagation();
     $fileManagerDragging = null;
+  }
+
+  function onDragOverMerge(ev: DragEvent) {
+    if (renaming) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    isDraggingOverMerge = true;
+  }
+
+  function onDragLeaveMerge() {
+    isDraggingOverMerge = false;
+  }
+
+  async function onDropMerge(ev: DragEvent) {
+    ev.preventDefault();
+    ev.stopPropagation();
+    isDraggingOverMerge = false;
+
+    if (!acceptable) return;
+
+    const dragging = $fileManagerDragging;
+    if (!dragging || dragging.entries.length === 0) return;
+
+    // Check if dropping on itself
+    if (dragging.entries.some(e => e.bindId === bindId)) return;
+
+    try {
+      const targetNode = await fileSystem.getNode(nodeId);
+      if (!targetNode || targetNode.getType() !== 'file') return;
+      const targetFile = targetNode.asFile()!;
+      const targetBook = await loadBookFrom(fileSystem, targetFile);
+
+      const sourceBookPromises = dragging.entries.map(async entry => {
+        const sourceParent = (await dragging.fileSystem.getNode(entry.parent)) as Folder;
+        const mover = await sourceParent.getEntry(entry.bindId);
+        if (!mover) return null;
+        const sourceNode = await dragging.fileSystem.getNode(mover[2]);
+        if (!sourceNode || sourceNode.getType() !== 'file') return null;
+        return { file: sourceNode.asFile()!, parent: sourceParent, bindId: entry.bindId, name: mover[1] };
+      });
+
+      const sourceItems = (await Promise.all(sourceBookPromises)).filter(x => x !== null);
+      if (sourceItems.length === 0) return;
+
+      const sourceBooks = await Promise.all(sourceItems.map(item => loadBookFrom(dragging.fileSystem, item!.file)));
+
+      const targetSize = targetBook.newPageProperty?.paperSize || targetBook.pages[0]?.paperSize || [840, 1188];
+      
+      const isSameSize = (size1: [number, number], size2: [number, number]) => {
+        return size1[0] === size2[0] && size1[1] === size2[1];
+      };
+
+      for (const sb of sourceBooks) {
+        const sourceSize = sb.newPageProperty?.paperSize || sb.pages[0]?.paperSize || [840, 1188];
+        if (!isSameSize(targetSize, sourceSize)) {
+          toastStore.trigger({ message: '版形が違うbookは統合できません。', timeout: 3000 });
+          return;
+        }
+      }
+
+      const confirmed = await waitDialog<boolean>('confirm', {
+        title: '統合の確認',
+        message: 'これらのbookを統合しますか？',
+        positiveButtonText: '統合する',
+        negativeButtonText: 'キャンセル'
+      });
+
+      if (!confirmed) return;
+
+      $progress = 0;
+      for (const sb of sourceBooks) {
+        if (loaded) {
+          $mainBook!.pages.push(...sb.pages);
+        }
+        targetBook.pages.push(...sb.pages);
+      }
+      if (loaded) {
+        $mainBook!.pages = $mainBook!.pages;
+      }
+      await saveBookTo(loaded ? $mainBook! : targetBook, fileSystem, targetFile);
+      
+      for (const item of sourceItems) {
+        await item!.parent.unlink(item!.bindId);
+      }
+
+      toastStore.trigger({ message: '統合しました。', timeout: 2000 });
+    } catch (e) {
+      console.error(e);
+      toastStore.trigger({ message: '統合に失敗しました。', timeout: 3000 });
+    } finally {
+      $progress = null;
+      $fileManagerDragging = null;
+      $selectedEntries = new Set();
+    }
   }
 
   async function removeFile() {
@@ -167,7 +262,7 @@
 
 <svelte:window on:keydown={onKeyDown}/>
 
-<div class="file" class:selected={$selectedEntries.has(nodeId)} data-node-id={nodeId} data-bind-id={bindId} data-parent-id={parent.id}>
+<div class="file" class:selected={$selectedEntries.has(nodeId)} class:file-dragging-over={isDraggingOverMerge} data-node-id={nodeId} data-bind-id={bindId} data-parent-id={parent.id}>
   <!-- svelte-ignore a11y-no-static-element-interactions -->
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <div class="file-title" class:loaded={loaded} use:toolTip={$_('fileManager.moveByDragEditByDoubleClick')}
@@ -205,6 +300,15 @@
     </div>
   {/if}
   <FileManagerInsertZone on:drop={onDrop} bind:acceptable={acceptable} depth={path.length}/>
+  <!-- svelte-ignore a11y-no-static-element-interactions -->
+  <div
+    class="file-drop-zone"
+    class:acceptable={acceptable}
+    on:dragover={onDragOverMerge}
+    on:dragleave={onDragLeaveMerge}
+    on:drop={onDropMerge}
+    style="z-index: {path.length + 1}"
+  ></div>
 </div>
 
 <style>
@@ -218,6 +322,21 @@
   }
   .file:hover {
     background-color: #fff4;
+  }
+  .file.file-dragging-over {
+    background-color: #ee84;
+    box-shadow: 0 0 0 2px #444 inset;
+  }
+  .file-drop-zone {
+    position: absolute;
+    top: 33%;
+    left: 0;
+    right: 0;
+    height: 34%;
+    display: none;
+  }
+  .file-drop-zone.acceptable {
+    display: block;
   }
   .file-title {
     font-size: 16px;
