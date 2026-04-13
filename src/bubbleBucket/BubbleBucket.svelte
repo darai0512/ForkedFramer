@@ -120,6 +120,25 @@
     $bubbleBucketDirty = true;
   }
 
+  function onDuplicateBubble(event: CustomEvent<{ bubble: Bubble; paperSize: [number, number] }>) {
+    const { bubble, paperSize } = event.detail;
+    const page = $bubbleBucketPage!;
+
+    const newBubble = bubble.clone(false);
+
+    // 元のバブルの次に挿入
+    const index = page.bubbles.indexOf(bubble);
+    if (index !== -1) {
+      page.bubbles.splice(index + 1, 0, newBubble);
+    } else {
+      page.bubbles.push(newBubble);
+    }
+
+    $bubbleBucketPage = page;
+    $bubbleBucketDirty = true;
+    toastStore.trigger({ message: '複製しました', timeout: 1500 });
+  }
+
   function onSelectBubble(event: CustomEvent<Bubble>) {
     const bubble = event.detail;
     const page = $bubbleBucketPage!;
@@ -282,7 +301,7 @@
         }}
       >
         {#each bubbles as bubble (bubble.uuid)}
-          <BubbleBucketItem bubble={bubble} paperSize={$bubbleBucketPage?.paperSize ?? [0, 0]} on:delete={onDeleteBubble} on:split={onSplitBubble} on:select={onSelectBubble} />
+          <BubbleBucketItem bubble={bubble} paperSize={$bubbleBucketPage?.paperSize ?? [0, 0]} on:delete={onDeleteBubble} on:split={onSplitBubble} on:duplicate={onDuplicateBubble} on:select={onSelectBubble} />
         {/each}
       </div>
       <div>

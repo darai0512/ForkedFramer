@@ -243,7 +243,8 @@
       "reorder": "Drag to reorder",
       "copy": "Copy",
       "split": "Split (Shift+Enter)",
-      "select": "Select"
+      "select": "Select",
+      "duplicate": "Duplicate"
     }
   },
   "bubbleBucket": {

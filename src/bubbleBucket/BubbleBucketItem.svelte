@@ -8,6 +8,7 @@
 
   import trashIcon from '../assets/trash.webp';
   import clipboardIcon from '../assets/clipboard.webp';
+  import duplicateIcon from '../assets/fileManager/duplicate.webp';
   import splitIcon from '../assets/split.webp';
   import selectIcon from '../assets/inspect.webp';
   import { toastStore } from '@skeletonlabs/skeleton';
@@ -68,6 +69,12 @@
     toastStore.trigger({ message: 'コピーしました', timeout: 1500 });
   }
 
+  function onDuplicate(ev: MouseEvent) {
+    ev.stopPropagation();
+    ev.preventDefault();
+    dispatch('duplicate', { bubble, paperSize });
+  }
+
   function onSplit(ev?: MouseEvent) {
     ev?.stopPropagation();
     ev?.preventDefault();
@@ -112,6 +119,16 @@
         alt={$_('bubble.actions.select')}
         use:toolTip={$_('bubble.actions.select')}
         on:click={onSelect}
+      />
+      <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
+      <img
+        draggable={false}
+        class="control-icon"
+        src={duplicateIcon}
+        alt={$_('bubble.actions.duplicate') || '複製'}
+        use:toolTip={$_('bubble.actions.duplicate') || '複製'}
+        on:click={onDuplicate}
       />
       <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
       <!-- svelte-ignore a11y-click-events-have-key-events -->
