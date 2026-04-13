@@ -224,6 +224,7 @@
         rotation: film.rotation,
         reverse: film.reverse,
         visible: film.visible,
+        opacity: film.opacity,
         prompt: film.prompt,
       };
       if (film.content.kind === 'media') {
@@ -232,7 +233,7 @@
           kind: 'media',
           media: film.content.media.fileId,
         });
-      } else {
+      } else if (film.content.kind === 'procedural') {
         films.push({
           ...base,
           kind: 'procedural',

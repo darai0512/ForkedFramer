@@ -7,7 +7,7 @@
   import { moveInArray } from '../../utils/moveInArray';
   import { sortableList } from '../../utils/sortableList';
   import { filmProcessorQueue } from '../../utils/filmprocessor/filmProcessorStore';
-  import { toastStore } from '@skeletonlabs/skeleton';
+  import { toastStore, RangeSlider } from '@skeletonlabs/skeleton';
   import { toolTip } from '../../utils/passiveToolTipStore';
   import Popup from '../../utils/Popup.svelte';
   import MediaFrame from '../../gallery/MediaFrame.svelte';
@@ -290,6 +290,11 @@
     </div>
     {#if effectVisible}
       <div class="effect-panel">
+        <div class="effect-item variant-ghost-primary p-2 w-full flex items-center justify-between gap-4" on:pointerdown={e => e.stopPropagation()}>
+          <label for={`opacity-${film.ulid}`} class="text-sm whitespace-nowrap text-white font-bold w-12">不透明度</label>
+          <RangeSlider id={`opacity-${film.ulid}`} name="opacity" bind:value={film.opacity} min={0} max={1} step={0.01} style="flex:1;" on:change={() => { $redrawToken = true; dispatch('commit', true) }} />
+          <span class="text-xs w-8 text-right font-mono">{Math.round((film.opacity ?? 1.0) * 100)}%</span>
+        </div>
         <div class="effect-item variant-ghost-primary procedural-effect-item">
           <FilmProceduralControls film={proceduralFilm} on:change={onProceduralEffectChange} />
         </div>
@@ -363,6 +368,11 @@
     </div>
     {#if effectVisible}
       <div class="effect-panel">
+        <div class="effect-item variant-ghost-primary p-2 w-full flex items-center justify-between gap-4" on:pointerdown={e => e.stopPropagation()}>
+          <label for={`opacity-${film.ulid}`} class="text-sm whitespace-nowrap text-white font-bold w-12">不透明度</label>
+          <RangeSlider id={`opacity-${film.ulid}`} name="opacity" bind:value={film.opacity} min={0} max={1} step={0.01} style="flex:1;" on:change={() => { $redrawToken = true; dispatch('commit', true) }} />
+          <span class="text-xs w-8 text-right font-mono">{Math.round((film.opacity ?? 1.0) * 100)}%</span>
+        </div>
         <div class="flex flex-col gap-2 w-full" use:sortableList={{ animation: 100, onUpdate: onUpdateEffectList }}>
           {#each film.effects as effect, index (effect.ulid)}
             <div class="effect-item variant-ghost-primary p-2">

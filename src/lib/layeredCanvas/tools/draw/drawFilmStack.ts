@@ -21,6 +21,7 @@ export function drawFilmStack(ctx: CanvasRenderingContext2D, filmStack: FilmStac
     ctx.translate(translation[0], translation[1]);
     ctx.rotate(-film.rotation * Math.PI / 180);
     ctx.scale(scale * film.reverse[0], scale * film.reverse[1]);
+    ctx.globalAlpha *= (film.opacity ?? 1.0);
 
     if (film.content.kind === 'media') {
       let media = film.content.media;

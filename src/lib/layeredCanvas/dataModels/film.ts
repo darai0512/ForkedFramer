@@ -28,6 +28,7 @@ export class Film  {
   rotation: number; // degree
   reverse: [number, number];
   visible: boolean;
+  opacity: number;
   prompt: string | null;
   effects: Effect[];
   barriers: Barriers;
@@ -46,7 +47,8 @@ export class Film  {
     this.rotation = 0;
     this.reverse = [1, 1];
     this.visible = true;
-    this.prompt = ["1 dog", "1 cat", "1 rabbit", "1 elephant", "1 dolphin", "1 bird"][Math.floor(Math.random() * 6)];
+    this.opacity = 1.0;
+    this.prompt = "";
     this.effects = [];
     this.selected = false;
     this.barriers = { top: true, right: true, bottom: true, left: true };
@@ -61,6 +63,7 @@ export class Film  {
     f.rotation = this.rotation;
     f.reverse = [...this.reverse];
     f.visible = this.visible;
+    f.opacity = this.opacity;
     f.prompt = this.prompt;
     f.effects = this.effects.map(e => e.clone());
     f.barriers = {...this.barriers};

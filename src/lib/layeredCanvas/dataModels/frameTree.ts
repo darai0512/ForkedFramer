@@ -59,7 +59,7 @@ export class FrameElement {
     this.borderWidth = null;
     this.z = 0;
     this.visibility = 2;
-    this.prompt = ["1 dog", "1 cat", "1 rabbit", "1 elephant", "1 dolphin", "1 bird"][Math.floor(Math.random() * 6)];
+    this.prompt = "";
     this.pseudo = false;
     this.semantics = null;
 
@@ -147,7 +147,7 @@ export class FrameElement {
     element.z = markUp.z ?? 0;
     element.visibility = markUp.visibility ?? 2;
     element.semantics = markUp.semantics;
-    element.prompt = markUp.prompt ?? ["1 dog", "1 cat", "1 rabbit", "1 elephant", "1 dolphin", "1 bird"][Math.floor(Math.random() * 6)];
+    element.prompt = markUp.prompt ?? "";
     element.pseudo = markUp.pseudo ?? false;
     return element;
   }

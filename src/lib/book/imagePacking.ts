@@ -227,6 +227,7 @@ export async function packFilms(films: Film[], saveMediaFunc: SaveMediaFunc): Pr
       rotation: film.rotation,
       reverse: [...film.reverse],
       visible: film.visible,
+      opacity: film.opacity,
       prompt: film.prompt,
       effects,
       barriers: film.barriers,
@@ -290,6 +291,7 @@ export async function unpackFilms(markUp: any, loadMediaFunc: LoadMediaFunc): Pr
     film.rotation = filmMarkUp.rotation;
     film.reverse = filmMarkUp.reverse;
     film.visible = filmMarkUp.visible;
+    film.opacity = filmMarkUp.opacity ?? 1.0;
     film.prompt = filmMarkUp.prompt;
     film.effects = effects;
     film.barriers = filmMarkUp.barriers ?? { top: true, right: true, bottom: true, left: true };

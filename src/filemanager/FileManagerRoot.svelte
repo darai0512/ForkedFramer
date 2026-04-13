@@ -170,31 +170,10 @@
           return;
         }
 
-        console.log("book initialize:2");
         const currentFileInfo = await fetchCurrentFileInfo();
         if (currentFileInfo) {
           try {
-            console.log("book initialize:3");
-            const fs = getFileSystemByType(currentFileInfo.fileSystem);
-            console.log("book initialize:4");
-            let currentFile = (await fs.getNode(currentFileInfo.id))!.asFile()!;
-            console.log("book initialize:5");
-            const newBook = await loadBookFrom(fs, currentFile);
-            console.log("book initialize:6");
-            refreshFilms(newBook);
-            currentRevision = {...newBook.revision};
-            console.log("book initialize:7");
-            $mainBookFileSystem = fs;
-            console.log("book initialize:8");
-            $mainBookExceptionHandler = loadExceptionHandler; // onChangeBookが一回実行されると消去される
-            console.log("book initialize:9");
-            $mainBook = newBook;
-            console.log("book initialize:10");
-            $mainBookTitle = currentFileInfo.title ?? '';
-            console.log("book initialize:11");
-            $frameInspectorTarget = null;
-            console.log("book initialize:12");
-            analyticsEvent('continue_book');
+            await loadBookFromInfo(currentFileInfo);
           }
           catch (e) {
             console.error(e);
@@ -382,6 +361,38 @@
     }, 1500);
   }
 
+  async function loadBookFromInfo(info: CurrentFileInfo) {
+    const fs = getFileSystemByType(info.fileSystem);
+    let currentFile = (await fs.getNode(info.id))!.asFile()!;
+    const newBook = await loadBookFrom(fs, currentFile);
+    refreshFilms(newBook);
+    currentRevision = {...newBook.revision};
+    $mainBookFileSystem = fs;
+    $mainBookExceptionHandler = loadExceptionHandler;
+    $mainBook = newBook;
+    $mainBookTitle = info.title ?? '';
+    $frameInspectorTarget = null;
+    analyticsEvent('continue_book');
+  }
+
+  async function handlePopState(e: PopStateEvent) {
+    if (e.state) {
+      const info = e.state as CurrentFileInfo;
+      if (currentRevision && currentRevision.id === info.id) return;
+      await coalescingSaveWork.whenIdle();
+      $loading = true;
+      try {
+        await loadBookFromInfo(info);
+      } catch (err) {
+        console.error(err);
+        toastStore.trigger({ message: $_('fileManager.fileLoadFailed'), timeout: 1500});
+      } finally {
+        $loading = false;
+        setTimeout(() => {$redrawToken = true;}, 200);
+      }
+    }
+  }
+
   async function displayStoredImages() {
     $fileManagerOpen = false;
     const d: ModalSettings = {
@@ -463,7 +474,7 @@
 
 </script>
 
-<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && $fileManagerOpen) clearSelection(); }} />
+<svelte:window on:keydown={(e) => { if (e.key === 'Escape' && $fileManagerOpen) clearSelection(); }} on:popstate={handlePopState} />
 
 <div class="drawer-outer">
   <Drawer

@@ -770,6 +770,7 @@
       "dragLeftRightToRotate": "左右ドラッグで回転",
       "scaleSync": "スケール同期",
       "dragToScale": "ドラッグでスケール",
+      "dragToImageRotate": "ドラッグで画像の回転",
       "addTransparentLayer": "透明レイヤ",
       "scribbleOnTop": "落書き(+透明レイヤ)",
       "dragTail": "ドラッグでしっぽ",

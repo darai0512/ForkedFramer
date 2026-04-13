@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "HTTPS_MODE=1 vite",
-    "dev:http": "vite",
+    "dev": "HTTPS_MODE=1 vite --host # `$ipconfig getifaddr en0`:5173",
+    "dev:http": "vite --host",
     "build": "npm run stamp && vite build",
     "devbuild": "vite build --mode development",
     "preview": "vite preview",

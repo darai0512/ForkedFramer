@@ -50,6 +50,7 @@ export class BubbleLayer extends LayerBase {
   rotateIcon: ClickableIcon;
   imageScaleLockIcon: ClickableIcon;
   scaleIcon: ClickableIcon;
+  imageRotateIcon: ClickableIcon;
   scribbleIcon: ClickableIcon;
   optionIcons: Record<string, ClickableIcon>;
 
@@ -93,6 +94,7 @@ export class BubbleLayer extends LayerBase {
     this.imageScaleLockIcon = new ClickableIcon(["bubbleLayer/bubble-unlock.webp","bubbleLayer/bubble-lock.webp"],unit,[1,1], "hint.bubble.scaleSync", () => this.interactable && 0 < (this.selected?.filmStack.films.length ?? 0), mp);
     this.imageScaleLockIcon.index = 0;
     this.scaleIcon = new ClickableIcon(["bubbleLayer/bubble-scale.webp"],unit,[1,1],"hint.bubble.dragToScale", () => this.interactable && this.selected != null && 0 < this.selected?.filmStack.films.length, mp);
+    this.imageRotateIcon = new ClickableIcon(["bubbleLayer/bubble-rotate.webp"],unit,[1,1],"hint.bubble.dragToImageRotate", () => this.interactable && this.selected != null && 0 < this.selected?.filmStack.films.length, mp);
 
     this.scribbleIcon = new ClickableIcon(["bubbleLayer/scribble.webp"],unit,[0,1],"hint.bubble.scribbleOnTop", () => this.interactable && this.selected != null, mp);
 
@@ -103,7 +105,7 @@ export class BubbleLayer extends LayerBase {
     this.optionIcons.circle = new ClickableIcon(["bubbleLayer/circle.webp"],unit,[0.5,0.5],"hint.bubble.dragCircle", () => this.interactable && this.selected != null, mp);
     this.optionIcons.radius = new ClickableIcon(["bubbleLayer/radius.webp"],unit,[0.5,0.5],"hint.bubble.dragRadius", () => this.interactable && this.selected != null, mp);
 
-    for (let icon of [this.dragIcon, this.zPlusIcon, this.zMinusIcon, this.removeIcon, this.rotateIcon, this.imageScaleLockIcon, this.scaleIcon, this.scribbleIcon]) {
+    for (let icon of [this.dragIcon, this.zPlusIcon, this.zMinusIcon, this.removeIcon, this.rotateIcon, this.imageScaleLockIcon, this.scaleIcon, this.imageRotateIcon, this.scribbleIcon]) {
       if (icon instanceof ClickableIcon) {
         icon.shadowColor = "#242";
       }
@@ -169,6 +171,7 @@ export class BubbleLayer extends LayerBase {
     
         this.imageScaleLockIcon.render(ctx);
         this.scaleIcon.render(ctx);
+        this.imageRotateIcon.render(ctx);
 
         this.scribbleIcon.render(ctx);
       }
@@ -385,6 +388,7 @@ export class BubbleLayer extends LayerBase {
         this.zPlusIcon.hintIfContains(p, this.hint) ||
         this.imageScaleLockIcon.hintIfContains(p, this.hint) ||
         this.scaleIcon.hintIfContains(p, this.hint) ||
+        this.imageRotateIcon.hintIfContains(p, this.hint) ||
         this.scribbleIcon.hintIfContains(p, this.hint) ||
         this.hintOptionIcon(this.selected.shape, p)) {
         this.handle = null;
@@ -701,6 +705,8 @@ export class BubbleLayer extends LayerBase {
         return { action: "image-scale-lock", bubble };
       } else if (this.scaleIcon.contains(point)) {
         return { action: "image-scale", bubble };
+      } else if (this.imageRotateIcon.contains(point)) {
+        return { action: "image-rotate", bubble };
       } else if (this.scribbleIcon.contains(point)) {
         return { action: "scribble", bubble };
       } else {
@@ -843,6 +849,8 @@ export class BubbleLayer extends LayerBase {
       yield* this.translateImage(dragStart, payload.bubble);
     } else if (payload.action === "image-scale") {
       yield* this.scaleImage(dragStart, payload.bubble);
+    } else if (payload.action === "image-rotate") {
+      yield* this.rotateImage(dragStart, payload.bubble);
     } else if (payload.action === "scribble") {
       this.onScribble(payload.bubble);
     } else if (payload.action === "options-tailTip") {
@@ -912,36 +920,7 @@ export class BubbleLayer extends LayerBase {
   }
 
   doubleClicked(p: Vector): boolean {
-    if (!this.interactable) { return false; }
-
-    const paperSize = this.getPaperSize();
-
-    for (let bubble of this.bubbles) {
-      if (bubble.contains(paperSize, p)) {
-        this.selectBubble(bubble);
-        const size = bubble.calculateFitSize(paperSize);
-        bubble.setPhysicalSize(paperSize, size);
-        this.onCommit();
-        this.relayoutIcons();
-        return true;
-      }
-    }
-
-    const q = Bubble.normalizedPosition(paperSize, p);
-
-    const bubble = this.defaultBubbleSlot.bubble.clone(false);
-    bubble.parent = null;
-    bubble.filmStack.films = [];
-    bubble.n_p0 = [q[0] - 0.12, q[1] - 0.12];
-    bubble.n_p1 = [q[0] + 0.12, q[1] + 0.12];
-    //bubble.n_p0 = [0,0];
-    //bubble.n_p1 = [1,1];
-    bubble.initOptions();
-    bubble.text = getHaiku();
-    this.bubbles.push(bubble);
-    this.onCommit();
-    this.selectBubble(bubble);
-    return true;
+    return false;
   }
 
   relayoutIcons(): void {
@@ -961,6 +940,7 @@ export class BubbleLayer extends LayerBase {
     this.imageScaleLockIcon.position = cp([1,1],[0,0]);
     this.imageScaleLockIcon.index = this.selected!.scaleLock ? 1 : 0;
 
+    this.imageRotateIcon.position = cp([1,1],[-4,0]);
     this.scaleIcon.position = cp([1,1],[-2,0]);
 
     this.scribbleIcon.position = cp([0,1], [0,0]);
@@ -1290,6 +1270,28 @@ export class BubbleLayer extends LayerBase {
         transformer.scale(Math.max(q[0], q[1]))
         this.redraw();
       });
+      this.onCommit();
+    } catch (e) {
+      if (e === "cancel") {
+        this.onRevert();
+      }
+    }
+  }
+
+  *rotateImage(dragStart: Vector, bubble: Bubble): Generator<void, void, Vector> {
+    const paperSize = this.getPaperSize();
+    const films = bubble.filmStack.getOperationTargetFilms();
+
+    try {
+      const transformer = new FilmStackTransformer(paperSize, films);
+      const s = dragStart;
+
+      let p: Vector;
+      while ((p = yield)) {
+        const op = (p[0] - s[0]) * 0.2;
+        transformer.rotate(op);
+        this.redraw();
+      }
       this.onCommit();
     } catch (e) {
       if (e === "cancel") {

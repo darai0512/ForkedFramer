@@ -769,6 +769,7 @@
       "dragLeftRightToRotate": "Drag left/right to rotate",
       "scaleSync": "Scale sync",
       "dragToScale": "Drag to scale",
+      "dragToImageRotate": "Drag to rotate image",
       "addTransparentLayer": "Add transparent layer",
       "scribbleOnTop": "Scribble on top layer",
       "dragTail": "Drag for tail",
