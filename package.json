@@ -104,7 +104,7 @@
     "svelte-routing": "^2.13.0",
     "svelte-writable-derived": "^3.1.0",
     "svelvet": "^8.1.0",
-    "swiper": "^11.1.9",
+    "swiper": "^12.1.2",
     "three": "^0.182.0",
     "ulid": "^2.3.0",
     "uuid": "^9.0.0",
