@@ -178,6 +178,10 @@
           catch (e) {
             console.error(e);
             await clearCurrentFileInfo();
+            // URLの?bookパラメータも削除してからリロード（残すと無限リロードになる）
+            const url = new URL(window.location.href);
+            url.searchParams.delete('book');
+            window.history.replaceState(null, '', url.toString());
             location.reload();
           }
           return;
@@ -355,6 +359,10 @@
     console.log("exception handler");
     console.error(e);
     await clearCurrentFileInfo();
+    // URLの?bookパラメータも削除（残すと無限リロードになる可能性がある）
+    const url = new URL(window.location.href);
+    url.searchParams.delete('book');
+    window.history.replaceState(null, '', url.toString());
     toastStore.trigger({ message: $_('fileManager.fileLoadFailed'), timeout: 1500});
     setTimeout(() => {
       location.reload();

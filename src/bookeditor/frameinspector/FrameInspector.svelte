@@ -85,7 +85,23 @@
       case "sendToMaterialCollection":
         onSendToMaterialCollection(film);
         break;
+      case "editScribble":
+        onEditScribble(film);
+        break;
     }
+  }
+
+  function onEditScribble(film: Film) {
+    const page = $frameInspectorTarget!.page;
+    const element = $frameInspectorTarget!.frame;
+    manuallyHidden = true;
+    frameInspectorTarget.set({
+      frame: element,
+      filmStack: element.filmStack,
+      page,
+      command: "scribble",
+      commandTargetFilm: film,
+    });
   }
 
   function onDuplicate(film: Film) {

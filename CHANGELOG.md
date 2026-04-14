@@ -1,7 +1,8 @@
 # 修正履歴
+- Fixed: リストアや初期化後に`?book=`パラメータが存在しないbook IDを指している場合、無限リロードが発生する不具合を修正。エラー時にsessionStorageだけでなくURLパラメータも削除するよう変更
 - Added: GitHub Pagesデプロイ用のGitHub Actionsワークフロー (`.github/workflows/deploy-gh-pages.yml`) を追加
 - Changed: `vite.config.ts` で `base: './'` を指定し、GitHub Pagesのサブディレクトリホスティングに完全対応
-- Fixed: PSDレイヤー分割インポートの表示崩れを大幅改善。①Groupの非表示判定を`layerFrame.layerProperties.hidden`で正確に実装、②opacityの二重適用を修正（composite()がalpha焼き込み済みだったのをraw pixelデータ取得に変更）、③ブレンドモード対応（multiply/screen/hard-light/overlay等をCanvas 2DのglobalCompositeOperationにマッピング）、④Linear Dodge(Add)を`lighter`（加算合成）に正しくマッピング
+- Fixed: PSDレイヤー分割インポートの表示崩れを大幅改善。①Groupの非表示判定を`layerFrame.layerProperties.hidden`で正確に実装、②opacityの二重適用を修正（composite()がalpha焼き込み済みだったのをraw pixelデータ取得に変更）、③ブレンドモード対応（multiply/screen/hard-light/overlay等をCanvas 2DのglobalCompositeOperationにマッピング）、④Linear Dodge(Add)を`lighter`（加算合成）に正しくマッピング、⑤Clip Studio Paintの「カメラ」フォルダ等に含まれる破壊的レイヤー（キャンバス全面+特殊ブレンド+80%以上不透明）を自動検出し非表示化、⑥クリッピングマスク (`clippingMask`) のサポートを追加（インポート時にベースレイヤーにアルファマスクを維持したまま焼き込む処理を実装し、Krita等と同様の合成結果を再現）
 - Changed: 倍率スライダーの最小値を50%→10%に変更
 - Added: キャビネット（ファイルマネージャ）内で、bookをドラッグ＆ドロップして別のbookに重ねることで、それらを1つのbookに統合する機能を追加しました（版形が同一の場合のみ統合可能）。
 - Fixed: 吹き出しやコマ上の落書きアイコン（scribble）が何もしない問題を修正。透明なレイヤーを挿入してペイントモードに入るように挙動を変更。
@@ -60,6 +61,9 @@
 - キャビネットモーダル内にすべてのローカルストレージデータを空にする初期化ボタンを追加
 - キャビネットモーダル内から「クラウドストレージ」関連の文言を削除
 - ログイン関連機能の全削除
+- 落書き機能を強化し、描画中以外でも透過レイヤーの操作ボタンから落書き領域を再開（編集）できるように変更
+- FreehandInspector（落書きパレット）のResetボタンを消しゴムプリセットの横へ移動
+- タブレット操作性を向上させるため、落書きパレットの太さ・フチ・太さ変化スライダーの左右に「＋」「－」ボタンを追加してそれぞれ適切な単位で調整できるよう改善
 
 ## 素材集
 - コマや吹き出しにドラッグ＆ドロップされたメディア画像を自動的に「素材集」にも追加・保存
@@ -86,6 +90,9 @@
 - ❌ HTTP環境（セキュアコンテキスト外）→ 利用不可
 
 # Originalの挙動memo
+## テーパーとは
+ストローク（線）の始点・終点に向かって線が細く絞られる「先細り効果」です。毛筆の「入り・抜き」と同じイメージで、鋭さ=0 のときは丸い端、値が大きいほど尖った細い端になります。
+
 ## 白紙レイヤー
 media kindです（単色Canvas画像）
 後からの色・サイズ編集、を追加するには、白紙を procedural kindの新しいタイプ（例: plain-fill）として実装し、プロシージャエフェクトシステムに組み込む必要あり

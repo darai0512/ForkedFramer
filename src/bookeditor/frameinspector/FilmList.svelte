@@ -151,6 +151,7 @@
       {/if}
       <FilmListItem
         {showsBarrier}
+        isTopmost={index === 0}
         bind:film={film}
         downloadName={downloadPrefix ? `${downloadPrefix}_l${String(filmStack.films.length - index).padStart(3, '0')}` : ''}
         on:select={onSelectFilm}

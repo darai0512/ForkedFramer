@@ -278,7 +278,8 @@
       "duplicate": "複製",
       "sendToMaterialCollection": "素材集に送る",
       "sendVideoFrameToMaterialCollection": "このフレームを画像として素材集に送る",
-      "download": "ダウンロード"
+      "download": "ダウンロード",
+      "editScribble": "落書き再開"
     },
     "procedural": {
       "settings": "プロシージャル設定"

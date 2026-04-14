@@ -20,6 +20,7 @@ export interface PsdLayerInfo {
   parentGroupName: string | null; // 直近の親グループ名
   opacity: number; // 0.0〜1.0
   blendMode: string; // PSDブレンドモード文字列 (norm, mul, scrn, hLit, etc.)
+  clippingMask: boolean; // クリッピングマスクかどうか
 }
 
 /** グループヘッダー情報 */
@@ -61,7 +62,8 @@ export async function compositePsd(psd: Psd): Promise<HTMLCanvasElement> {
  */
 export async function extractPsdFlatItems(psd: Psd): Promise<PsdFlatItem[]> {
   const items: PsdFlatItem[] = [];
-  await traverseNodeFlat(psd, items, [], 0);
+  const canvasSize: [number, number] = [psd.width, psd.height];
+  await traverseNodeFlat(psd, items, [], 0, true, canvasSize);
   return items;
 }
 
@@ -106,12 +108,61 @@ function getNodeBlendMode(node: any): string {
   return 'norm';
 }
 
+/**
+ * キャンバス全面を覆い、通常以外のブレンドモードを持つ破壊的レイヤーを検出する。
+ * Clip Studio Paintの「カメラ」フォルダなどに含まれるガイド用レイヤーは、
+ * PSD合成画像には含まれないが、レイヤーデータとしては存在する。
+ * これらはキャンバス全体に影響し、意図しない色変化や消失を引き起こすため自動非表示にする。
+ *
+ * 判定条件:
+ * 1. ブレンドモードがnorml/pass以外
+ * 2. バウンディングボックスがキャンバスの90%以上をカバー
+ * 3. 不透明ピクセルがレイヤー内の80%以上（大部分が塗りつぶされている）
+ */
+function isDestructiveFullCanvasLayer(
+  node: any,
+  canvasSize: [number, number],
+  pixelData: Uint8ClampedArray
+): boolean {
+  const lp = node.layerFrame?.layerProperties;
+  if (!lp) return false;
+
+  const blendMode = lp.blendMode;
+  // normal/pass through は破壊的ではない
+  if (!blendMode || blendMode === 'norm' || blendMode === 'pass') return false;
+
+  // レイヤーの範囲がキャンバスの90%以上をカバーしているか
+  const layerWidth = Math.max(0, (lp.right ?? 0) - (lp.left ?? 0));
+  const layerHeight = Math.max(0, (lp.bottom ?? 0) - (lp.top ?? 0));
+  const layerArea = layerWidth * layerHeight;
+  const canvasArea = canvasSize[0] * canvasSize[1];
+
+  if (canvasArea <= 0 || layerArea < canvasArea * 0.9) return false;
+
+  // ピクセルの不透明率をチェック（80%以上が不透明なら「塗りつぶし」）
+  const totalPixels = pixelData.length / 4;
+  let opaquePixels = 0;
+  for (let i = 3; i < pixelData.length; i += 4) {
+    if (pixelData[i] > 0) opaquePixels++;
+  }
+  const opaqueRatio = opaquePixels / totalPixels;
+
+  if (opaqueRatio >= 0.8) {
+    console.warn(
+      `PSD: destructive full-canvas blend layer detected: "${lp.name}" (blend=${blendMode}, opaque=${(opaqueRatio*100).toFixed(0)}%), auto-hiding`
+    );
+    return true;
+  }
+  return false;
+}
+
 async function traverseNodeFlat(
   node: any,
   results: PsdFlatItem[],
   groupStack: string[],
   depth: number,
-  isVisible: boolean = true
+  isVisible: boolean = true,
+  canvasSize: [number, number] = [0, 0]
 ): Promise<void> {
   const nodeHidden = isNodeHidden(node);
   const currentVisible = isVisible && (node.type === 'Psd' || !nodeHidden);
@@ -122,13 +173,17 @@ async function traverseNodeFlat(
       // opacityはFilm.opacityで別途適用する（composite(true,*)だとopacityがalphaに焼き込まれ二重適用になる）
       const pixelData = await node.composite(false, false);
       if (pixelData && node.width > 0 && node.height > 0) {
+        // キャンバス全面を覆う破壊的ブレンドレイヤー（CSPカメラフォルダ等）を自動非表示
+        const destructive = isDestructiveFullCanvasLayer(node, canvasSize, pixelData);
+        const layerVisible = destructive ? false : currentVisible;
+
         const canvas = pixelDataToCanvas(pixelData, node.width, node.height);
         results.push({
           kind: 'layer',
           info: {
             canvas,
             name: node.name,
-            visible: currentVisible,
+            visible: layerVisible,
             top: node.top,
             left: node.left,
             isGroup: false,
@@ -137,6 +192,7 @@ async function traverseNodeFlat(
             parentGroupName: groupStack.length > 0 ? groupStack[groupStack.length - 1] : null,
             opacity: getNodeOpacity(node),
             blendMode: getNodeBlendMode(node),
+            clippingMask: !!node.layerFrame?.layerProperties?.clippingMask,
           },
         });
       }
@@ -156,14 +212,14 @@ async function traverseNodeFlat(
     groupStack.push(node.name);
     if (node.children) {
       for (const child of node.children) {
-        await traverseNodeFlat(child, results, groupStack, depth + 1, currentVisible);
+        await traverseNodeFlat(child, results, groupStack, depth + 1, currentVisible, canvasSize);
       }
     }
     groupStack.pop();
   } else if (node.type === "Psd") {
     if (node.children) {
       for (const child of node.children) {
-        await traverseNodeFlat(child, results, groupStack, depth, currentVisible);
+        await traverseNodeFlat(child, results, groupStack, depth, currentVisible, canvasSize);
       }
     }
   }
@@ -189,6 +245,39 @@ function pixelDataToCanvas(
   const imageData = new ImageData(new Uint8ClampedArray(pixelData), width, height);
   ctx.putImageData(imageData, 0, 0);
   return canvas;
+}
+
+function bakeClippingLayers(baseInfo: PsdLayerInfo, clippedInfos: PsdLayerInfo[]) {
+  // clippedInfos は下敷きに近い順に並んでいる想定
+  const A = baseInfo;
+  
+  const ctx = A.canvas.getContext("2d")!;
+  
+  // 1. ベースレイヤーの現在のアルファ（形）を保存
+  const alphaMaskCanvas = document.createElement("canvas");
+  alphaMaskCanvas.width = A.canvas.width;
+  alphaMaskCanvas.height = A.canvas.height;
+  const actx = alphaMaskCanvas.getContext("2d")!;
+  actx.drawImage(A.canvas, 0, 0);
+
+  // 2. クリッピングレイヤーを順次ベースレイヤーに重ね描き
+  for (const B of clippedInfos) {
+    if (!B.visible) continue;
+    ctx.save();
+    ctx.globalCompositeOperation = psdBlendModeToCanvas(B.blendMode);
+    ctx.globalAlpha = B.opacity;
+    // BのキャンバスをAのキャンバスに相対的な位置で描画
+    ctx.translate(B.left - A.left, B.top - A.top);
+    ctx.drawImage(B.canvas, 0, 0);
+    ctx.restore();
+  }
+
+  // 3. 最後に 'destination-in' で最初のアルファマスクを適用し、はみ出た部分を削る
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.globalAlpha = 1.0;
+  ctx.drawImage(alphaMaskCanvas, 0, 0);
+  ctx.restore();
 }
 
 /**
@@ -249,7 +338,44 @@ export async function createPageFromPsdLayers(psd: Psd): Promise<Page> {
   const frameTree = FrameElement.compile(frameExamples["white-paper"].frameTree);
   const films: Film[] = [];
 
-  for (const item of flatItems) {
+  // ① Clipping Mask を考慮して焼き込み前処理を行う
+  const bakedItems: PsdFlatItem[] = [];
+  let currentBase: PsdLayerInfo | null = null;
+  let clippingLayers: PsdLayerInfo[] = [];
+
+  // 配列の最後（最背面）から先頭（最前面）に向かって処理する
+  for (let i = flatItems.length - 1; i >= 0; i--) {
+    const item = flatItems[i];
+    if (item.kind === 'groupHeader') {
+      bakedItems.unshift(item);
+      continue;
+    }
+
+    if (item.info.clippingMask) {
+      if (currentBase) {
+        // 現在のベースレイヤーに対するクリッピングなのでリストに追加
+        clippingLayers.push(item.info);
+      } else {
+        // ベースが見つからない異常系：そのまま通常レイヤーとして扱う
+        bakedItems.unshift(item);
+      }
+    } else {
+      // 新しいベースレイヤーを発見。これまでのクリッピングレイヤー群を直前のベースに焼き込む
+      if (currentBase && clippingLayers.length > 0) {
+        bakeClippingLayers(currentBase, clippingLayers);
+        clippingLayers = []; // リセット
+      }
+      currentBase = item.info;
+      bakedItems.unshift(item);
+    }
+  }
+  // ループ後、最後のベースレイヤーの分を処理
+  if (currentBase && clippingLayers.length > 0) {
+    bakeClippingLayers(currentBase, clippingLayers);
+  }
+
+  // ② 焼き込み済みのアイテム群から Film を構築する
+  for (const item of bakedItems) {
     if (item.kind === 'groupHeader') {
       // グループヘッダー: 画像なしの特殊Film
       const headerFilm = Film.fromGroupHeader(item.header.name, item.header.depth);

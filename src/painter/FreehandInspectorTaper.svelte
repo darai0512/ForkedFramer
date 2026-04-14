@@ -7,10 +7,11 @@
     taper: 0,
     easing: "linear",
   };
+  export let label = "開始点の鋭さ";
 </script>
 
 <div class="parameter-box">
-  <Parameter label="開始点の鋭さ" bind:value={taper.taper} min={0} max={100} step={1}/>
+  <Parameter {label} bind:value={taper.taper} min={0} max={100} step={1} showStepButtons={true} buttonStep={1}/>
 </div>
 <div class="parameter-box">
   {#if taper.taper == 0}

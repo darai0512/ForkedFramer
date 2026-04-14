@@ -14,7 +14,7 @@
   type StrokeOperation = "strokeWithfill" | "stroke" | "erase";
 
   const initialOptions = {
-    size: 8,
+    size: 4,
     thinning: 0.5,
     smoothing: 0.6,
     streamline: 0.5,
@@ -150,7 +150,7 @@
       </button>
       <span class="panel-title">🖊 落書き</span>
       <div class="header-actions">
-        <button class="preset-btn" on:click={onReset}>Reset</button>
+        <!-- Edit button placed where Reset was, though not functional unless palette is opened without painting mode. Handled gracefully. -->
         <button class="done-btn" on:click={onDone}>Done</button>
       </div>
     </div>
@@ -164,21 +164,22 @@
               {preset.label}
             </button>
           {/each}
+          <button class="preset-chip" style="background: rgba(234, 179, 8, 0.8);" on:click={onReset}>Reset</button>
         </div>
 
         <!-- パラメータ行 -->
         <div class="param-grid">
           <div class="param-item">
-            <Parameter label="太さ" bind:value={options.size} min={1} max={100} step={1} />
+            <Parameter label="太さ" bind:value={options.size} min={1} max={100} step={1} showStepButtons={true} buttonStep={1} />
           </div>
           <div class="param-item">
-            <Parameter label="太さ変化" bind:value={options.thinning} min={-1} max={1} step={0.01} />
+            <Parameter label="太さ変化" bind:value={options.thinning} min={-1} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
           </div>
           <div class="param-item">
-            <Parameter label="流線型" bind:value={options.streamline} min={0} max={1} step={0.01} />
+            <Parameter label="流線型" bind:value={options.streamline} min={0} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
           </div>
           <div class="param-item">
-            <Parameter label="スムージング" bind:value={options.smoothing} min={0} max={1} step={0.01} />
+            <Parameter label="スムージング" bind:value={options.smoothing} min={0} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
           </div>
         </div>
 
@@ -187,9 +188,9 @@
           <details>
             <summary class="taper-summary">テーパー設定</summary>
             <div class="taper-content">
-              <FreehandInspectorTaper bind:taper={options.start} />
+              <FreehandInspectorTaper label="入り：先端の鋭さ" bind:taper={options.start} />
               <hr class="divider" />
-              <FreehandInspectorTaper bind:taper={options.end} />
+              <FreehandInspectorTaper label="抜き：先端の鋭さ" bind:taper={options.end} />
             </div>
           </details>
         </div>
@@ -213,7 +214,7 @@
 
           {#if options.strokeOperation != "erase"}
             <div class="param-item">
-              <Parameter label="フチ" bind:value={options.strokeWidth} min={0} max={100} step={1} />
+              <Parameter label="フチ" bind:value={options.strokeWidth} min={0} max={100} step={1} showStepButtons={true} buttonStep={1} />
             </div>
           {/if}
           {#if 0 < options.strokeWidth}

@@ -24,12 +24,14 @@
   import dupliateIcon from '../../assets/filmlist/duplicate.webp';
   import downloadIcon from '../../assets/download.webp';
   import stampIcon from '../../assets/stamp.webp';
+  import scribbleIcon from '../../assets/frameLayer/scribble.webp';
   import { drawProceduralEffect } from '../../lib/layeredCanvas/tools/draw/proceduralEffectRenderer';
   import { tick } from 'svelte';
   
   export let showsBarrier: boolean;
   export let film: Film | null;
   export let downloadName: string = '';
+  export let isTopmost: boolean = false;
 
   let effectVisible = false;
   let popupVisible = false;
@@ -130,6 +132,9 @@
     dispatchFilmTool('sendToMaterialCollection');
   }
 
+  function onEditScribble(ev: MouseEvent) {
+    dispatchFilmTool('editScribble');
+  }
 
   function onToggleeffectVisible(ev: MouseEvent) {
     ev.stopPropagation();
@@ -362,6 +367,16 @@
         {/if}
       </div>
 
+      {#if isTopmost && filmMedia}
+        <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+        <button
+          class="scribble-edit-icon"
+          use:toolTip={$_('frame.actions.editScribble')}
+          on:click|stopPropagation={onEditScribble}
+        >
+          <img draggable={false} src={scribbleIcon} alt={$_('frame.actions.editScribble')} />
+        </button>
+      {/if}
       <button class="transformix-icon" bind:this={popupButton} on:click={togglePopup}>
         <img draggable={false} src={popupIcon} alt="変換メニュー" />
       </button>
@@ -653,6 +668,26 @@
   }
   .effect-icon.active svg {
     transform: rotate(180deg);
+  }
+  .scribble-edit-icon {
+    position: absolute;
+    right: 40px;
+    bottom: 4px;
+    width: 32px;
+    height: 32px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.75;
+    transition: opacity 0.15s;
+  }
+  .scribble-edit-icon:hover {
+    opacity: 1;
+  }
+  .scribble-edit-icon img {
+    width: 100%;
+    height: 100%;
   }
   .transformix-icon {
     position: absolute;
