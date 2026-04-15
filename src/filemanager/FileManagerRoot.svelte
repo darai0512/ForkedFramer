@@ -188,19 +188,43 @@
         }
 
         // 初起動またはFSA/クラウドストレージ接続失敗の場合デスクトップにセーブ
-        book = newBook('not visited', "initial-", "standard", null);
         // localFoldersが初期化されてない可能性があるので自力
         const root = await localFileSystem.getRoot();
         const desktop = (await root.getEmbodiedEntryByName("デスクトップ"))![2].asFolder()!;
-        const title = getCurrentDateTime();
-        await newFile(localFileSystem, desktop, title, book);
-        await recordCurrentFileInfo({ id: book.revision.id as NodeId, fileSystem: 'local', title });
+        const cabinet = (await root.getEmbodiedEntryByName("キャビネット"))![2].asFolder()!;
 
-        currentRevision = {...book.revision};
-        $mainBookFileSystem = localFileSystem;
-        $mainBook = book;
-        $mainBookTitle = title;
-        analyticsEvent('new_book');
+        // デスクトップ→キャビネットの順で既存ファイルを探す
+        const desktopEmbodied = await desktop.listEmbodied();
+        const cabinetEmbodied = await cabinet.listEmbodied();
+        const firstExisting =
+          desktopEmbodied.find(e => e[2].getType() === 'file') ??
+          cabinetEmbodied.find(e => e[2].getType() === 'file');
+
+        if (firstExisting) {
+          // 既存bookの先頭を開く
+          const file = firstExisting[2].asFile()!;
+          const title = firstExisting[1];
+          const existingBook = await loadBookFrom(localFileSystem, file);
+          refreshFilms(existingBook);
+          currentRevision = {...existingBook.revision};
+          $mainBookFileSystem = localFileSystem;
+          $mainBookExceptionHandler = loadExceptionHandler;
+          $mainBook = existingBook;
+          $mainBookTitle = title;
+          await recordCurrentFileInfo({ id: existingBook.revision.id as NodeId, fileSystem: 'local', title });
+          analyticsEvent('continue_book');
+        } else {
+          // ストレージが空の場合のみ新規作成
+          book = newBook('not visited', "initial-", "standard", null);
+          const title = getCurrentDateTime();
+          await newFile(localFileSystem, desktop, title, book);
+          await recordCurrentFileInfo({ id: book.revision.id as NodeId, fileSystem: 'local', title });
+          currentRevision = {...book.revision};
+          $mainBookFileSystem = localFileSystem;
+          $mainBook = book;
+          $mainBookTitle = title;
+          analyticsEvent('new_book');
+        }
       }
       finally {
         $loading = false;

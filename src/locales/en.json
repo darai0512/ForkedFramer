@@ -279,8 +279,7 @@
       "duplicate": "Duplicate",
       "sendToMaterialCollection": "Send to Material Collection",
       "sendVideoFrameToMaterialCollection": "Send this frame as image to Material Collection",
-      "download": "Download",
-      "editScribble": "Edit Scribble"
+      "download": "Download"
     },
     "procedural": {
       "settings": "Procedural Settings"

@@ -1,1 +1,1 @@
-export type FilmTool = 'duplicate' | 'download' | 'sendToMaterialCollection' | 'editScribble';
+export type FilmTool = 'duplicate' | 'download' | 'sendToMaterialCollection';

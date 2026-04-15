@@ -3,7 +3,7 @@
   import Parameter from "../utils/Parameter.svelte";
   import FreehandInspectorEasing from "./FreehandInspectorEasing.svelte";
   import FreehandInspectorTaper from "./FreehandInspectorTaper.svelte";
-  import FreehandInspectorPalette from "./FreehandInspectorPalette.svelte";
+  import ColorPickerLabel from '../utils/colorpicker/ColorPickerLabel.svelte';
   import { EASINGS, type Easing } from "./easing";
   import { deepCopyProperties } from "../lib/layeredCanvas/tools/misc";
 
@@ -11,23 +11,23 @@
 
   const dispatch = createEventDispatcher();
 
-  type StrokeOperation = "strokeWithfill" | "stroke" | "erase";
+  type StrokeOperation = "strokeWithFill" | "stroke" | "erase" | "brush";
 
   const initialOptions = {
     size: 4,
-    thinning: 0.5,
+    thinning: 0,
     smoothing: 0.6,
     streamline: 0.5,
     easing: "linear",
     simulatePressure: true,
     last: true,
     start: {
-      cap: true,
+      cap: false,
       taper: 0,
       easing: "linear",
     },
     end: {
-      cap: true,
+      cap: false,
       taper: 0,
       easing: "linear",
     },
@@ -37,41 +37,12 @@
     strokeOperation: "strokeWithFill",
     fill: "#000000",
     stroke: "#ffffff",
+    brushOpacity: 0.3,
   };
 
   const presets = [
     {
-      label: "ファイン",
-      thinning: 0.5,
-      easing: "linear",
-      last: true,
-      start: {
-        taper: 100,
-        easing: "linear",
-      },
-      end: {
-        taper: 100,
-        easing: "linear",
-      },
-      strokeOperation: "strokeWithFill",
-    },
-    {
-      label: "サインペン",
-      thinning: 0,
-      easing: "linear",
-      last: true,
-      start: {
-        taper: 0,
-        cap: true,
-      },
-      end: {
-        taper: 0,
-        cap: true,
-      },
-      strokeOperation: "strokeWithFill",
-    },
-    {
-      label: "フラット",
+      label: "ペン",
       thinning: 0,
       easing: "linear",
       last: true,
@@ -100,16 +71,33 @@
       },
       strokeOperation: "erase",
     },
+    {
+      label: "ぼかしブラシ",
+      thinning: 0,
+      easing: "linear",
+      last: true,
+      start: {
+        taper: 0,
+        cap: true,
+      },
+      end: {
+        taper: 0,
+        cap: true,
+      },
+      strokeOperation: "brush",
+      size: 30,
+      brushOpacity: 0.3,
+    },
   ];
 
   let options = structuredClone(initialOptions);
-  let fillTheme = options.fill;
-  let strokeTheme = options.stroke;
   let paletteOpen = true;
+  let activePresetIndex: number | null = 0; // デフォルトは「ペン」
 
-  function applyPreset(preset: any) {
+  function applyPreset(preset: any, index: number) {
     deepCopyProperties(options, preset);
     options = options;
+    activePresetIndex = index;
   }
 
   let strokeOptions;
@@ -127,15 +115,12 @@
 
   function onReset() {
     options = structuredClone(initialOptions);
+    activePresetIndex = 0; // リセット→デフォルトの「ペン」
   }
 
   function onDone() {
     console.log("onDone");
     dispatch("done");
-  }
-
-  function onSyncThemeColor() {
-    strokeTheme = fillTheme;
   }
 </script>
 
@@ -150,7 +135,6 @@
       </button>
       <span class="panel-title">🖊 落書き</span>
       <div class="header-actions">
-        <!-- Edit button placed where Reset was, though not functional unless palette is opened without painting mode. Handled gracefully. -->
         <button class="done-btn" on:click={onDone}>Done</button>
       </div>
     </div>
@@ -159,8 +143,8 @@
       <div class="panel-body">
         <!-- プリセット行 -->
         <div class="preset-row">
-          {#each presets as preset}
-            <button class="preset-chip" on:click={() => applyPreset(preset)}>
+          {#each presets as preset, i}
+            <button class="preset-chip" class:preset-active={activePresetIndex === i} on:click={() => applyPreset(preset, i)}>
               {preset.label}
             </button>
           {/each}
@@ -202,23 +186,43 @@
               <option value={"strokeWithFill"}>塗りつぶし</option>
               <option value={"stroke"}>フチのみ</option>
               <option value={"erase"}>消しゴム</option>
+              <option value={"brush"}>ぼかしブラシ</option>
             </select>
-            {#if options.strokeOperation != "erase" && 0 < options.strokeWidth}
-              <button class="sync-btn" on:click={onSyncThemeColor}>色同期</button>
-            {/if}
           </div>
 
-          {#if options.strokeOperation == "strokeWithFill"}
-            <FreehandInspectorPalette bind:color={options.fill} bind:themeColor={fillTheme} />
+          {#if options.strokeOperation === "strokeWithFill"}
+            <div class="color-row">
+              <span class="color-label-text">塗り色</span>
+              <span class="color-swatch">
+                <ColorPickerLabel bind:hex={options.fill}/>
+              </span>
+            </div>
           {/if}
 
-          {#if options.strokeOperation != "erase"}
+          {#if options.strokeOperation !== "erase"}
             <div class="param-item">
               <Parameter label="フチ" bind:value={options.strokeWidth} min={0} max={100} step={1} showStepButtons={true} buttonStep={1} />
             </div>
           {/if}
           {#if 0 < options.strokeWidth}
-            <FreehandInspectorPalette bind:color={options.stroke} bind:themeColor={strokeTheme} />
+            <div class="color-row">
+              <span class="color-label-text">フチ色</span>
+              <span class="color-swatch">
+                <ColorPickerLabel bind:hex={options.stroke}/>
+              </span>
+            </div>
+          {/if}
+
+          {#if options.strokeOperation === "brush"}
+            <div class="param-item">
+              <Parameter label="不透明度" bind:value={options.brushOpacity} min={0.01} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
+            </div>
+            <div class="color-row">
+              <span class="color-label-text">ブラシ色</span>
+              <span class="color-swatch">
+                <ColorPickerLabel bind:hex={options.fill}/>
+              </span>
+            </div>
           {/if}
         </div>
       </div>
@@ -275,20 +279,6 @@
     margin-left: auto;
   }
 
-  .preset-btn {
-    background: rgba(234, 179, 8, 0.8);
-    color: white;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-  }
-  .preset-btn:hover {
-    background: rgba(234, 179, 8, 1);
-  }
-
   .done-btn {
     background: rgba(59, 130, 246, 0.9);
     color: white;
@@ -336,6 +326,10 @@
   }
   .preset-chip:hover {
     background: rgba(100, 116, 139, 1);
+  }
+  .preset-chip.preset-active {
+    background: rgba(59, 130, 246, 0.9);
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.5);
   }
 
   .param-grid {
@@ -394,13 +388,24 @@
     padding: 2px 6px;
   }
 
-  .sync-btn {
-    background: rgba(100, 116, 139, 0.7);
-    color: white;
-    font-size: 10px;
-    padding: 2px 6px;
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+  }
+
+  .color-label-text {
+    font-size: 11px;
+    color: rgba(255,255,255,0.8);
+    min-width: 40px;
+  }
+
+  .color-swatch {
+    width: 48px;
+    height: 20px;
     border-radius: 4px;
-    border: none;
+    overflow: hidden;
     cursor: pointer;
   }
 

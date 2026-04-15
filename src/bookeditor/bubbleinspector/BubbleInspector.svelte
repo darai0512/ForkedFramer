@@ -395,17 +395,26 @@
 
     const page = bit.page;
     const b = bit.bubble;
-    const paperSize = page.paperSize;
+    const films = b.filmStack.films;
+    const topmostFilm = films.length > 0 ? films[films.length - 1] : null;
 
-    // 透明レイヤを一番上に追加
-    const bubbleSize = b.getPhysicalSize(paperSize);
-    const w = Math.max(256, Math.ceil(bubbleSize[0]));
-    const h = Math.max(256, Math.ceil(bubbleSize[1]));
-    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
-    const newFilm = Film.fromMedia(media);
-    insertBubbleLayers(paperSize, b, b.filmStack.films.length, [newFilm]);
-    bubble.update(b => b);
-    $bookOperators!.commit(null);
+    let targetFilm: Film;
+
+    if (topmostFilm && topmostFilm.content.kind === 'media') {
+      // 最上位レイヤーがメディアレイヤー（落書可能）なら再開
+      targetFilm = topmostFilm;
+    } else {
+      // 新規透明レイヤーを作成
+      const paperSize = page.paperSize;
+      const bubbleSize = b.getPhysicalSize(paperSize);
+      const w = Math.max(256, Math.ceil(bubbleSize[0]));
+      const h = Math.max(256, Math.ceil(bubbleSize[1]));
+      const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+      targetFilm = Film.fromMedia(media);
+      insertBubbleLayers(paperSize, b, b.filmStack.films.length, [targetFilm]);
+      bubble.update(b => b);
+      $bookOperators!.commit(null);
+    }
 
     // モーダルを閉じる
     manuallyHidden = true;
@@ -416,7 +425,7 @@
       filmStack: b.filmStack,
       page,
       command: "scribble",
-      commandTargetFilm: newFilm,
+      commandTargetFilm: targetFilm,
     });
   }
 

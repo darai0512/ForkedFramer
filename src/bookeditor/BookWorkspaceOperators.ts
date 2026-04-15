@@ -361,42 +361,57 @@ export class BookWorkspaceOperators implements BookOperators {
   }
 
   scribbleFrame(page: Page, frame: FrameElement): void {
-    const paperSize = page.paperSize;
-    const [fw, fh] = paperSize;
-    const w = Math.max(256, Math.ceil(fw));
-    const h = Math.max(256, Math.ceil(fh));
-    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
-    const newFilm = Film.fromMedia(media);
+    const films = frame.filmStack.films;
+    const topmostFilm = films.length > 0 ? films[films.length - 1] : null;
 
-    insertFrameLayers(page.frameTree, paperSize, frame, frame.filmStack.films.length, [newFilm]);
-    this.commit(null);
+    let targetFilm: Film;
+    if (topmostFilm && topmostFilm.content.kind === 'media') {
+      // 最上位がメディアレイヤーなら落書き再開
+      targetFilm = topmostFilm;
+    } else {
+      const paperSize = page.paperSize;
+      const [fw, fh] = paperSize;
+      const w = Math.max(256, Math.ceil(fw));
+      const h = Math.max(256, Math.ceil(fh));
+      const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+      targetFilm = Film.fromMedia(media);
+      insertFrameLayers(page.frameTree, paperSize, frame, frame.filmStack.films.length, [targetFilm]);
+      this.commit(null);
+    }
 
     frameInspectorTarget.set({
       frame,
       filmStack: frame.filmStack,
       page,
       command: "scribble",
-      commandTargetFilm: newFilm,
+      commandTargetFilm: targetFilm,
     });
   }
 
   scribbleBubble(page: Page, bubble: Bubble): void {
-    const paperSize = page.paperSize;
-    const bubbleSize = bubble.getPhysicalSize(paperSize);
-    const w = Math.max(256, Math.ceil(bubbleSize[0]));
-    const h = Math.max(256, Math.ceil(bubbleSize[1]));
-    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
-    const newFilm = Film.fromMedia(media);
+    const films = bubble.filmStack.films;
+    const topmostFilm = films.length > 0 ? films[films.length - 1] : null;
 
-    insertBubbleLayers(paperSize, bubble, bubble.filmStack.films.length, [newFilm]);
-    this.commit(null);
+    let targetFilm: Film;
+    if (topmostFilm && topmostFilm.content.kind === 'media') {
+      targetFilm = topmostFilm;
+    } else {
+      const paperSize = page.paperSize;
+      const bubbleSize = bubble.getPhysicalSize(paperSize);
+      const w = Math.max(256, Math.ceil(bubbleSize[0]));
+      const h = Math.max(256, Math.ceil(bubbleSize[1]));
+      const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+      targetFilm = Film.fromMedia(media);
+      insertBubbleLayers(paperSize, bubble, bubble.filmStack.films.length, [targetFilm]);
+      this.commit(null);
+    }
 
     bubbleInspectorTarget.set({
       bubble,
       filmStack: bubble.filmStack,
       page,
       command: "scribble",
-      commandTargetFilm: newFilm,
+      commandTargetFilm: targetFilm,
     });
   }
 

@@ -33,9 +33,14 @@
   $: opened = !manuallyHidden && $dominantMode != "painting" && $frameInspectorTarget?.frame != null;
   let manuallyHidden = false;
 
-  // 新しいコマが選択されたらドロワーを再表示
-  $: if ($frameInspectorTarget?.frame) {
-    manuallyHidden = false;
+  // 新しいコマが選択されたときだけドロワーを再表示（同一コマへのコマンド発行ではリセットしない）
+  let _prevFrame: any = null;
+  $: {
+    const _frame = $frameInspectorTarget?.frame ?? null;
+    if (_frame !== _prevFrame) {
+      _prevFrame = _frame;
+      if (_frame) manuallyHidden = false;
+    }
   }
 
   function close() {
@@ -85,23 +90,7 @@
       case "sendToMaterialCollection":
         onSendToMaterialCollection(film);
         break;
-      case "editScribble":
-        onEditScribble(film);
-        break;
     }
-  }
-
-  function onEditScribble(film: Film) {
-    const page = $frameInspectorTarget!.page;
-    const element = $frameInspectorTarget!.frame;
-    manuallyHidden = true;
-    frameInspectorTarget.set({
-      frame: element,
-      filmStack: element.filmStack,
-      page,
-      command: "scribble",
-      commandTargetFilm: film,
-    });
   }
 
   function onDuplicate(film: Film) {
@@ -129,28 +118,37 @@
 
     const page = fit.page;
     const element = fit.frame;
-    const paperSize = page.paperSize;
+    const films = element.filmStack.films;
+    const topmostFilm = films.length > 0 ? films[films.length - 1] : null;
 
-    // 透明レイヤを一番上に追加
-    const [fw, fh] = paperSize;
-    const w = Math.max(256, Math.ceil(fw));
-    const h = Math.max(256, Math.ceil(fh));
-    const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
-    const newFilm = Film.fromMedia(media);
-    insertFrameLayers(page.frameTree, paperSize, element, element.filmStack.films.length, [newFilm]);
-    filmStack = filmStack;
-    $bookOperators!.commit(null);
+    let targetFilm: Film;
+
+    if (topmostFilm && topmostFilm.content.kind === 'media') {
+      // 最上位レイヤーがメディアレイヤー（落書可能）なら再開
+      targetFilm = topmostFilm;
+    } else {
+      // 新規透明レイヤーを作成
+      const paperSize = page.paperSize;
+      const [fw, fh] = paperSize;
+      const w = Math.max(256, Math.ceil(fw));
+      const h = Math.max(256, Math.ceil(fh));
+      const media = new ImageMedia(makePlainCanvas(w, h, '#ffffff00'));
+      targetFilm = Film.fromMedia(media);
+      insertFrameLayers(page.frameTree, paperSize, element, element.filmStack.films.length, [targetFilm]);
+      filmStack = filmStack;
+      $bookOperators!.commit(null);
+    }
 
     // モーダルを閉じる
     manuallyHidden = true;
 
-    // scribbleコマンド発行 (新しい透明レイヤで落書き)
+    // scribbleコマンド発行
     frameInspectorTarget.set({
       frame: element,
       filmStack: element.filmStack,
       page,
       command: "scribble",
-      commandTargetFilm: newFilm,
+      commandTargetFilm: targetFilm,
     });
   }
 

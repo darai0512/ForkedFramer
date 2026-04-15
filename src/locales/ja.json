@@ -278,8 +278,7 @@
       "duplicate": "複製",
       "sendToMaterialCollection": "素材集に送る",
       "sendVideoFrameToMaterialCollection": "このフレームを画像として素材集に送る",
-      "download": "ダウンロード",
-      "editScribble": "落書き再開"
+      "download": "ダウンロード"
     },
     "procedural": {
       "settings": "プロシージャル設定"
@@ -745,7 +744,7 @@
       "dragToScale": "ドラッグでスケール",
       "dragToRotate": "ドラッグで回転",
       "addTransparentLayer": "透明レイヤ",
-      "scribbleOnTop": "落書き(+透明レイヤ)",
+      "scribbleOnTop": "落書き(透明レイヤ)",
       "flipHorizontal": "左右反転",
       "flipVertical": "上下反転",
       "fit": "フィット",
@@ -774,7 +773,7 @@
       "dragToScale": "ドラッグでスケール",
       "dragToImageRotate": "ドラッグで画像の回転",
       "addTransparentLayer": "透明レイヤ",
-      "scribbleOnTop": "落書き(+透明レイヤ)",
+      "scribbleOnTop": "落書き(透明レイヤ)",
       "dragTail": "ドラッグでしっぽ",
       "dragTailCurve": "ドラッグでしっぽのカーブ",
       "dragToLinkBubble": "ドラッグで他のフキダシと結合",

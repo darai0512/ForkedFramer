@@ -23,6 +23,7 @@ export class InlinePainterLayer extends LayerBase {
 
   drawsBackground: boolean;
   path: Path2D | null = null;
+  brushStamps: { x: number, y: number, size: number, opacity: number }[] | null = null;
   strokeOptions: any = {}; // perfect-freehandのオプション
 
   constructor(frameLayer: FrameLayer, onAutoGenerate: () => void) {
@@ -61,6 +62,12 @@ export class InlinePainterLayer extends LayerBase {
       this.drawPath(ctx);
       ctx.restore();
     }
+
+    if (this.brushStamps && this.brushStamps.length > 0) {
+      ctx.save();
+      this.drawBrushStamps(ctx, this.brushStamps);
+      ctx.restore();
+    }
   }
 
   accepts(_point: Vector, _button: number, depth: number): any {
@@ -69,6 +76,14 @@ export class InlinePainterLayer extends LayerBase {
   }
 
   async *pointer(q: Vector, payload: any): AsyncGenerator<void, void, Vector> {
+    if (this.strokeOptions.strokeOperation === 'brush') {
+      yield* this.pointerBrush(q);
+    } else {
+      yield* this.pointerFreehand(q);
+    }
+  }
+
+  private async *pointerFreehand(q: Vector): AsyncGenerator<void, void, Vector> {
     const rawStroke: Vector[] = [];
 
     let p: Vector;
@@ -88,6 +103,42 @@ export class InlinePainterLayer extends LayerBase {
     }
     this.snapshot();
     this.path = null;
+    this.redraw();
+    this.onAutoGenerate();
+  }
+
+  private async *pointerBrush(q: Vector): AsyncGenerator<void, void, Vector> {
+    const stamps: { x: number, y: number, size: number, opacity: number }[] = [];
+    const brushSize = this.strokeOptions.size;
+    const brushOpacity = this.strokeOptions.brushOpacity ?? 0.3;
+    const spacing = Math.max(2, brushSize * 0.15);
+    let lastPoint: Vector | null = null;
+
+    let p: Vector;
+    while (p = yield) {
+      if (lastPoint) {
+        const dx = p[0] - lastPoint[0];
+        const dy = p[1] - lastPoint[1];
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const steps = Math.max(1, Math.floor(dist / spacing));
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          stamps.push({
+            x: lastPoint[0] + dx * t,
+            y: lastPoint[1] + dy * t,
+            size: brushSize,
+            opacity: brushOpacity,
+          });
+        }
+      } else {
+        stamps.push({ x: p[0], y: p[1], size: brushSize, opacity: brushOpacity });
+      }
+      lastPoint = p;
+      this.brushStamps = stamps;
+      this.redraw();
+    }
+    this.snapshotBrush(stamps);
+    this.brushStamps = null;
     this.redraw();
     this.onAutoGenerate();
   }
@@ -253,6 +304,55 @@ export class InlinePainterLayer extends LayerBase {
         ctx.fill(this.path!);
       }
     }
+  }
+
+  drawBrushStamps(ctx: CanvasRenderingContext2D, stamps: { x: number, y: number, size: number, opacity: number }[]) {
+    const color = this.strokeOptions.fill || '#000000';
+    for (const stamp of stamps) {
+      const r = stamp.size * 0.5;
+      const gradient = ctx.createRadialGradient(stamp.x, stamp.y, 0, stamp.x, stamp.y, r);
+      gradient.addColorStop(0, this.hexToRgba(color, stamp.opacity));
+      gradient.addColorStop(0.6, this.hexToRgba(color, stamp.opacity * 0.5));
+      gradient.addColorStop(1, this.hexToRgba(color, 0));
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(stamp.x, stamp.y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  private hexToRgba(hex: string, alpha: number): string {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return `rgba(0,0,0,${alpha})`;
+    return `rgba(${parseInt(result[1],16)},${parseInt(result[2],16)},${parseInt(result[3],16)},${alpha})`;
+  }
+
+  snapshotBrush(stamps: { x: number, y: number, size: number, opacity: number }[]): void {
+    const [w, h] = [this.canvas!.width, this.canvas!.height];
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(this.history[this.historyIndex-1], 0, 0);
+
+    // ブラシスタンプを描画
+    ctx.save();
+    ctx.translate(w * 0.5, h * 0.5);
+    ctx.rotate(this.film!.rotation * Math.PI / 180);
+    ctx.scale(1/this.scale[0], 1/this.scale[1]);
+    ctx.translate(-this.translation[0], -this.translation[1]);
+    this.drawBrushStamps(ctx, stamps);
+    ctx.restore();
+
+    const ctx2 = this.canvas!.getContext('2d')!;
+    ctx2.clearRect(0, 0, w, h);
+    ctx2.drawImage(canvas, 0, 0, w, h);
+
+    this.history.length = this.historyIndex;
+    this.history.push(canvas);
+    this.historyIndex++;
   }
 
 }
