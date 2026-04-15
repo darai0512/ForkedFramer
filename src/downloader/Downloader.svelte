@@ -14,10 +14,7 @@
 
   $: buttons = [
     {icon: downloadIcon, label: $_('downloader.download'), onClick: download, hint: $_('downloader.downloadHint')},
-    {icon: clipboardIcon, label: $_('downloader.copyToClipboard'), onClick: copyToClipboard, hint: $_('downloader.copyToClipboardHint')},
-    // {icon: aiPictorsIcon, label: "に投稿", onClick: postAIPictors, hint: "aiPictorsに投稿します"},
     {label: $_('downloader.exportPSD'), onClick: downloadPSD, hint: $_('downloader.exportPSDHint')},
-    // {label: $_('downloader.share'), onClick: shareBook, hint: $_('downloader.shareHint')},
     {label: $_('downloader.package'), onClick: downloadEnvelop, hint: $_('downloader.packageHint')},
     {label: $_('downloader.downloadMaterials'), onClick: downloadMaterials, hint: $_('downloader.downloadMaterialsHint')},
     {label: $_('downloader.exportDialogues'), onClick: downloadDialogues, hint: $_('downloader.exportDialoguesHint')},

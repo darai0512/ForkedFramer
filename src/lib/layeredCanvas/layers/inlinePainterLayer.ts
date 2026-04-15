@@ -111,8 +111,28 @@ export class InlinePainterLayer extends LayerBase {
     const stamps: { x: number, y: number, size: number, opacity: number }[] = [];
     const brushSize = this.strokeOptions.size;
     const brushOpacity = this.strokeOptions.brushOpacity ?? 0.3;
-    const spacing = Math.max(2, brushSize * 0.15);
+    const sizeJitter = this.strokeOptions.brushSizeJitter ?? 0;    // 0-1: サイズのランダム変動率
+    const posJitter = this.strokeOptions.brushPositionJitter ?? 0; // 0-1: 位置のランダムオフセット（サイズに対する割合）
+    const scatter = this.strokeOptions.brushScatter ?? 1;          // 各ポイントでのスタンプ数
+    const spacing = Math.max(2, brushSize * (scatter > 1 ? 0.3 : 0.15));
     let lastPoint: Vector | null = null;
+
+    const jitterStamp = (bx: number, by: number) => {
+      for (let s = 0; s < scatter; s++) {
+        const sizeRand = 1 + (Math.random() * 2 - 1) * sizeJitter;
+        const stampSize = brushSize * Math.max(0.2, sizeRand);
+        const posOffset = posJitter * brushSize;
+        const ox = (Math.random() * 2 - 1) * posOffset;
+        const oy = (Math.random() * 2 - 1) * posOffset;
+        const opacityRand = 1 + (Math.random() * 0.4 - 0.2); // ±20%の不透明度揺れ
+        stamps.push({
+          x: bx + ox,
+          y: by + oy,
+          size: stampSize,
+          opacity: brushOpacity * Math.max(0.1, opacityRand),
+        });
+      }
+    };
 
     let p: Vector;
     while (p = yield) {
@@ -123,15 +143,10 @@ export class InlinePainterLayer extends LayerBase {
         const steps = Math.max(1, Math.floor(dist / spacing));
         for (let i = 1; i <= steps; i++) {
           const t = i / steps;
-          stamps.push({
-            x: lastPoint[0] + dx * t,
-            y: lastPoint[1] + dy * t,
-            size: brushSize,
-            opacity: brushOpacity,
-          });
+          jitterStamp(lastPoint[0] + dx * t, lastPoint[1] + dy * t);
         }
       } else {
-        stamps.push({ x: p[0], y: p[1], size: brushSize, opacity: brushOpacity });
+        jitterStamp(p[0], p[1]);
       }
       lastPoint = p;
       this.brushStamps = stamps;
