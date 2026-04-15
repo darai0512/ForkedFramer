@@ -8,7 +8,7 @@ export async function loadFonts(fonts: { family: string, weight: string }[]): Pr
     }
   }
   return result;
-}  
+}
 
 const localFontFiles: { [key: string]: string } = {
   '源暎アンチック': 'GenEiAntiqueNv5-M',
@@ -19,6 +19,15 @@ const localFontFiles: { [key: string]: string } = {
   '源暎きわみゴ': 'GenEiKiwamiGo',
   "ふい字": 'HuiFont29',
   "まきばフォント": 'MakibaFont13',
+  '瀞ノグリッチ黒体H1': 'ToronoGlitchH1',
+  '瀞ノグリッチ黒体H2': 'ToronoGlitchH2',
+  '瀞ノグリッチ黒体H3': 'ToronoGlitchH3',
+  '瀞ノグリッチ黒体H4': 'ToronoGlitchH4',
+  'ひび割れ文字': 'hibiware_jp',
+  '851チカラヨワク': '851CHIKARA-YOWAKU_002',
+  'DoublePop': 'DoublePopDemo-R',
+  'DragonQuestFC': 'DragonQuestFC',
+  'ZeroGothic': 'ZeroGothic',
 }
 
 const cache = new Set<string>();

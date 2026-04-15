@@ -8,6 +8,7 @@ import { PaperOffset } from 'paperjs-offset'
 import type { Vector, Rect } from "../geometry/geometry";
 import rough from 'roughjs';
 import rgba from 'color-rgba'
+import { drawGlitchSfxBubble } from './drawGlitchSfx'
 // import { getStroke, type StrokeOptions } from 'perfect-freehand'
 // import { Paper } from "../../system/layeredCanvas";
 
@@ -17,49 +18,50 @@ export type DrawMethod = "fill" | "stroke" | "clip";
 
 export function initPaperJs() {
   // https://github.com/paperjs/paper.js/issues/1889
-  paper.setup([1,1]); // creates a virtual canvas
+  paper.setup([1, 1]); // creates a virtual canvas
   paper.view.autoUpdate = false; // disables drawing any shape automatically
-/*
-  // ① _setProject をフックして「登録された瞬間」を捕捉
-  (function injectStackTraceOnAttach(paper) {
-    const orig = paper.Item.prototype._setProject;
-
-    paper.Item.prototype._setProject = function (project, ...rest) {
-      // Project に非 null が入る＝シーンに加わった瞬間
-      if (project && this instanceof paper.PathItem) {
-        // ② スタックトレースを出力（折り畳み表示にすると見やすい）
-        console.groupCollapsed('[PathItem attached]', this);
-        console.trace();                 // DevTools でクリック展開可
-        console.groupEnd();
-      }
-      return orig.call(this, project, ...rest);
-    };
-  })(paper);        // ← PaperScope を差し替えている場合は該当 scope を渡す
-*/
+  /*
+    // ① _setProject をフックして「登録された瞬間」を捕捉
+    (function injectStackTraceOnAttach(paper) {
+      const orig = paper.Item.prototype._setProject;
+  
+      paper.Item.prototype._setProject = function (project, ...rest) {
+        // Project に非 null が入る＝シーンに加わった瞬間
+        if (project && this instanceof paper.PathItem) {
+          // ② スタックトレースを出力（折り畳み表示にすると見やすい）
+          console.groupCollapsed('[PathItem attached]', this);
+          console.trace();                 // DevTools でクリック展開可
+          console.groupEnd();
+        }
+        return orig.call(this, project, ...rest);
+      };
+    })(paper);        // ← PaperScope を差し替えている場合は該当 scope を渡す
+  */
 }
 
 export function getBubbleName(shape: string) {
   switch (shape) {
     case "rounded": return "角丸";
-    case "square":  return "四角形";
+    case "square": return "四角形";
     case "ellipse": return "楕円";
     case "concentration": return "意識";
     case "thought": return "思考";
     case "polygon": return "多角形";
     case "strokes": return "線";
-    case "double-strokes":  return "二重線";
-    case "harsh":   return "トゲトゲ";
-    case "shout":   return "シャウト";
-    case "soft":    return "やわらか";
-    case "heart":   return "ハート";
+    case "double-strokes": return "二重線";
+    case "harsh": return "トゲトゲ";
+    case "shout": return "シャウト";
+    case "soft": return "やわらか";
+    case "heart": return "ハート";
     case "diamond": return "ダイヤ";
-    case "arrow":   return "矢印";
-    case "motion-lines":  return "集中線";
-    case "speed-lines":   return "流線";
-    case "ellipse-mind":  return "楕円？";
-    case "soft-mind":     return "やわらか？";
-    case "rounded-mind":  return "角丸？";
-    case "none":      return "なし";
+    case "arrow": return "矢印";
+    case "motion-lines": return "集中線";
+    case "speed-lines": return "流線";
+    case "ellipse-mind": return "楕円？";
+    case "soft-mind": return "やわらか？";
+    case "rounded-mind": return "角丸？";
+    case "glitch-sfx": return "特殊💨";
+    case "none": return "なし";
     default:
       throw new Error(
         `Unknown bubble : ${shape}`
@@ -129,6 +131,9 @@ export function drawBubble(context: CanvasRenderingContext2D, method: DrawMethod
     case "rounded-mind":
       drawRoundedMindBubble(context, method, seed, size, opts);
       break;
+    case "glitch-sfx":
+      drawGlitchSfxBubble(context, method, seed, size, opts, opts._text ?? '', opts._direction ?? 'v', opts._fontSize ?? 32);
+      break;
     case "none":
       break;
     default:
@@ -138,7 +143,7 @@ export function drawBubble(context: CanvasRenderingContext2D, method: DrawMethod
   }
 }
 
-function drawConcentrationBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any) {
+function drawConcentrationBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any) {
   const [w, h] = size;
 
   if (method === "fill") {
@@ -177,14 +182,14 @@ function drawConcentrationBubble(context: CanvasRenderingContext2D, method: stri
     context.restore();
   } else if (method === "clip") {
     context.beginPath();
-    context.ellipse(0, 0, w*0.5, h*0.5, 0, 0, 2 * Math.PI);
+    context.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, 2 * Math.PI);
     context.clip();
   } else {  // stroke
     // do nothing;
   }
 }
 
-function drawThoughtBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any) {
+function drawThoughtBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any) {
   const rng = seedrandom(seed);
   const [w, h] = size;
   const radius = Math.min(w, h) * 0.5;
@@ -226,7 +231,7 @@ function drawThoughtBubble(context: CanvasRenderingContext2D, method: string, se
     context.restore();
   } else if (method === "clip") {
     context.beginPath();
-    context.ellipse(0, 0, w*0.5, h*0.5, 0, 0, 2 * Math.PI);
+    context.ellipse(0, 0, w * 0.5, h * 0.5, 0, 0, 2 * Math.PI);
     context.clip();
   } else {  // stroke
     // do nothing;
@@ -249,15 +254,15 @@ function drawRhombus(ctx: CanvasRenderingContext2D, p0: Vector, p1: Vector, widt
   ctx.fill();
 }
 
-function drawStrokesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any) {
-    drawStrokesBubbleAux(context, method, seed, size, opts, false);
+function drawStrokesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any) {
+  drawStrokesBubbleAux(context, method, seed, size, opts, false);
 }
 
-function drawDoubleStrokesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any) {
-    drawStrokesBubbleAux(context, method, seed, size, opts, true);
+function drawDoubleStrokesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any) {
+  drawStrokesBubbleAux(context, method, seed, size, opts, true);
 }
 
-function drawStrokesBubbleAux(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any, double: boolean) {
+function drawStrokesBubbleAux(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any, double: boolean) {
   const rng = seedrandom(seed);
   const rawPoints = generateSuperEllipsePoints(size, generateRandomAngles(rng, opts.vertexCount, opts.angleJitter), opts.superEllipse);
   const points = QuickHull(rawPoints);
@@ -318,7 +323,7 @@ function drawStrokesBubbleAux(context: CanvasRenderingContext2D, method: string,
   }
 }
 
-function drawMotionLinesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any) {
+function drawMotionLinesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any) {
   const [x, y, w, h] = sizeToRect(size);
 
   if (method === "fill") {
@@ -334,9 +339,9 @@ function drawMotionLinesBubble(context: CanvasRenderingContext2D, method: string
     // draw n parallel line
     const n = opts.lineCount;
     const icd = opts?.focalPoint ?? [0, 0];
-    const rangeVector = opts?.focalRange ?? [0, Math.hypot(w/2, h/2) * 0.25];
+    const rangeVector = opts?.focalRange ?? [0, Math.hypot(w / 2, h / 2) * 0.25];
     const range = Math.hypot(rangeVector[0], rangeVector[1]);
-    const [ox, oy, od] = [0, 0, Math.hypot(w/2, h/2)]; // 外円
+    const [ox, oy, od] = [0, 0, Math.hypot(w / 2, h / 2)]; // 外円
     const [ix, iy, id] = [icd[0], icd[1], range]; // 内円
 
     // グラデーション
@@ -376,7 +381,7 @@ function drawMotionLinesBubble(context: CanvasRenderingContext2D, method: string
   }
 }
 
-function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number,number], opts: any) {
+function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string, seed: string, size: [number, number], opts: any) {
   const [x, y, w, h] = sizeToRect(size);
 
   if (method === "fill") {
@@ -390,8 +395,8 @@ function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string,
       context.clip();
 
       const tailTip = opts?.tailTip ?? [0, 0];
-      const tailMid = tailCoordToWorldCoord([0,0], tailTip, opts?.tailMid ?? [0, 0]);
-    
+      const tailMid = tailCoordToWorldCoord([0, 0], tailTip, opts?.tailMid ?? [0, 0]);
+
       const length = Math.hypot(w, h);
       // lengthの防御のみ: 0や非有限は以降の計算でNaN/Infを誘発する
       if (!Number.isFinite(length) || length <= 1e-6) {
@@ -401,8 +406,8 @@ function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string,
       const angle = Math.atan2(tailTip[1], tailTip[0]);
       context.rotate(angle);
 
-      function calculateNormalizedPosition([fx,fy]: Vector): number {
-        const v0: Vector = [length*0.5, 0];
+      function calculateNormalizedPosition([fx, fy]: Vector): number {
+        const v0: Vector = [length * 0.5, 0];
         const [nx, ny] = rotate2D(v0, angle);
         const psf = 0.5 - projectionScalingFactor2D([fx, fy], [nx, ny]) * 0.5;
         return clamp(psf);
@@ -416,13 +421,13 @@ function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string,
 
       // 線を描く
       for (let i = 0; i < n; i++) {
-        const y = (i + 0.5) / n * length - length/2 + rng() * length * opts.laneJitter;
+        const y = (i + 0.5) / n * length - length / 2 + rng() * length * opts.laneJitter;
         const lx = - length * 0.5 + (rng() - 0.5) * w * opts.startJitter;
         const lw = h * opts.lineWidth * 0.01 * (rng() + 0.5);
 
         // グラデーション
         try {
-          const gradient = context.createLinearGradient(lx+length, y, lx, y);
+          const gradient = context.createLinearGradient(lx + length, y, lx, y);
           const color0 = rgba(context.strokeStyle as string); // わざとstrokeStyleを使う
           const color1 = rgba(context.strokeStyle as string);
           color0[3] = 0;
@@ -452,9 +457,9 @@ function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string,
         }
 
         context.beginPath();
-        context.moveTo(lx, y-lw);
-        context.lineTo(lx+length, y);
-        context.lineTo(lx, y+lw);
+        context.moveTo(lx, y - lw);
+        context.lineTo(lx + length, y);
+        context.lineTo(lx, y + lw);
         context.closePath();
         context.fill();
       }
@@ -479,15 +484,15 @@ function drawSpeedLinesBubble(context: CanvasRenderingContext2D, method: string,
 }
 
 function extendLineSegment(p0: Vector, p1: Vector, extensionFactor: number): [Vector, Vector] {
-    const [dx, dy] = [p1[0] - p0[0], p1[1] - p0[1]];
-  
-    const q0: Vector = [p1[0] - dx * extensionFactor, p1[1] - dy * extensionFactor];
-    const q1: Vector = [p0[0] + dx * extensionFactor, p0[1] + dy * extensionFactor];
-    return [q0, q1];
+  const [dx, dy] = [p1[0] - p0[0], p1[1] - p0[1]];
+
+  const q0: Vector = [p1[0] - dx * extensionFactor, p1[1] - dy * extensionFactor];
+  const q1: Vector = [p0[0] + dx * extensionFactor, p0[1] + dy * extensionFactor];
+  return [q0, q1];
 }
-  
+
 function finishTrivialPath(context: CanvasRenderingContext2D, method: string) {
-  switch(method) {
+  switch (method) {
     case 'fill':
       context.fill();
       break;
@@ -534,6 +539,7 @@ export function getPath(shape: string, size: Vector, opts: any, seed: string): p
         return getRoundedMindPath(size, opts, seed);
       case "concentration":
       case "thought":
+      case 'glitch-sfx':
       case 'none':
         return null;
     }
@@ -547,7 +553,7 @@ export function getPath(shape: string, size: Vector, opts: any, seed: string): p
 }
 
 function sizeToRect(size: Vector): Rect {
-  return [-size[0]*0.5, -size[1]*0.5, size[0], size[1]];
+  return [-size[0] * 0.5, -size[1] * 0.5, size[0], size[1]];
 }
 
 function halfSize(size: Vector): Vector {
@@ -560,7 +566,7 @@ function getSquarePath(size: Vector, opts: any, seed: string) {
 }
 
 function getEllipsePath(size: Vector, opts: any, seed: string) {
-  const path = new paper.Path.Ellipse({center: [0, 0], radius: halfSize(size)});
+  const path = new paper.Path.Ellipse({ center: [0, 0], radius: halfSize(size) });
   return addTrivialTail(path, size, opts);
 }
 
@@ -573,13 +579,13 @@ function getRoundedPath(size: Vector, opts: any, seed: string) {
   const path = new paper.Path();
   path.moveTo([x1 + sx, y0]);
   path.lineTo([x1 - sx, y0]);
-  path.quadraticCurveTo([x0, y0], [x0, y1-sy]);
-  path.lineTo([x0, y1+sy]);
-  path.quadraticCurveTo([x0, y2], [x1-sx, y2]);
-  path.lineTo([x1+sx, y2]);
-  path.quadraticCurveTo([x2, y2], [x2, y1+sy]);
-  path.lineTo([x2, y1-sy]);
-  path.quadraticCurveTo([x2, y0], [x1+sx, y0]);
+  path.quadraticCurveTo([x0, y0], [x0, y1 - sy]);
+  path.lineTo([x0, y1 + sy]);
+  path.quadraticCurveTo([x0, y2], [x1 - sx, y2]);
+  path.lineTo([x1 + sx, y2]);
+  path.quadraticCurveTo([x2, y2], [x2, y1 + sy]);
+  path.lineTo([x2, y1 - sy]);
+  path.quadraticCurveTo([x2, y0], [x1 + sx, y0]);
   path.closed = true;
 
   return addTrivialTail(path, size, opts);
@@ -630,9 +636,9 @@ function getSoftPath(size: Vector, opts: any, seed: string) {
   if (opts.smoothing) {
     for (let i = 0; i < points.length + 1; i++) {
       const p0 = points[i % points.length];
-      const p1 = points[(i + 1)%points.length];
+      const p1 = points[(i + 1) % points.length];
       let cp: Vector = [(p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2];
-      if (i == 0) { 
+      if (i == 0) {
         path.moveTo(cp);
       } else {
         path.quadraticCurveTo(p0, cp);
@@ -666,11 +672,11 @@ function getHeartPath(size: Vector, opts: any, seed: string) {
 
   path.moveTo([x, y + h2]);
   path.cubicCurveTo([- 0.1 * w, h1], [- 0.5 * w, h1], [- 0.5 * w, h3]);
-  path.cubicCurveTo([- 0.5 * w, h4], [- 0.3 * w, h5], [  0,       h6]);
-  path.cubicCurveTo([  0.3 * w, h5], [  0.5 * w, h4], [  0.5 * w, h3]);
-  path.cubicCurveTo([  0.5 * w, h1], [  0.1 * w, h1], [  0,       h2]);
+  path.cubicCurveTo([- 0.5 * w, h4], [- 0.3 * w, h5], [0, h6]);
+  path.cubicCurveTo([0.3 * w, h5], [0.5 * w, h4], [0.5 * w, h3]);
+  path.cubicCurveTo([0.5 * w, h1], [0.1 * w, h1], [0, h2]);
   path.closed = true;
-  
+
   return path;
 }
 
@@ -702,39 +708,39 @@ function getArrowPath(size: Vector, opts: any, seed: string) {
   path.moveTo([0, y0]);
   path.lineTo([x0, y1]);
   path.lineTo([x1, y1]);
-  path.lineTo([x1, y0+h]);
-  path.lineTo([x2, y0+h]);
+  path.lineTo([x1, y0 + h]);
+  path.lineTo([x2, y0 + h]);
   path.lineTo([x2, y1]);
-  path.lineTo([x0+w, y1]);
+  path.lineTo([x0 + w, y1]);
   path.lineTo([0, y0]);
   path.closed = true;
 
   return path;
-  
+
 }
 
 function getEllipseMindPath(size: Vector, opts: any, seed: string) {
-  const newOpts = {...opts};
-  newOpts.tailTip = [0,0];
-  newOpts.tailMid = [0.5,0];
+  const newOpts = { ...opts };
+  newOpts.tailTip = [0, 0];
+  newOpts.tailMid = [0.5, 0];
   const path = getEllipsePath(size, newOpts, seed);
   const path2 = addMind(path, seed, size, opts, newOpts);
   return path2;
 }
 
 function getSoftMindPath(size: Vector, opts: any, seed: string) {
-  const newOpts = {...opts};
-  newOpts.tailTip = [0,0];
-  newOpts.tailMid = [0.5,0];
+  const newOpts = { ...opts };
+  newOpts.tailTip = [0, 0];
+  newOpts.tailMid = [0.5, 0];
   const path = getSoftPath(size, newOpts, seed);
   const path2 = addMind(path, seed, size, opts, newOpts);
   return path2;
 }
 
 function getRoundedMindPath(size: Vector, opts: any, seed: string) {
-  const newOpts = {...opts};
-  newOpts.tailTip = [0,0];
-  newOpts.tailMid = [0.5,0];
+  const newOpts = { ...opts };
+  newOpts.tailTip = [0, 0];
+  newOpts.tailMid = [0.5, 0];
   const path = getRoundedPath(size, newOpts, seed);
   const path2 = addMind(path, seed, size, opts, newOpts);
   return path2;
@@ -812,7 +818,7 @@ function makeExtractTailPath(size: Vector, m: Vector, p: Vector, w: number) {
   if (m == null || (m[0] == 0 && m[1] == 0)) {
     m = [0.5, 0];
   }
-  const q = tailCoordToWorldCoord([0,0], p, m);
+  const q = tailCoordToWorldCoord([0, 0], p, m);
   const v: Vector = [p[0] - q[0], p[1] - q[1]];
   const l = Math.hypot(p[0], p[1]);
   const vd = normalize2D(perpendicular2D(v), l * w);
@@ -906,7 +912,7 @@ function drawRoundedMindBubble(context: CanvasRenderingContext2D, method: DrawMe
 
 export function drawPath(context: CanvasRenderingContext2D, method: string, unified: paper.PathItem, opts: any) {
   context.beginPath();
-  switch(method) {
+  switch (method) {
     case 'fill':
       context.fill(new Path2D(unified.pathData));
       break;
@@ -914,7 +920,7 @@ export function drawPath(context: CanvasRenderingContext2D, method: string, unif
       const roughness = opts.roughness ?? 0;
       if (0 < roughness) {
         const seed = (opts.randomSeed ?? 0) + 1;
-        const rc = rough.canvas(context.canvas, {options:{seed, roughness, strokeWidth: context.lineWidth, stroke: context.strokeStyle as string}});
+        const rc = rough.canvas(context.canvas, { options: { seed, roughness, strokeWidth: context.lineWidth, stroke: context.strokeStyle as string } });
         rc.path(unified.pathData);
       } else {
         context.stroke(new Path2D(unified.pathData));
@@ -954,7 +960,7 @@ function drawPoints(context, points, color) {
 
 function addMind(path: paper.PathItem, seed: string, size: Vector, opts: any, newOpts: any) {
   const trail = [[0.97, 0.04], [0.8, 0.05], [0.6, 0.08], [0.3, 0.12]];
-  const m = tailCoordToWorldCoord([0,0], opts.tailTip, opts.tailMid);
+  const m = tailCoordToWorldCoord([0, 0], opts.tailTip, opts.tailMid);
   const s = opts.tailTip;
   const v = [s[0] - m[0], s[1] - m[1]];
   const r = Math.min(size[0], size[1]) * 0.5 * opts.tailWidth;
@@ -963,7 +969,7 @@ function addMind(path: paper.PathItem, seed: string, size: Vector, opts: any, ne
   for (let t of trail) {
     const p: Vector = [m[0] + t[0] * v[0], m[1] + t[0] * v[1]];
     const rt = r * t[1] * 2;
-    const path2 = getCloudPath([rt,rt], newOpts, seed, 6, 2, 0.15);
+    const path2 = getCloudPath([rt, rt], newOpts, seed, 6, 2, 0.15);
     // 思考の泡を座標軸ベースで扁平化
     if (flattening && Math.abs(flattening - 1.0) > 1e-6) {
       const sx = (flattening > 1) ? (1 / flattening) : 1; // >1 で垂直方向に平たい => Xを縮める

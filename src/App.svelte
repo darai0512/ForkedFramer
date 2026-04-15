@@ -42,7 +42,6 @@
   import DebugOnly from './utils/DebugOnly.svelte';
   import StructureTree from './about/StructureTree.svelte';
   import MaterialBucket from './materialBucket/MaterialBucket.svelte';
-  import DolphinRoom from './dolphinroom/DolphinRoom.svelte';
   import BubbleBucket from './bubbleBucket/BubbleBucket.svelte';
   //  import JsonReader from './utils/JsonReader.svelte';
   import VideoMaker from './videomaker/VideoMaker.svelte';
@@ -216,7 +215,6 @@
 <BubbleInspector/>
 <StructureTree/>
 <MaterialBucket/>
-<DolphinRoom/>
 <BubbleBucket/>
 <Downloader/>
 <ColorPickerDialog/>

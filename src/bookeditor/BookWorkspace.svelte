@@ -6,7 +6,12 @@
   import { PaperRendererLayer } from '../lib/layeredCanvas/layers/paperRendererLayer';
   import { setBubbleCommandTools } from './bubbleinspector/bubbleInspectorStore';
   import { setFrameCommandTools } from './frameinspector/frameInspectorStore';
-  import { type Book, commitBook, emptyNotebook, trivialNewPageProperty } from '../lib/book/book';
+  import { type Book, commitBook, emptyNotebook, trivialNewPageProperty, collectAllFilms } from '../lib/book/book';
+  import { mediaResourceSize, buildMedia } from '../lib/layeredCanvas/dataModels/media';
+  import { Film } from '../lib/layeredCanvas/dataModels/film';
+  import { frameExamples } from '../lib/layeredCanvas/tools/frameExamples';
+  import { FrameElement } from '../lib/layeredCanvas/dataModels/frameTree';
+  import type { Vector } from '../lib/layeredCanvas/tools/geometry/geometry';
   import { mainBook, bookOperators, viewport, redrawToken, undoToken, resetFontCacheKey, mainBookExceptionHandler, pendingFocusIndex } from './workspaceStore';
   import { newBookToken, newBookTitleHint } from '../filemanager/fileManagerStore';
   import { buildBookEditor } from './operations/buildBookEditor';
@@ -126,8 +131,9 @@
     layeredCanvas = builtBook.layeredCanvas;
     arrayLayer = builtBook.arrayLayer;
 
-    // PSDドロップコールバックを設定
+    // ドラッグ＆ドロップのコールバックを設定
     layeredCanvas.onPsdDropped = handlePsdDropped;
+    layeredCanvas.onMediaDropped = handleMediaDropped;
     
     setLayerRefs(layeredCanvas, arrayLayer);
     layeredCanvas.redraw();
@@ -244,6 +250,45 @@
         toastStore.trigger({ message: $_('psd.importFailed'), timeout: 3000 });
       }
     }
+  }
+
+  async function handleMediaDropped(mediaResources: (HTMLCanvasElement | HTMLVideoElement | string)[], p: Vector): Promise<boolean> {
+    const book = $mainBook;
+    if (!book) return false;
+    
+    // Book内にページが1つしかなく、バブルがなく、画像フィルムも存在しない「事実上の空の本」に対する最初の画像ドロップ
+    if (book.pages.length === 1 && book.pages[0].bubbles.length === 0) {
+      const page = book.pages[0];
+      const allFilms = collectAllFilms(book);
+      const media = mediaResources[0];
+      
+      if (allFilms.length === 0 && (media instanceof HTMLCanvasElement || media instanceof HTMLVideoElement)) {
+        const size = mediaResourceSize(media);
+        if (size) {
+          const confirmed = await waitDialog<boolean>('confirm', {
+            title: '画像配置の確認',
+            message: '画像サイズに合わせて版形を調整しますか？\n（現在のコマ割りはすべて削除され、透過背景になります）',
+            positiveButtonText: 'はい',
+            negativeButtonText: 'いいえ'
+          });
+
+          if (confirmed) {
+            const frameTree = FrameElement.compile(frameExamples["transparent"].frameTree);
+            const film = Film.fromMedia(buildMedia(media));
+            frameTree.filmStack.films = [film];
+            
+            page.paperSize = [size[0], size[1]];
+            page.frameTree = frameTree;
+            book.newPageProperty.paperSize = [size[0], size[1]];
+            
+            commit('page-size');
+            $bookOperators?.forceDelayedCommit();
+            return true;
+          }
+        }
+      }
+    }
+    return false;
   }
 
   onDestroy(() => {

@@ -38,6 +38,9 @@
     fill: "#000000",
     stroke: "#ffffff",
     brushOpacity: 0.3,
+    brushSizeJitter: 0,
+    brushPositionJitter: 0,
+    brushScatter: 1,
   };
 
   const presets = [
@@ -87,6 +90,30 @@
       strokeOperation: "brush",
       size: 30,
       brushOpacity: 0.3,
+      brushSizeJitter: 0,
+      brushPositionJitter: 0,
+      brushScatter: 1,
+    },
+    {
+      label: "ガスブラシ",
+      thinning: 0,
+      easing: "linear",
+      last: true,
+      start: {
+        taper: 0,
+        cap: true,
+      },
+      end: {
+        taper: 0,
+        cap: true,
+      },
+      strokeOperation: "brush",
+      fill: "#E3C27F",
+      size: 50,
+      brushOpacity: 0.06,
+      brushSizeJitter: 0.5,
+      brushPositionJitter: 0.6,
+      brushScatter: 3,
     },
   ];
 
@@ -215,7 +242,16 @@
 
           {#if options.strokeOperation === "brush"}
             <div class="param-item">
-              <Parameter label="不透明度" bind:value={options.brushOpacity} min={0.01} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
+              <Parameter label="不透明度" bind:value={options.brushOpacity} min={0.01} max={1} step={0.01} showStepButtons={true} buttonStep={0.05} />
+            </div>
+            <div class="param-item">
+              <Parameter label="サイズ揺れ" bind:value={options.brushSizeJitter} min={0} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
+            </div>
+            <div class="param-item">
+              <Parameter label="散布" bind:value={options.brushPositionJitter} min={0} max={1} step={0.01} showStepButtons={true} buttonStep={0.1} />
+            </div>
+            <div class="param-item">
+              <Parameter label="密度" bind:value={options.brushScatter} min={1} max={8} step={1} showStepButtons={true} buttonStep={1} />
             </div>
             <div class="color-row">
               <span class="color-label-text">ブラシ色</span>

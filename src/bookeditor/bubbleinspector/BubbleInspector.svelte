@@ -149,6 +149,16 @@
       if (oldTail.tailTip !== undefined) $bubble.optionContext.tailTip = oldTail.tailTip;
       if (oldTail.tailMid !== undefined) $bubble.optionContext.tailMid = oldTail.tailMid;
       if (oldTail.tailWidth !== undefined) $bubble.optionContext.tailWidth = oldTail.tailWidth;
+
+      // glitch-sfx: デフォルトスタイル自動設定
+      if (s === 'glitch-sfx') {
+        $bubble.fontFamily = '瀞ノグリッチ黒体H4';
+        $bubble.fontWeight = '400';
+        $bubble.fillColor = '#ffffff00'; // 背景透明
+        $bubble.n_strokeWidth = 0;       // フチなし
+        $bubble.fontColor = '#E3C27FFF';
+        $fontLoadToken = [{ family: '瀞ノグリッチ黒体H4', weight: '400' }];
+      }
     }
   }
 
@@ -480,7 +490,7 @@
           <!-- svelte-ignore a11y-click-events-have-key-events -->
           <!-- svelte-ignore a11y-no-static-element-interactions -->
           <div class="self-stretch selected-font variant-ghost-primary rounded-container-token text-center" on:click={() => $fontChooserOpen = true}>
-            <span style="font-family: {$bubble.fontFamily};">{$bubble.fontFamily}</span>
+            <span style="font-family: system-ui, sans-serif;">{$bubble.fontFamily}</span>
           </div>
           {#if getAvailableWeights($bubble.fontFamily).length > 1}
             <div class="flex gap-2 items-center">

@@ -464,6 +464,7 @@ export class LayeredCanvas {
   set pointerCursor(p: Vector | null) {(this.viewport.canvas as any)["pointerCursor"] = p;}
 
   onPsdDropped: ((files: File[]) => void) | null = null;
+  onMediaDropped: ((mediaResources: (HTMLCanvasElement | HTMLVideoElement | string)[], p: Vector) => Promise<boolean>) | null = null;
 
   constructor(viewport: Viewport, editable: boolean) {
     this.viewport = viewport;
@@ -676,8 +677,14 @@ export class LayeredCanvas {
     if (psdFiles.length > 0 && this.onPsdDropped) {
       this.onPsdDropped(psdFiles);
     }
-    for (let media of mediaResources) {
-      this.rootPaper.handleDrop(p, media);
+    let handledByOnMediaDropped = false;
+    if (mediaResources.length > 0 && this.onMediaDropped) {
+      handledByOnMediaDropped = await this.onMediaDropped(mediaResources, p);
+    }
+    if (!handledByOnMediaDropped) {
+      for (let media of mediaResources) {
+        this.rootPaper.handleDrop(p, media);
+      }
     }
   }
 

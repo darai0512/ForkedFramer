@@ -70,8 +70,8 @@ export function renderBubbleForeground(ctx: CanvasRenderingContext2D, paperSize:
     clipBubbleElement(ctx, bubble, size);
   }
 
-  // テキスト描画
-  if (bubble.text && !bubble.hidesText && !skipText) {
+  // テキスト描画（glitch-sfx は shape 内で独自テキスト描画するためスキップ）
+  if (bubble.text && !bubble.hidesText && !skipText && bubble.shape !== 'glitch-sfx') {
     drawBubbleText(ctx, paperSize, bubble, supportsDpr, fontSizeCoefficient);
   }
   ctx.restore();
@@ -106,7 +106,22 @@ function fillBubbleElement(ctx: CanvasRenderingContext2D, paperSize: Vector, bub
       size[1] = Math.abs(size[1]);
       setBubbleStyle(ctx, bubble, paperSize, bubble.fillColor, minimumSizeWarning);
       ctx.strokeStyle = bubble.strokeColor;
-      drawBubbleShape(ctx, 'fill', bubble.text, size, bubble.shape, bubble.optionContext);
+
+      // glitch-sfx: テキスト・方向・フォントサイズをoptsに注入
+      let opts = bubble.optionContext;
+      if (bubble.shape === 'glitch-sfx') {
+        opts = { 
+          ...opts, 
+          _text: bubble.text, 
+          _direction: bubble.direction, 
+          _fontSize: bubble.getPhysicalFontSize(paperSize),
+          _fontFamily: bubble.fontFamily,
+          _fontWeight: bubble.fontWeight,
+          _outlineWidth: bubble.getPhysicalOutlineWidth(paperSize),
+          _outlineColor: bubble.outlineColor
+        };
+      }
+      drawBubbleShape(ctx, 'fill', bubble.text, size, bubble.shape, opts);
     }
   }
 }

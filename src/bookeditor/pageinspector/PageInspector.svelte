@@ -298,7 +298,7 @@
               <!-- svelte-ignore a11y-click-events-have-key-events -->
               <!-- svelte-ignore a11y-no-static-element-interactions -->
               <div class="font-selector variant-ghost-primary rounded-container-token" on:click={openFontChooser}>
-                <span style="font-family: {batchFontFamily};">{batchFontFamily}</span>
+                <span style="font-family: system-ui, sans-serif;">{batchFontFamily}</span>
               </div>
               <button class="btn btn-sm variant-filled-primary apply-btn" on:click={applyFont}>適用</button>
             </div>

@@ -46,6 +46,7 @@
     "ellipse-mind",
     "soft-mind",
     "rounded-mind",
+    "glitch-sfx",
     "none",
   ];
 

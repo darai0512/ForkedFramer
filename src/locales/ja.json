@@ -84,7 +84,7 @@
     "cannotDeleteSpecialFolder": "特別なフォルダは削除できません",
     "folderNotEmpty": "フォルダが空ではありません",
     "createFolder": "フォルダ作成",
-    "createPage": "ページ作成",
+    "createPage": "Book作成",
     "changeFileName": "ファイル名変更",
     "changeFolderName": "フォルダ名変更",
     "moveByDrag": "ドラッグで移動",
@@ -615,8 +615,6 @@
       "clearAll": "全て解除",
       "clickToDeselect": "クリックで選択解除"
     },
-    "copyPrompt": "プロンプトをクリップボードにコピー",
-    "copiedToClipboard": "プロンプトをクリップボードにコピーしました",
     "generation": {
       "image": "画像",
       "video": "動画",
@@ -678,12 +676,8 @@
   "downloader": {
     "download": "ダウンロード",
     "downloadHint": "画像としてダウンロードします\n対象ページが複数の場合はzipファイルになります",
-    "copyToClipboard": "クリップボードにコピー",
-    "copyToClipboardHint": "クリップボードにコピーします\n対象ページが複数の場合は最初のページのみ",
     "upscaleAndDownload": "アップスケールして\nダウンロード",
     "upscaleAndDownloadHint": "画像としてダウンロードします\n対象ページが複数の場合はzipファイルになります\nアップスケールコスト 枚数x1",
-    "upscaleAndCopy": "アップスケールして\nクリップボードにコピー",
-    "upscaleAndCopyHint": "クリップボードにコピーします\n対象ページが複数の場合は最初のページのみ\nアップスケールコスト 枚数x1",
     "exportPSD": "PSDでエクスポート",
     "exportPSDHint": "PSDファイルとしてダウンロードします\n対象ページが複数の場合はzipファイルになります",
     "downloadFrames": "コマごとにダウンロード",

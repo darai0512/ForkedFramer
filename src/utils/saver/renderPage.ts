@@ -34,6 +34,10 @@ export async function renderPage(page: Page): Promise<HTMLCanvasElement> {
   canvas.width = page.paperSize[0]
   canvas.height = page.paperSize[1]
 
+  const ctx = canvas.getContext('2d')!;
+  ctx.fillStyle = page.paperColor || '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   const viewport = new Viewport(canvas, () => {});
 
   const layeredCanvas = new LayeredCanvas(viewport, true);
