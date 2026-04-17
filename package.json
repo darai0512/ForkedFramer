@@ -46,7 +46,7 @@
     "wrangler": "^4.46.0"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.38",
+    "@anthropic-ai/claude-code": "^2.1.75",
     "@diffusion-studio/ffmpeg-js": "^0.2.3",
     "@floating-ui/dom": "^1.6.13",
     "@neodrag/svelte": "^2.3.2",
